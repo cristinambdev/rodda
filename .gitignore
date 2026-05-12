@@ -1,4 +1,5 @@
 bin/
 obj/
+appsettings.json
 appsettings.Development.json
 .vs/
