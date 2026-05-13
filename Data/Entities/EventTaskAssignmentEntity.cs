@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Data.Entities;
 
-[Index(nameof(TaskId))]
+[Index(nameof(EventTaskId))]
 [Table("EventTaskAssignments")]
 public class EventTaskAssignmentEntity
 {
@@ -15,17 +16,17 @@ public class EventTaskAssignmentEntity
     public DateTime? UpdatedAt { get; set; }
 
     [Required]
-    public string TaskId { get; set; } = null!;
+    public string EventTaskId { get; set; } = null!;
 
-    [ForeignKey(nameof(TaskId))]
-    public virtual EventTaskEntity Task { get; set; } = null!;
+    [ForeignKey(nameof(EventTaskId))]
+    public virtual EventTaskEntity EventTask { get; set; } = null!;
 
     public AssigneeType AssigneeType { get; set; }
 
     public string? UserId { get; set; }
 
     [ForeignKey(nameof(UserId))]
-    public virtual UserEntity? Assignee { get; set; }
+    public virtual UserEntity? User { get; set; }
 
     public string? PlaceholderLabel { get; set; }
 

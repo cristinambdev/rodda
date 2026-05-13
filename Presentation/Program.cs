@@ -1,5 +1,6 @@
 using Data.Contexts;
 using Data.Entities;
+using Data.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,16 @@ builder.Services.ConfigureApplicationCookie(x =>
     x.Cookie.Expiration = TimeSpan.FromHours(1);
     x.SlidingExpiration = true;
 });
+
+builder.Services.AddScoped<IEventAttendanceRepository, EventAttendanceRepository>();
+builder.Services.AddScoped<IEventChatRepository, EventChatRepository>();
+builder.Services.AddScoped<IEventItemAssignmentRepository, EventItemAssignmentRepository>();
+builder.Services.AddScoped<IEventItemRepository, EventItemRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<IEventRoleRepository, EventRoleRepository>();
+builder.Services.AddScoped<IEventTaskAssignmentRepository, EventTaskAssignmentRepository>();
+builder.Services.AddScoped<IEventTaskRepository, EventTaskRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 app.UseHsts();

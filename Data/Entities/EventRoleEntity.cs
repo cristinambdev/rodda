@@ -1,9 +1,12 @@
+using Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace Data.Entities;
 
+[Index(nameof(EventId))] 
+[Index(nameof(UserId))]
 [Table("EventRoles")]
 public class EventRoleEntity
 {

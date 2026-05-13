@@ -1,15 +1,13 @@
 using Data.Contexts;
 using Data.Entities;
+using Domain.Models;
 
 namespace Data.Repositories;
 
-public interface IEventAttendanceRepository : IBaseRepository<EventAttendanceEntity, EventAttendanceEntity>
+public interface IEventAttendanceRepository : IBaseRepository<EventAttendanceEntity, EventAttendance>
 {
 }
 
-public class EventAttendanceRepository : BaseRepository<EventAttendanceEntity, EventAttendanceEntity>, IEventAttendanceRepository
+public class EventAttendanceRepository(AppDbContext context) : BaseRepository<EventAttendanceEntity, EventAttendance>(context), IEventAttendanceRepository
 {
-    public EventAttendanceRepository(AppDbContext context) : base(context)
-    {
-    }
 }

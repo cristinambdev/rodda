@@ -1,15 +1,13 @@
 using Data.Contexts;
 using Data.Entities;
+using Domain.Models;
 
 namespace Data.Repositories;
 
-public interface IUserRepository : IBaseRepository<UserEntity, UserEntity>
+public interface IUserRepository : IBaseRepository<UserEntity, User>
 {
 }
 
-public class UserRepository : BaseRepository<UserEntity, UserEntity>, IUserRepository
+public class UserRepository(AppDbContext context) : BaseRepository<UserEntity, User>(context), IUserRepository
 {
-    public UserRepository(AppDbContext context) : base(context)
-    {
-    }
 }

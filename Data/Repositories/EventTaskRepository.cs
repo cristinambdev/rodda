@@ -1,15 +1,13 @@
 using Data.Contexts;
 using Data.Entities;
+using Domain.Models;
 
 namespace Data.Repositories;
 
-public interface IEventTaskRepository : IBaseRepository<EventTaskEntity, EventTaskEntity>
+public interface IEventTaskRepository : IBaseRepository<EventTaskEntity, EventTask>
 {
 }
 
-public class EventTaskRepository : BaseRepository<EventTaskEntity, EventTaskEntity>, IEventTaskRepository
+public class EventTaskRepository(AppDbContext context) : BaseRepository<EventTaskEntity, EventTask>(context), IEventTaskRepository
 {
-    public EventTaskRepository(AppDbContext context) : base(context)
-    {
-    }
 }
