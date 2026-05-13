@@ -1,12 +1,23 @@
 ﻿using Data.Contexts;
+
+using Data.Models;
+
 using Microsoft.EntityFrameworkCore;
+
 using System.Diagnostics;
+
 using System.Linq.Expressions;
+
+
 
 namespace Data.Repositories;
 
+
+
 public abstract class BaseRepository <TEntity> where TEntity : class
+
 {
+
     protected readonly AppDbContext _context;
     protected readonly DbSet<TEntity> _table;
 
@@ -16,73 +27,130 @@ public abstract class BaseRepository <TEntity> where TEntity : class
         _table = _context.Set<TEntity>();
     }
 
-    public async Task<bool> AddAsync(TEntity entity)
+    public virtual async Task<RepositoryResult<bool>> AddAsync(TEntity entity)
     {
-        if (entity == null) return false;
-
+        if (entity == null)
+            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 400, ErrorMessage = "Entity cannot be null." };
         try
         {
             await _table.AddAsync(entity);
             await _context.SaveChangesAsync();
-            return true;
+            return new RepositoryResult<bool> { Succeeded = true, StatusCode = 201 };
         }
+
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            return false;
+            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 500, ErrorMessage = ex.Message };
         }
     }
 
-    public virtual async Task<TEntity> GetAsync(Expression <Func<TEntity, bool>> findBy)
-    {
-        var entity = await _table.FirstOrDefaultAsync(findBy);
-        return entity ?? null!;
-    }
-
-    public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
+    public virtual async Task<RepositoryResult<IEnumerable<TEntity>>> GetAllAsync()
     {
         var entities = await _table.ToListAsync();
-        return entities;
+        return new RepositoryResult<IEnumerable<TEntity>> { Succeeded = true, StatusCode = 200, Result = entities };
     }
 
-    public virtual async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> findBy)
+
+    public virtual async Task<RepositoryResult<TEntity>> GetAsync(Expression <Func<TEntity, bool>> findBy)
     {
+        var entity = await _table.FirstOrDefaultAsync(findBy);
+        return entity == null
+            ? new RepositoryResult<TEntity> { Succeeded = false, StatusCode = 404, ErrorMessage = "Entity not found.", Result = null }
+            : new RepositoryResult<TEntity> { Succeeded = true, StatusCode = 200, Result = entity };
+
+    }
+
+
+
+    public virtual async Task<RepositoryResult<bool>> ExistsAsync(Expression<Func<TEntity, bool>> findBy)
+
+    {
+
         var exists = await _table.AnyAsync(findBy);
-        return exists;
+
+        return exists
+
+            ? new RepositoryResult<bool> { Succeeded = true, StatusCode = 200 }
+
+            : new RepositoryResult<bool> { Succeeded = false, StatusCode = 404, ErrorMessage = "Entity not found." };
+
     }
 
-    public async Task<bool> UpdateAsync(TEntity entity)
+
+
+    public async Task<RepositoryResult<bool>> UpdateAsync(TEntity entity)
+
     {
-        if (entity == null) return false;
+
+        if (entity == null)
+
+            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 400, ErrorMessage = "Entity cannot be null." };
+
+
 
         try
+
         {
+
             _table.Update(entity);
+
             await _context.SaveChangesAsync();
-            return true;
+
+            return new RepositoryResult<bool> { Succeeded = true, StatusCode = 200 };
+
         }
+
         catch (Exception ex)
+
         {
+
             Debug.WriteLine(ex.Message);
-            return false;
+
+            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 500, ErrorMessage = ex.Message };
+
         }
+
     }
 
-    public async Task<bool> DeleteAsync(TEntity entity)
+
+
+    public async Task<RepositoryResult<bool>> DeleteAsync(TEntity entity)
+
     {
-        if (entity == null) return false;
+
+        if (entity == null)
+
+            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 400, ErrorMessage = "Entity cannot be null." };
+
+
 
         try
+
         {
+
             _table.Remove(entity);
+
             await _context.SaveChangesAsync();
-            return true;
+
+            return new RepositoryResult<bool> { Succeeded = true, StatusCode = 200 };
+
         }
+
         catch (Exception ex)
+
         {
+
             Debug.WriteLine(ex.Message);
-            return false;
+
+            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 500, ErrorMessage = ex.Message };
+
         }
+
     }
+
+
 
 }
+
+
