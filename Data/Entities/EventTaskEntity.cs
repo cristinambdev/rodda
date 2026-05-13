@@ -15,14 +15,12 @@ namespace Data.Entities;
 public class EventTaskEntity
 {
     [Key]
-    [StringLength(450)]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
     [Required]
-    [StringLength(450)]
     public string EventId { get; set; } = null!;
 
     [ForeignKey(nameof(EventId))]
@@ -54,7 +52,6 @@ public class EventTaskEntity
 
     public SignupMode OwnerSignupMode { get; set; } = SignupMode.Available;
 
-    [StringLength(450)]
     public string? CreatedByUserId { get; set; }
 
     [ForeignKey(nameof(CreatedByUserId))]

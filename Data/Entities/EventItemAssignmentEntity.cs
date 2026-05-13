@@ -9,14 +9,12 @@ namespace Data.Entities;
 public class EventItemAssignmentEntity
 {
     [Key]
-    [StringLength(450)]
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
     [Required]
-    [StringLength(450)]
     public string ItemId { get; set; } = null!;
 
     [ForeignKey(nameof(ItemId))]
@@ -24,7 +22,6 @@ public class EventItemAssignmentEntity
 
     public AssigneeType AssigneeType { get; set; }
 
-    [StringLength(450)]
     public string? UserId { get; set; }
 
     [ForeignKey(nameof(UserId))]

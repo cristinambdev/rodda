@@ -9,9 +9,7 @@ namespace Data.Entities;
 public class EventEntity
 {
     [Key]
-    [StringLength(450)]
     public string Id { get; set; } = Guid.NewGuid().ToString();
-
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
@@ -74,7 +72,6 @@ public class EventEntity
     public string? PaymentComment { get; set; }
 
     [Required]
-    [StringLength(450)]
     public string CreatedByUserId { get; set; } = null!;
 
     [ForeignKey(nameof(CreatedByUserId))]

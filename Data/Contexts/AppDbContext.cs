@@ -13,5 +13,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public virtual DbSet<EventTaskAssignmentEntity> TaskAssignments { get; set; } 
     public virtual DbSet<EventRoleEntity> EventRoles { get; set; } 
     public virtual DbSet<EventAttendanceEntity> Attendances { get; set; } 
-    public virtual DbSet<EventChatEntity> ChatMessages { get; set; } 
+    public virtual DbSet<EventChatEntity> ChatMessages { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+        // Soft Delete protection for Attendance.
+        builder.Entity<EventAttendanceEntity>()
+            .HasOne(e => e.User)
+            .WithMany()
+            .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        // Soft Delete protection for Roles
+        builder.Entity<EventRoleEntity>()
+            .HasOne(e => e.User)
+            .WithMany()
+            .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
 }

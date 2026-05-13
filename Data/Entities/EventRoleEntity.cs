@@ -4,16 +4,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Data.Entities;
 
-[PrimaryKey(nameof(EventId), nameof(UserId))]
 [Table("EventRoles")]
 public class EventRoleEntity
 {
+    [Key]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     [Required]
-    [StringLength(450)]
     public string EventId { get; set; } = null!;
 
     [Required]
-    [StringLength(450)]
     public string UserId { get; set; } = null!;
 
     public EventRoleType Role { get; set; }
