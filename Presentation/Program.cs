@@ -1,3 +1,4 @@
+using Business.Services;
 using Data.Contexts;
 using Data.Entities;
 using Data.Repositories;
@@ -33,6 +34,12 @@ builder.Services.AddScoped<IEventRoleRepository, EventRoleRepository>();
 builder.Services.AddScoped<IEventTaskAssignmentRepository, EventTaskAssignmentRepository>();
 builder.Services.AddScoped<IEventTaskRepository, EventTaskRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+//builder.Services.AddScoped<IEventItemService, EventItemService>();
+//builder.Services.AddScoped<IEventTaskService, EventTaskService>();
 
 var app = builder.Build();
 app.UseHsts();

@@ -12,6 +12,15 @@ public static class MapExtensions
 
         // Create a new instance of the destination type.
         TDestination destination = Activator.CreateInstance<TDestination>();
+        source.MapOnto(destination);
+        return destination;
+    }
+
+    // Copies matching properties onto an existing instance (e.g. form data onto a tracked entity).
+    public static void MapOnto<TDestination>(this object source, TDestination destination)
+    {
+        ArgumentNullException.ThrowIfNull(source, nameof(source));
+        ArgumentNullException.ThrowIfNull(destination, nameof(destination));
 
         //  Retrieve all public instance properties for both source and destination types.
         var sourceProperties = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -32,8 +41,5 @@ public static class MapExtensions
                 destinationProperty.SetValue(destination, value);
             }
         }
-
-        // Return the populated destination object.
-        return destination;
     }
 }

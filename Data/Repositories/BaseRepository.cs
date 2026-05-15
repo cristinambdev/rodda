@@ -2,7 +2,6 @@
 using Data.Models;
 using Domain.Extensions;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace Data.Repositories;
@@ -12,15 +11,14 @@ public interface IBaseRepository<TEntity, TModel> where TEntity : class
     Task<RepositoryResult<bool>> AddAsync(TEntity entity);
     Task<RepositoryResult<bool>> DeleteAsync(TEntity entity);
     Task<RepositoryResult<bool>> ExistsAsync(Expression<Func<TEntity, bool>> findBy);
-    Task<RepositoryResult<IEnumerable<TSelect>>> GetAllAsync<TSelect>(Expression<Func<TEntity, TSelect>> selector, bool orderBydescending = false, Expression<Func<TEntity, object>>? sortBy = null, Expression<Func<TEntity, bool>>? where = null, params Expression<Func<TEntity, object>>[] includes);
+    Task<RepositoryResult<TEntity>> GetEntityAsync(Expression<Func<TEntity, bool>> where);
+    Task<RepositoryResult<IEnumerable<TSelect>>> GetAllAsync<TSelect>(Expression<Func<TEntity, TSelect>> selector, bool orderByDescending = false, Expression<Func<TEntity, object>>? sortBy = null, Expression<Func<TEntity, bool>>? where = null, params Expression<Func<TEntity, object>>[] includes);
     Task<RepositoryResult<TModel>> GetAsync(Expression<Func<TEntity, bool>> where, params Expression<Func<TEntity, object>>[] includes);
     Task<RepositoryResult<bool>> UpdateAsync(TEntity entity);
 }
 
-/// <summary>
 /// Persistence for <typeparamref name="TEntity"/>. Methods that return <typeparamref name="TModel"/> map from the entity
 /// using <see cref="MapExtensions"/> (<c>MapTo&lt;TModel&gt;()</c>) so DTO shape stays in the Domain layer.
-/// </summary>
 public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity, TModel> where TEntity : class
 {
     protected readonly AppDbContext _context;
@@ -36,23 +34,16 @@ public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity,
     {
         if (entity == null)
             return new RepositoryResult<bool> { Succeeded = false, StatusCode = 400, ErrorMessage = "Entity cannot be null." };
-        try
-        {
-            await _table.AddAsync(entity);
-            await _context.SaveChangesAsync();
-            return new RepositoryResult<bool> { Succeeded = true, StatusCode = 201 };
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 500, ErrorMessage = ex.Message };
-        }
+
+        await _table.AddAsync(entity);
+        await _context.SaveChangesAsync();
+        return new RepositoryResult<bool> { Succeeded = true, StatusCode = 201 };
     }
 
-    /// Loads rows (optional filter, includes, sort), then projects with <paramref name="selector"/>; use <c>e => e</c> to materialize entities.
-    /// <paramref name="selector"/> must be translatable to SQL by EF Core (client-only calls such as <c>MapTo</c> will fail at runtime).
-    /// <param name="where">Filter predicate; must return <see cref="bool"/> (e.g. <c>e => e.EventId == id</c>). Not a property selector.</param>
-    public virtual async Task<RepositoryResult<IEnumerable<TSelect>>> GetAllAsync<TSelect>(Expression<Func<TEntity, TSelect>> selector, bool orderBydescending = false, Expression<Func<TEntity, object>>? sortBy = null, Expression<Func<TEntity, bool>>? where = null, params Expression<Func<TEntity, object>>[] includes)
+    // Loads rows (optional filter, includes, sort), then projects with <paramref name="selector"/>; use <c>e => e</c> to materialize entities.
+    // <paramref name="selector"/> must be translatable to SQL by EF Core (client-only calls such as <c>MapTo</c> will fail at runtime).
+    // <param name="where">Filter predicate; must return <see cref="bool"/> (e.g. <c>e => e.EventId == id</c>). Not a property selector.</param>
+    public virtual async Task<RepositoryResult<IEnumerable<TSelect>>> GetAllAsync<TSelect>(Expression<Func<TEntity, TSelect>> selector, bool orderByDescending = false, Expression<Func<TEntity, object>>? sortBy = null, Expression<Func<TEntity, bool>>? where = null, params Expression<Func<TEntity, object>>[] includes)
     {
         IQueryable<TEntity> query = _table;
 
@@ -64,16 +55,19 @@ public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity,
                 query = query.Include(include);
 
         if (sortBy != null)
-            query = orderBydescending
-                ? query.OrderByDescending(sortBy)
-                : query.OrderBy(sortBy);
+        {
+            if (orderByDescending)
+                query = query.OrderByDescending(sortBy);
+            else
+                query = query.OrderBy(sortBy);
+        }
 
         var result = await query.Select(selector).ToListAsync();
         return new RepositoryResult<IEnumerable<TSelect>> { Succeeded = true, StatusCode = 200, Result = result };
     }
 
-    /// Finds one entity and maps it to <typeparamref name="TModel"/> using
-    /// <see cref="MapExtensions.MapTo{TDestination}(object)"/>; returns 404 when no row matches <paramref name="findBy"/>.
+    // Finds one entity and maps it to <typeparamref name="TModel"/> using
+    // <see cref="MapExtensions.MapTo{TDestination}(object)"/>; returns 404 when no row matches <paramref name="findBy"/>.
     public virtual async Task<RepositoryResult<TModel>> GetAsync(Expression<Func<TEntity, bool>> where, params Expression<Func<TEntity, object>>[] includes)
     {
         IQueryable<TEntity> query = _table;
@@ -89,6 +83,14 @@ public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity,
         return new RepositoryResult<TModel> { Succeeded = true, StatusCode = 200, Result = result };
     }
 
+    public virtual async Task<RepositoryResult<TEntity>> GetEntityAsync(Expression<Func<TEntity, bool>> where)
+    {
+        var entity = await _table.FirstOrDefaultAsync(where);
+        if (entity == null)
+            return new RepositoryResult<TEntity> { Succeeded = false, StatusCode = 404, ErrorMessage = "Entity not found." };
+        return new RepositoryResult<TEntity> { Succeeded = true, StatusCode = 200, Result = entity };
+    }
+
     public virtual async Task<RepositoryResult<bool>> ExistsAsync(Expression<Func<TEntity, bool>> findBy)
     {
         var exists = await _table.AnyAsync(findBy);
@@ -102,17 +104,9 @@ public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity,
         if (entity == null)
             return new RepositoryResult<bool> { Succeeded = false, StatusCode = 400, ErrorMessage = "Entity cannot be null." };
 
-        try
-        {
-            _table.Update(entity);
-            await _context.SaveChangesAsync();
-            return new RepositoryResult<bool> { Succeeded = true, StatusCode = 200 };
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 500, ErrorMessage = ex.Message };
-        }
+        _table.Update(entity);
+        await _context.SaveChangesAsync();
+        return new RepositoryResult<bool> { Succeeded = true, StatusCode = 200 };
     }
 
     public async Task<RepositoryResult<bool>> DeleteAsync(TEntity entity)
@@ -120,16 +114,8 @@ public abstract class BaseRepository<TEntity, TModel> : IBaseRepository<TEntity,
         if (entity == null)
             return new RepositoryResult<bool> { Succeeded = false, StatusCode = 400, ErrorMessage = "Entity cannot be null." };
 
-        try
-        {
-            _table.Remove(entity);
-            await _context.SaveChangesAsync();
-            return new RepositoryResult<bool> { Succeeded = true, StatusCode = 200 };
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-            return new RepositoryResult<bool> { Succeeded = false, StatusCode = 500, ErrorMessage = ex.Message };
-        }
+        _table.Remove(entity);
+        await _context.SaveChangesAsync();
+        return new RepositoryResult<bool> { Succeeded = true, StatusCode = 200 };
     }
 }

@@ -8,9 +8,6 @@ public interface IEventRepository : IBaseRepository<EventEntity, Event>
 {
 }
 
-public class EventRepository : BaseRepository<EventEntity, Event>, IEventRepository
+public class EventRepository(AppDbContext context) : BaseRepository<EventEntity, Event>(context), IEventRepository
 {
-    public EventRepository(AppDbContext context) : base(context)
-    {
-    }
 }
