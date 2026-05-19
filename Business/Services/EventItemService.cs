@@ -5,6 +5,8 @@ using Domain.Enums;
 using Domain.Extensions;
 using Domain.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Business.Services;
 
@@ -16,6 +18,8 @@ public interface IEventItemService
     Task<EventItemResult<IEnumerable<EventItem>>> GetItemsClaimedByUserAsync(string userId);
     Task<EventItemResult<IEnumerable<EventItem>>> GetItemsForEventAsync(string eventId);
     Task<EventItemResult> UpdateEventItemAsync(string userId, string eventId, string eventItemId, EditItemFormData formData);
+    Task<EventItemResult> ClaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null);
+    Task<EventItemResult> UnclaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null);
 }
 
 // Handles EventItemEntity, EventItemAssignmentEntity
@@ -52,21 +56,30 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
             return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to create an item for this event." };
 
         var newEventItem = formData.MapTo<EventItemEntity>();
-
+        newEventItem.EventId = formData.EventId;
         newEventItem.CreatedByUserId = userId;
         newEventItem.IsActive = true;
         newEventItem.CreatedAt = DateTime.UtcNow;
 
-        // Populate the original values
+        var peopleNeeded = ClampPeopleNeeded(formData.PeopleNeeded);
+        newEventItem.PeopleNeeded = peopleNeeded;
         newEventItem.OriginalTitle = formData.Title;
         newEventItem.OriginalAmount = formData.Amount;
+        newEventItem.OriginalPeopleNeeded = peopleNeeded;
         newEventItem.OriginalSignupMode = formData.SignupMode;
 
-
         var result = await _eventItemRepository.AddAsync(newEventItem);
-        return result.Succeeded
-            ? new EventItemResult { Succeeded = true, StatusCode = 201 }
-            : new EventItemResult { Succeeded = false, StatusCode = result.StatusCode, ErrorMessage = result.ErrorMessage };
+        if (!result.Succeeded)
+            return new EventItemResult { Succeeded = false, StatusCode = result.StatusCode, ErrorMessage = result.ErrorMessage };
+
+        for (var slot = 1; slot <= peopleNeeded; slot++)
+        {
+            var slotResult = await _eventItemAssignmentRepository.AddAsync(CreateOpenSlotAssignment(newEventItem.Id, slot));
+            if (!slotResult.Succeeded)
+                return new EventItemResult { Succeeded = false, StatusCode = slotResult.StatusCode, ErrorMessage = slotResult.ErrorMessage };
+        }
+
+        return new EventItemResult { Succeeded = true, StatusCode = 201 };
     }
 
     // **************************************************************************************************************************
@@ -165,6 +178,9 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
             return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to edit this event item." };
 
         formData.MapOnto(eventItemEntity);
+        eventItemEntity.PeopleNeeded = ClampPeopleNeeded(formData.PeopleNeeded);
+        eventItemEntity.OriginalPeopleNeeded = eventItemEntity.PeopleNeeded;
+        eventItemEntity.UpdatedAt = DateTime.UtcNow;
 
         var result = await _eventItemRepository.UpdateAsync(eventItemEntity);
         return result.Succeeded
@@ -209,4 +225,261 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
             : new EventItemResult { Succeeded = false, StatusCode = result.StatusCode, ErrorMessage = result.ErrorMessage };
     }
 
+    // **************************************************************************************************************************
+    // INTERACTION: Claim and Unclaim an item methods and helpers.
+    // Generated with help from AI
+    // **************************************************************************************************************************
+    // Guest claims an open PERSON # slot
+    public async Task<EventItemResult> ClaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null)
+    {
+        // Include the item, assignments, event, and roles
+        var fetchResponse = await _eventItemRepository.GetEntityAsync
+        (
+            i => i.Id == eventItemId && i.EventId == eventId && i.IsActive,
+            includeChains:
+            [
+                q => q.Include(i => i.Assignments),
+                q => q.Include(i => i.Event).ThenInclude(e => e.Roles),
+                q => q.Include(i => i.Event).ThenInclude(e => e.Attendances)
+            ]
+        );
+
+        var item = fetchResponse.Result;
+        if (!fetchResponse.Succeeded || item == null)
+            return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event item not found." };
+
+        // Validate the guest interaction
+        var permissionError = ValidateGuestItemInteraction(item, userId, requireOpenSlot: item.SignupMode == SignupMode.Hidden);
+        if (permissionError != null)
+            return permissionError;
+
+        // Check if the item is assigned to everyone and cannot be claimed individually
+        if (item.Assignments.Any(a => a.AssigneeType == AssigneeType.Everyone && a.Status != AssignmentStatus.Removed))
+            return new EventItemResult { Succeeded = false, StatusCode = 409, ErrorMessage = "This item is assigned to everyone and cannot be claimed individually." };
+
+        // Check if the user has already claimed a slot for this item
+        if (item.Assignments.Any(a => IsActiveUserAssignment(a) && a.UserId == userId))
+            return new EventItemResult { Succeeded = false, StatusCode = 409, ErrorMessage = "You have already claimed a slot for this item." };
+
+        // Determine the number of slots needed and the number of active claims
+        var slotsNeeded = ClampPeopleNeeded(item.PeopleNeeded);
+        var activeClaims = item.Assignments.Count(IsActiveUserAssignment);
+        // Resolve the open slot or create a new one
+        var targetSlot = ResolveOpenSlot(item.Assignments, assignmentId);
+
+        // If the target slot is not null, update the user assignment
+        if (targetSlot != null)
+        {
+            targetSlot.UserId = userId;
+            targetSlot.AssigneeType = AssigneeType.User;
+            targetSlot.Status = AssignmentStatus.SignedUp;
+            targetSlot.PlaceholderLabel = null;
+            targetSlot.UpdatedAt = DateTime.UtcNow;
+        }
+        else if (activeClaims < slotsNeeded && !item.Assignments.Any(IsOpenSlot))
+        {
+            // Create a new user assignment
+            item.Assignments.Add(new EventItemAssignmentEntity
+            {
+                Id = Guid.NewGuid().ToString(),
+                EventItemId = eventItemId,
+                UserId = userId,
+                AssigneeType = AssigneeType.User,
+                Status = AssignmentStatus.SignedUp,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        else
+            return new EventItemResult { Succeeded = false, StatusCode = 409, ErrorMessage = "All slots for this item are currently full." };
+
+        // If there are no open slots, disable the signup mode
+        if (!item.Assignments.Any(IsOpenSlot))
+            item.SignupMode = SignupMode.Disabled;
+
+        // Update the item
+        item.UpdatedAt = DateTime.UtcNow;
+        var result = await _eventItemRepository.UpdateAsync(item);
+
+        return result.Succeeded
+            ? new EventItemResult { Succeeded = true, StatusCode = 200 }
+            : new EventItemResult { Succeeded = false, StatusCode = result.StatusCode, ErrorMessage = result.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    //  Guest unclaims — slot reverts in place to PERSON #
+    public async Task<EventItemResult> UnclaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null)
+    {
+        // Include the item and assignments
+        var fetchResponse = await _eventItemRepository.GetEntityAsync(
+            i => i.Id == eventItemId && i.EventId == eventId && i.IsActive,
+            includes: [x => x.Assignments]);
+
+        var item = fetchResponse.Result;
+        if (!fetchResponse.Succeeded || item == null)
+            return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event item not found." };
+
+        // Resolve the user assignment
+        var userAssignment = ResolveUserAssignment(item.Assignments, userId, assignmentId);
+        if (userAssignment == null)
+            return new EventItemResult { Succeeded = false, StatusCode = 400, ErrorMessage = "You do not have an active claim on this item." };
+
+        // Check if there are other active users
+        var otherActiveUsers = item.Assignments.Any(a =>
+            a.Id != userAssignment.Id && IsActiveUserAssignment(a));
+
+        // Update the user assignment
+        userAssignment.UserId = null;
+        userAssignment.AssigneeType = AssigneeType.OpenSlot;
+        userAssignment.Status = AssignmentStatus.Assigned;
+        userAssignment.PlaceholderLabel = $"PERSON {NextPersonSlotNumber(item.Assignments)}";
+        userAssignment.UpdatedAt = DateTime.UtcNow;
+
+        // If there are no other active users, revert the item to the original state
+        if (!otherActiveUsers)
+        {
+            item.Title = item.OriginalTitle;
+            item.Amount = item.OriginalAmount;
+            item.PeopleNeeded = item.OriginalPeopleNeeded;
+        }
+
+        item.SignupMode = item.OriginalSignupMode;
+        item.UpdatedAt = DateTime.UtcNow;
+
+        // Update the item
+        var result = await _eventItemRepository.UpdateAsync(item);
+
+        return result.Succeeded
+            ? new EventItemResult { Succeeded = true, StatusCode = 200 }
+            : new EventItemResult { Succeeded = false, StatusCode = result.StatusCode, ErrorMessage = result.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    // Helpers: slot / assignment rules shared by claim and unclaim
+    // **************************************************************************************************************************
+    // Enforces boundary limits on the number of requested task slots for an item. Minimum of 1 and a maximum of 99.
+    private static int ClampPeopleNeeded(int peopleNeeded)
+    {
+        return peopleNeeded < 1 ? 1 : Math.Min(peopleNeeded, 99);
+    }
+
+    // **************************************************************************************************************************
+   // Determines if an assignment represents an active claim by a real volunteer.
+   // Filters out empty placeholders and removed/soft-deleted historical data.
+    private static bool IsActiveUserAssignment(EventItemAssignmentEntity assignment)
+    {
+        return !string.IsNullOrEmpty(assignment.UserId) &&
+            assignment.Status is AssignmentStatus.SignedUp or AssignmentStatus.Assigned;
+    }
+
+    // **************************************************************************************************************************
+    // Evaluates if an assignment is a valid, available placeholder slot that a guest can volunteer for.
+    private static bool IsOpenSlot(EventItemAssignmentEntity assignment)
+    {
+        return assignment.AssigneeType == AssigneeType.OpenSlot &&
+            string.IsNullOrEmpty(assignment.UserId) &&
+            assignment.Status != AssignmentStatus.Removed;
+    }
+
+    // **************************************************************************************************************************
+    // Calculates the next logically available "PERSON #" label by scanning existing assignments using Regex.
+    // Automatically fills in gaps (e.g., if Person 2 cancels, the next slot generated is 2, not 4).
+    private static int NextPersonSlotNumber(ICollection<EventItemAssignmentEntity> assignments)
+    {
+        var usedNumbers = assignments
+            .Select(a => a.PlaceholderLabel)
+            .Select(label =>
+            {
+                var match = Regex.Match(label ?? string.Empty, @"^PERSON\s+(\d+)$", RegexOptions.IgnoreCase);
+                return match.Success && int.TryParse(match.Groups[1].Value, out var n) ? n : (int?)null;
+            })
+            .Where(n => n.HasValue)
+            .Select(n => n!.Value)
+            .ToHashSet();
+
+        for (var i = 1; i <= 99; i++)
+        {
+            if (!usedNumbers.Contains(i))
+                return i;
+        }
+
+        return 99;
+    }
+
+    // **************************************************************************************************************************
+    // Locates an available slot for a guest to claim.
+    // Prioritizes a specific slot ID if requested by the UI, otherwise falls back to the first available open slot.
+    private static EventItemAssignmentEntity? ResolveOpenSlot(ICollection<EventItemAssignmentEntity> assignments, string? assignmentId)
+    {
+        if (!string.IsNullOrEmpty(assignmentId))
+        {
+            var specific = assignments.FirstOrDefault(a => a.Id == assignmentId);
+            return specific != null && IsOpenSlot(specific) ? specific : null;
+        }
+
+        return assignments.FirstOrDefault(IsOpenSlot);
+    }
+
+    // **************************************************************************************************************************
+    // Locates a specific user's active volunteer assignment.
+    // Useful for unclaiming tasks or modifying an existing claim.
+    private static EventItemAssignmentEntity? ResolveUserAssignment(ICollection<EventItemAssignmentEntity> assignments, string userId, string? assignmentId)
+    {
+        if (!string.IsNullOrEmpty(assignmentId))
+        {
+            return assignments.FirstOrDefault(a =>
+                a.Id == assignmentId && a.UserId == userId && IsActiveUserAssignment(a));
+        }
+
+        return assignments.FirstOrDefault(a => a.UserId == userId && IsActiveUserAssignment(a));
+    }
+
+    // **************************************************************************************************************************
+    // Generates a new database entity for an open placeholder slot, automatically applying the "PERSON #" label.
+    private static EventItemAssignmentEntity CreateOpenSlotAssignment(string eventItemId, int personNumber)
+    {
+        return new()
+        {
+            Id = Guid.NewGuid().ToString(),
+            EventItemId = eventItemId,
+            AssigneeType = AssigneeType.OpenSlot,
+            PlaceholderLabel = $"PERSON {personNumber}",
+            Status = AssignmentStatus.Assigned,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    // **************************************************************************************************************************
+    // Enforces the core business rules for guest interactions. Validates event role permissions, 
+    // global event volunteer settings, attendance status, and task-level signup visibility.
+    private static EventItemResult? ValidateGuestItemInteraction(EventItemEntity item, string userId, bool requireOpenSlot)
+    {
+        // Check if the user is an owner or co-owner
+        var isOwnerOrCoOwner = item.Event.Roles.Any(r =>
+            r.UserId == userId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+
+        if (!isOwnerOrCoOwner)
+        {
+            // Global Event Rules: Does the host even allow guests to bring things?
+            if (item.Event.AllowGuestBringItems != true)
+                return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "Guests cannot claim items for this event." };
+
+            // Prevent users from claiming items if they haven't RSVP'd
+            var hasAcceptedAttendance = item.Event.Attendances.Any(a =>
+                a.UserId == userId && a.Status == AttendanceStatus.Accepted);
+
+            if (!hasAcceptedAttendance)
+                return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You must join the event before claiming an item." };
+        }
+
+        //  Check if the host manually disabled signups for this specific item
+        if (item.SignupMode == SignupMode.Disabled && !isOwnerOrCoOwner)
+            return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "Signup is disabled for this item." };
+
+        // Prevent guests from trying to claim hidden/full items
+        if (requireOpenSlot && !item.Assignments.Any(IsOpenSlot) && !isOwnerOrCoOwner)
+            return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "Signup is hidden until a slot becomes available." };
+
+        return null;
+    }
 }

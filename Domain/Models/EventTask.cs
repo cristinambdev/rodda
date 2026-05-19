@@ -16,6 +16,7 @@ public class EventTask
     public string? TaskTime { get; set; }
     public string? TaskLocationName { get; set; }
     public Address? TaskLocation { get; set; }
+    public int PeopleNeeded { get; set; } = 1;
     public SignupMode SignupMode { get; set; }
 
     // --- Original State ---
@@ -24,6 +25,7 @@ public class EventTask
     public string? OriginalTaskTime { get; set; }
     public string? OriginalTaskLocationName { get; set; }
     public Address? OriginalTaskLocation { get; set; }
+    public int OriginalPeopleNeeded { get; set; } = 1;
     public SignupMode OriginalSignupMode { get; set; }
 
     public int SortOrder { get; set; }

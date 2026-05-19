@@ -38,6 +38,8 @@ public class EventTaskEntity
     [StringLength(500)]
     public string? TaskLocation { get; set; }
 
+    public int PeopleNeeded { get; set; } = 1;
+
     public SignupMode SignupMode { get; set; } = SignupMode.Available;
 
     // THE ORIGINAL BACKUP (Event creator data)
@@ -52,8 +54,10 @@ public class EventTaskEntity
 
     [StringLength(500)]
     public string? OriginalTaskLocation { get; set; }
-    public SignupMode OriginalSignupMode { get; set; } = SignupMode.Available;
 
+    public int OriginalPeopleNeeded { get; set; } = 1;
+
+    public SignupMode OriginalSignupMode { get; set; } = SignupMode.Available;
 
     public int SortOrder { get; set; }
 

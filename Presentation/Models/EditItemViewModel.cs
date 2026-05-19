@@ -17,20 +17,13 @@ public class EditItemViewModel
     [StringLength(200)]
     public string? Amount { get; set; }
 
+    [Range(1, 99)]
+    public int PeopleNeeded { get; set; } = 1;
+
     public SignupMode SignupMode { get; set; } = SignupMode.Available;
 
     public int SortOrder { get; set; }
 
     public bool IsActive { get; set; } = true;
 
-    // **************************************************************************************************************************
-
-    public EditItemFormData ToFormData() => new()
-    {
-        Title = Title,
-        Amount = Amount,
-        SignupMode = SignupMode,
-        SortOrder = SortOrder,
-        IsActive = IsActive
-    };
 }

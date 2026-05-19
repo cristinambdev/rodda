@@ -36,6 +36,8 @@ public class EventItemEntity
     [StringLength(200)]
     public string? Amount { get; set; }
 
+    public int PeopleNeeded { get; set; } = 1;
+
     public SignupMode SignupMode { get; set; } = SignupMode.Available;
 
     // The original backup (Event creator data)
@@ -45,6 +47,9 @@ public class EventItemEntity
     public string OriginalTitle { get; set; } = null!;
     [StringLength(200)]
     public string? OriginalAmount { get; set; }
+
+    public int OriginalPeopleNeeded { get; set; } = 1;
+
     public SignupMode OriginalSignupMode { get; set; } = SignupMode.Available;
 
     public int SortOrder { get; set; }

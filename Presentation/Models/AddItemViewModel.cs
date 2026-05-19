@@ -15,6 +15,9 @@ public class AddItemViewModel
     [StringLength(200)]
     public string? Amount { get; set; }
 
+    [Range(1, 99)]
+    public int PeopleNeeded { get; set; } = 1;
+
     public SignupMode SignupMode { get; set; } = SignupMode.Available;
 
     public int SortOrder { get; set; }

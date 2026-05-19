@@ -16,12 +16,14 @@ public class EventItem
     // If an assignee edits the item, it changes THESE fields.
     public string Title { get; set; } = null!;
     public string? Amount { get; set; }
+    public int PeopleNeeded { get; set; } = 1;
     public SignupMode SignupMode { get; set; } = SignupMode.Available;
 
     // THE ORIGINAL BACKUP (Event creator data)
     // Used ONLY to revert the item if the assignee cancels.
     public string OriginalTitle { get; set; } = null!;
     public string? OriginalAmount { get; set; }
+    public int OriginalPeopleNeeded { get; set; } = 1;
     public SignupMode OriginalSignupMode { get; set; } = SignupMode.Available;
 
     public int SortOrder { get; set; }

@@ -9,6 +9,7 @@ public class AddTaskFormData
     public DateTimeOffset? ScheduledAt { get; set; }
     public string? TaskTime { get; set; }
     public string? TaskLocation { get; set; }
+    public int PeopleNeeded { get; set; } = 1;
     public SignupMode SignupMode { get; set; } = SignupMode.Available;
     public int SortOrder { get; set; }
     public bool IsActive { get; set; } = true;
