@@ -1,0 +1,32 @@
+<!-- Delete event confirmation dialog -->
+<dialog class="dialogue event-details-delete-dialogue" id="event-details-delete-dialog" aria-labelledby="event-details-delete-dialog-heading">
+  <div class="card event-details-delete-dialogue-panel">
+    <!-- Dialog header with close button -->
+    <div class="card-header event-details-delete-dialogue-header">
+      <button type="button" class="btn-close event-details-delete-dialogue-close" aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <!-- Dialog body with event details and action buttons -->
+    <div class="card-body event-details-delete-dialogue-body">
+      <i class="fa-regular fa-trash-can icon" aria-hidden="true"></i>
+      <h5 class="event-details-delete-dialogue-heading" id="event-details-delete-dialog-heading">Delete event?</h5>
+      <p class="event-details-delete-dialogue-text">
+        You are about to delete "<strong id="event-details-delete-event-name">this event</strong>".
+        <br />
+        Choose how you want to proceed:
+      </p>
+      <div class="event-details-delete-dialogue-actions">
+        <!-- Delete from my list button -->
+        <button type="button" class="btn delete-action delete-action-own-list" data-event-details-delete-action="list">
+          Delete from my list
+        </button>
+        <!-- Delete for everyone button -->
+        <button type="button" class="btn delete-action delete-action-everyone" data-event-details-delete-action="everyone">
+          Delete for everyone
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>
+

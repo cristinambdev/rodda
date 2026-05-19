@@ -1,0 +1,274 @@
+/* ============================================================================
+   Community Page Styles
+   - Scope: Rodda_app/html/community.html
+   - Purpose: page-specific overrides so `common.css` can stay shared/generic.
+   ========================================================================== */
+
+/* ============================================================================ */
+/* PAGE SECTION                                                                */
+/* ============================================================================ */
+
+.page-section
+{
+  /* Community is a simple list page; tighten spacing slightly vs event lists. */
+  margin-top: .25rem;
+  margin-bottom: 0;
+}
+
+/* ============================================================================ */
+/* LIST + EMPTY STATE                                                          */
+/* ============================================================================ */
+
+.page-items-list.community
+{
+  margin-top: .5rem;
+}
+
+.empty-state-card.community
+{
+  margin-top: .75rem;
+}
+
+/* ============================================================================ */
+/* COMMUNITY CARD LAYOUT                                                        */
+/* ============================================================================ */
+
+/* Base container for the card */
+.member-item
+{
+  list-style: none;
+  margin-bottom: 0.75rem;
+
+  .member-card
+  {
+    padding: 1rem;
+    background: var(--white-100);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-300);
+  }
+}
+
+/* Title + remove on one row */
+.member-card-title-row
+{
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+}
+
+.member-card-title-row .member-card-title
+{
+  flex: 1;
+  min-width: 0;
+}
+
+.member-card-remove
+{
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gray-700);
+  cursor: pointer;
+  font-size: 1rem;
+
+  &:hover
+  {
+    background: color-mix(in srgb, #ff5b4f 12%, var(--white-100));
+    color: #b91c1c;
+  }
+
+  &:focus-visible
+  {
+    outline: 2px solid var(--purple);
+    outline-offset: 2px;
+  }
+}
+
+/* Flex Row: Avatar + Content */
+.member-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+/* Avatar Circle */
+.member-avatar {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  color: var(--white-100);
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--dark-900) 10%, transparent);
+}
+
+/* Content Area */
+.member-card-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.member-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--dark-900);
+}
+
+/* Shared Info */
+.member-shared {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  color: var(--gray-700);
+  font-size: 0.8125rem;
+}
+
+.member-shared-item
+{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+
+  i
+  {
+    font-size: 0.85rem;
+    color: var(--purple); /* Added a touch of color to icons */
+    opacity: 0.8;
+  }
+}
+
+.member-shared-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-shared-item--muted
+{
+  opacity: .72;
+}
+
+.member-shared-item--muted i
+{
+  color: var(--gray-600);
+}
+
+
+
+
+
+
+
+/* Remove member confirmation (`community-remove-member-dialog.html`) */
+.community-remove-member-dialogue
+{
+  padding: 0;
+  border: none;
+  width: min(22rem, calc(100vw - 2rem));
+  margin: 0;
+  background: transparent;
+  position: fixed;
+  top: 28%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  &::backdrop
+  {
+    background: color-mix(in srgb, var(--dark-900) 42%, transparent);
+  }
+}
+
+.community-remove-member-dialogue-panel.card
+{
+  position: relative;
+  padding: 1rem .9rem 1.05rem;
+  border-color: var(--gray-300);
+  box-shadow: var(--shadows-popup);
+  border-radius: var(--radius-lg);
+}
+
+.community-remove-member-dialogue-header
+{
+  margin: 0;
+  min-height: 1rem;
+}
+
+.community-remove-member-dialogue-close
+{
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+}
+
+.community-remove-member-dialogue-body
+{
+  padding: 0;
+  text-align: center;
+}
+
+.community-remove-member-dialogue-icon
+{
+  font-size: 1rem;
+  color: var(--orange);
+}
+
+.community-remove-member-dialogue-heading
+{
+  margin: .4rem 0 .35rem;
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--dark-900);
+}
+
+
+
+.community-remove-member-dialogue-actions
+{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+
+.community-remove-member-dialogue-action
+{
+  flex: 1 1 auto;
+  min-width: 6.5rem;
+  text-transform: uppercase;
+  font-weight: var(--font-weight-bold);
+  font-size: .78rem;
+  letter-spacing: .02em;
+  border-radius: .62rem;
+  padding: .72rem .9rem;
+}
+
+
+
+.community-remove-member-dialogue-action-confirm
+{
+  background: color-mix(in srgb, #ff5b4f 22%, white);
+  color: #b91c1c;
+
+  &:hover
+  {
+    background: color-mix(in srgb, #ff5b4f 30%, white);
+  }
+}

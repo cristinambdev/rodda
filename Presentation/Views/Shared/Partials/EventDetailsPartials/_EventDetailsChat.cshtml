@@ -1,0 +1,32 @@
+<!-- Chat section in event details -->
+<section class="event-details-chat" data-event-details-guest-chat aria-labelledby="event-details-chat-heading">
+  <h2 class="event-details-chat-heading" id="event-details-chat-heading">
+    <i class="fa-solid fa-comments" aria-hidden="true"></i>
+    Chat
+  </h2>
+  <!-- Chat messages will be displayed here -->
+  <ul class="event-details-chat-list" id="event-details-chat-list" role="list"></ul>
+  <!-- Chat input form -->
+  <form class="event-details-chat-form"
+        asp-controller="Events"
+        asp-action="AddChatMessage"
+        asp-route-id="@ViewContext.RouteData.Values["id"]"
+        method="post">
+    @Html.AntiForgeryToken()
+    <label class="visually-hidden" for="event-details-chat-input">Add a comment</label>
+    <input
+      type="text"
+      id="event-details-chat-input"
+      class="event-details-chat-input"
+      name="Body"
+      placeholder="Add a comment..."
+      autocomplete="off"
+      required
+    />
+    <!-- Send message button -->
+    <button type="submit" class="event-details-chat-send" aria-label="Send comment">
+      <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+    </button>
+  </form>
+</section>
+

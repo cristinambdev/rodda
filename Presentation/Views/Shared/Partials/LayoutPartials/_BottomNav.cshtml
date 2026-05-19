@@ -1,0 +1,33 @@
+<nav class="navigation-menu" role="navigation" aria-label="Main" id="navigation-menu">
+  <ul class="navigation-menu-list">
+    <li class="navigation-menu-item">
+      <a class="navlink" data-nav="home" asp-controller="Home" asp-action="Index">
+        <span class="navigation-menu-icon"><i class="fa-solid fa-house" aria-hidden="true"></i></span>
+        <span>Home</span>
+      </a>
+    </li>
+    <li class="navigation-menu-item">
+      <a class="navlink" data-nav="events-all" asp-controller="Events" asp-action="Events">
+        <span class="navigation-menu-icon"><i class="fa-solid fa-list" aria-hidden="true"></i></span>
+        <span>All Events</span>
+      </a>
+    </li>
+    <li class="navigation-menu-item">
+      <a class="navlink fab btn-round-add" href="#" aria-label="Add event or task">
+        <span class="fab-icon btn-round-add-icon" aria-hidden="true"><i class="fa-solid fa-plus"></i></span>
+      </a>
+    </li>
+    <li class="navigation-menu-item">
+      <a class="navlink" data-nav="events-mine" href="#">
+        <span class="navigation-menu-icon"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i></span>
+        <span>My Events</span>
+      </a>
+    </li>
+    <li class="navigation-menu-item">
+      <a class="navlink" data-nav="community" asp-controller="Profiles" asp-action="Index">
+        <span class="navigation-menu-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+        <span>Community</span>
+      </a>
+    </li>
+  </ul>
+</nav>

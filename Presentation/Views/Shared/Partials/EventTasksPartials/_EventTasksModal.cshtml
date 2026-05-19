@@ -1,0 +1,69 @@
+<!-- List of tasks modal -->
+<div id="eventtasks-modal" class="modal modal-event-tasks" data-eventtasks-modal hidden role="presentation">
+  <!-- Modal backdrop -->
+  <button type="button" class="modal-backdrop" data-close-eventtasks-modal tabindex="-1" aria-label="Close"></button>
+  <div class="modal-panel edit-add-task-dialogue" role="dialog" aria-modal="true" aria-labelledby="eventtasks-modal-title">
+    <!-- Modal dismiss button -->
+    <button
+      type="button"
+      id="eventtasks-modal-dismiss"
+      class="modal-dismiss modal-dismiss-corner"
+      data-close-eventtasks-modal
+      aria-label="Close"
+    >
+      ×
+    </button>
+
+    <!-- Modal header -->
+    <header class="modal-header">
+      <span class="modal-header-icon" aria-hidden="true">
+        <i class="fa-solid fa-clipboard-check"></i>
+      </span>
+      <div class="modal-header-text">
+        <h2 class="modal-title" id="eventtasks-modal-title">Tasks to do</h2>
+        <p class="modal-subtitle" id="eventtasks-modal-subtitle"></p>
+      </div>
+    </header>
+
+    <!-- Modal content -->
+    <div class="modal-content modal-content-eventtasks">
+      <div id="eventtasks-modal-list" class="modal-list">
+        <div class="modal-list-scroll">
+          <!-- Task rows will be injected here -->
+          <div id="eventtasks-modal-rows" class="modal-list-rows"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Container: Add task button and allow guest tasks toggle row -->
+    <div class="add-event-tasks-container">
+      <!-- Add task button -->
+      <button type="button" class="modal-content-add task" id="eventtasks-modal-add">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        <span>ADD A TASK</span>
+      </button>
+
+      <!-- Allow guest tasks toggle row -->
+      <div class="newtask-join-block" id="eventtasks-guest-policy-row">
+        <div class="newtask-join-copy">
+          <label class="form-label" for="eventitem-allow-guest-tasks-toggle">Let people add their own tasks</label>
+        </div>
+        <label class="newetask-switch">
+          <input type="checkbox" id="eventitem-allow-guest-tasks-toggle" name="allowGuestTasks" value="1" />
+          <span class="newetask-switch-track" aria-hidden="true"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Modal footer -->
+    <footer class="modal-footer modal-footer-eventtasks">
+      <button type="button" class="btn btn-save-task" id="eventtasks-modal-save">
+        <span class="eventitem-join-label">SAVE</span>
+        <span class="eventitem-join-pill">
+          <i class="fa-solid fa-check" aria-hidden="true"></i>
+          Saved
+        </span>
+      </button>
+    </footer>
+  </div>
+</div>

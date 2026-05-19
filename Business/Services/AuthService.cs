@@ -20,6 +20,7 @@ public class AuthService(IUserService userService, SignInManager<UserEntity> sig
     private readonly SignInManager<UserEntity> _signInManager = signInManager;
 
     // Signin
+    // **************************************************************************************************************************
     public async Task<AuthResult> SignInAsync(SignInFormData formData)
     {
         if (formData == null)
@@ -29,14 +30,15 @@ public class AuthService(IUserService userService, SignInManager<UserEntity> sig
        return result.Succeeded
             ? new AuthResult { Succeeded = true, StatusCode = 200 }
             : new AuthResult { Succeeded = false, StatusCode = 401, ErrorMessage = "Invalid email or password." };
-    }  
+    }
 
     // SignUp
+    // **************************************************************************************************************************
     public async Task<AuthResult> SignUpAsync(SignUpFormData formData)
     {
         if (formData == null)
             return new AuthResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Not all required fields are supplied." };
-        
+
         var result = await _userService.CreateUserAsync(formData);
         return result.Succeeded
             ? new AuthResult { Succeeded = true, StatusCode = 201 }
@@ -44,6 +46,7 @@ public class AuthService(IUserService userService, SignInManager<UserEntity> sig
     }
 
     // SignOut
+    // **************************************************************************************************************************
     public async Task<AuthResult> SignOutAsync()
     {
         await _signInManager.SignOutAsync();

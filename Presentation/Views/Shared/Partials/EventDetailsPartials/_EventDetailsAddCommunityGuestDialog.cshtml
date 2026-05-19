@@ -1,0 +1,41 @@
+<!-- Add guest to community dialogue -->
+<dialog
+  class="dialogue event-details-add-community-dialogue"
+  id="event-details-add-community-dialog"
+  aria-labelledby="event-details-add-community-heading"
+>
+
+  <div class="card event-details-add-community-dialogue-panel">
+    <div class="card-header event-details-add-community-dialogue-header">
+      <button type="button" class="btn-close event-details-add-community-dialogue-close" aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <!-- Modal content -->
+    <div class="card-body event-details-add-community-dialogue-body">
+      <i class="fa-solid fa-user-plus event-details-add-community-dialogue-icon" aria-hidden="true"></i>
+      <h5 class="event-details-add-community-dialogue-heading" id="event-details-add-community-heading">Add guest</h5>
+      <p class="event-details-add-community-dialogue-text">
+        Do you want to add <strong id="event-details-add-community-guest-name"></strong> to your community?
+      </p>
+      <div class="event-details-add-community-dialogue-actions">
+        <!-- Cancel button -->
+        <button
+          type="button"
+          class="btn event-details-add-community-dialogue-action event-details-add-community-dialogue-action-cancel"
+          data-event-details-add-community-cancel
+        >
+          Cancel
+        </button>
+        <!-- Confirm button -->
+        <button
+          type="button"
+          class="btn event-details-add-community-dialogue-action event-details-add-community-dialogue-action-confirm"
+          data-event-details-add-community-confirm
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>

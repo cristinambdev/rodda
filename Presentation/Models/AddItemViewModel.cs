@@ -20,13 +20,4 @@ public class AddItemViewModel
     public int SortOrder { get; set; }
 
     public bool IsActive { get; set; } = true;
-
-    public AddItemFormData ToFormData() => new()
-    {
-        Title = Title,
-        Amount = Amount,
-        SignupMode = SignupMode,
-        SortOrder = SortOrder,
-        IsActive = IsActive
-    };
 }

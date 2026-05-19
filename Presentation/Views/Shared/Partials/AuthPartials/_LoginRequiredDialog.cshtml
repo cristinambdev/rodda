@@ -1,0 +1,17 @@
+<dialog class="dialogue auth-reason-dialog" id="rodda-loginrequired-dialog" aria-labelledby="rodda-loginrequired-title">
+  <div class="card auth-reason-card">
+    <div class="card-header">
+      <h2 class="card-title" id="rodda-loginrequired-title">Login required</h2>
+      <button type="button" class="btn-close" data-auth-reason-close aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="card-body">
+      <p class="auth-link-muted auth-reason-text" data-auth-reason-text></p>
+      <div class="auth-reason-actions">
+        <button type="button" class="btn btn-primary" data-auth-reason-login>Log in</button>
+        <a class="btn btn-secondary" data-auth-reason-signup asp-controller="Auth" asp-action="SignUp">Create account</a>
+      </div>
+    </div>
+  </div>
+</dialog>

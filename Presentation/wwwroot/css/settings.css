@@ -1,0 +1,744 @@
+/* Rodda settings page — load after common.css.
+ * Purpose: shared profile / notifications / account chrome for `settings.html`.
+ * Uses native CSS nesting so each region is colocated with its states.
+ * Toggle visuals are self-contained (no dependency on `newevent.css`).
+ */
+
+/* ========================================================================== */
+/* Page shell                                                                  */
+/* ========================================================================== */
+
+.settings-page
+{
+  .page-head
+  {
+    margin-bottom: 1rem;
+  }
+
+  .settings-title
+  {
+    color: var(--purple);
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+
+    i
+    {
+      font-size: 1.05em;
+    }
+  }
+
+  /* ======================================================================== */
+  /* Profile card                                                              */
+  /* ======================================================================== */
+
+  .settings-profile-card
+  {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .65rem;
+    padding: 1.25rem 1rem 1rem;
+    background: var(--white-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.25rem;
+  }
+
+  .settings-profile-avatar-wrap
+  {
+    position: relative;
+  }
+
+  .settings-profile-avatar
+  {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    background: var(--gray-100);
+    border: 1px dashed var(--gray-400);
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover,
+    &:focus-within
+    {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple) 18%, transparent);
+    }
+  }
+
+  .settings-profile-avatar-image
+  {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+
+    &[hidden]
+    {
+      display: none;
+    }
+
+    &:not([hidden]) + .settings-profile-avatar-placeholder
+    {
+      display: none;
+    }
+  }
+
+  .settings-profile-avatar-placeholder
+  {
+    display: inline-flex;
+    font-size: 2.2rem;
+    color: var(--gray-500);
+  }
+
+  .settings-profile-avatar-edit
+  {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 1.45rem;
+    height: 1.45rem;
+    border-radius: 50%;
+    background: var(--purple);
+    color: var(--white-100);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .68rem;
+    line-height: 1;
+    box-shadow: var(--shadow-sm);
+    border: 2px solid var(--white-100);
+
+    i
+    {
+      display: block;
+      line-height: 1;
+    }
+  }
+
+  .settings-profile-identity
+  {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .15rem;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .settings-profile-name
+  {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    border: none;
+    background: transparent;
+    padding: .1rem .3rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-standard);
+    font-weight: var(--font-weight-bold);
+    font-size: 1.05rem;
+    color: var(--dark-900);
+    cursor: pointer;
+    max-width: 100%;
+
+    &:hover,
+    &:focus-visible
+    {
+      background: var(--gray-100);
+      outline: none;
+    }
+  }
+
+  .settings-profile-name-text
+  {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .settings-profile-name-pen
+  {
+    font-size: .72rem;
+    color: var(--gray-600);
+    flex-shrink: 0;
+  }
+
+  .settings-profile-email
+  {
+    margin: 0;
+    font-size: .82rem;
+    color: var(--gray-700);
+    text-align: center;
+    word-break: break-all;
+
+    &:empty
+    {
+      display: none;
+    }
+  }
+
+  /* ======================================================================== */
+  /* Generic section + section title                                           */
+  /* ======================================================================== */
+
+  .settings-section
+  {
+    margin-bottom: 1.25rem;
+  }
+
+  .settings-section-title
+  {
+    margin: 0 0 .55rem;
+    padding-inline: .25rem;
+    font-family: var(--font-standard);
+    font-size: .72rem;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: .06em;
+    color: var(--gray-700);
+    text-transform: uppercase;
+  }
+
+  /* ======================================================================== */
+  /* Toggle rows (notifications + privacy)                                     */
+  /* ======================================================================== */
+
+  .settings-toggle-list
+  {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+
+    &--inset .settings-toggle-row
+    {
+      grid-template-columns: 1fr auto;
+      background: var(--gray-100);
+      box-shadow: none;
+    }
+
+    /* When the list is itself the body of a `<details>` disclosure, give it
+       breathing room inside the panel instead of the outer page padding. */
+    &.settings-disclosure-body
+    {
+      padding: .8rem;
+    }
+  }
+
+  .settings-toggle-row
+  {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr auto;
+    align-items: center;
+    gap: .6rem;
+    padding: .65rem .8rem;
+    background: var(--white-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .settings-toggle-icon
+  {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    color: var(--gray-700);
+    font-size: .9rem;
+  }
+
+  .settings-toggle-copy
+  {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .settings-toggle-label
+  {
+    font-size: .9rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--dark-900);
+  }
+
+  .settings-toggle-sub
+  {
+    font-size: .74rem;
+    color: var(--gray-700);
+    margin-top: .1rem;
+  }
+
+  /* `.settings-switch` is self-contained here so `settings.html` does not have to
+     load `newevent.css` just for the toggle styling. Mirrors `.newevent-switch`
+     in newevent.css; thumb is a `::after` of the track span. */
+  .settings-switch
+  {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    align-self: center;
+    cursor: pointer;
+
+    input
+    {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .newevent-switch-track
+    {
+      width: 2.75rem;
+      height: 1.5rem;
+      border-radius: var(--radius-pill);
+      background: var(--gray-400);
+      transition: background 0.2s ease;
+      position: relative;
+
+      &::after
+      {
+        content: "";
+        position: absolute;
+        top: .15rem;
+        left: .15rem;
+        width: 1.2rem;
+        height: 1.2rem;
+        border-radius: 50%;
+        background: var(--white-100);
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s ease;
+      }
+    }
+
+    input:checked + .newevent-switch-track
+    {
+      background: var(--green-primary);
+
+      &::after
+      {
+        transform: translateX(1.2rem);
+      }
+    }
+
+    input:focus-visible + .newevent-switch-track
+    {
+      box-shadow: var(--navlink-focus-ring);
+    }
+  }
+
+  /* ======================================================================== */
+  /* Account & Security: list rows with expandable bodies                      */
+  /* ======================================================================== */
+
+  .settings-action-list
+  {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+
+  .settings-disclosure
+  {
+    background: var(--white-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+
+    &[open] .settings-action-chevron
+    {
+      transform: rotate(180deg);
+    }
+  }
+
+  .settings-action-row
+  {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr auto auto;
+    align-items: center;
+    gap: .6rem;
+    padding: .8rem .8rem;
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker
+    {
+      display: none;
+    }
+
+    &::marker
+    {
+      content: "";
+    }
+  }
+
+  .settings-action-icon
+  {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    color: var(--gray-700);
+    font-size: .95rem;
+  }
+
+  .settings-action-label
+  {
+    font-size: .92rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--dark-900);
+  }
+
+  .settings-action-value
+  {
+    font-size: .82rem;
+    color: var(--gray-700);
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  /* Pin the chevron to column 4 so rows without a value (Password, Privacy)
+     keep it at the same horizontal position as rows that do (Language). */
+  .settings-action-chevron
+  {
+    color: var(--gray-600);
+    transition: transform 0.18s ease;
+    grid-column: 4;
+  }
+
+  .settings-disclosure-body
+  {
+    padding: 0 .85rem 1rem;
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-100);
+    margin-top: -1px;
+  }
+
+  /* ======================================================================== */
+  /* Language picker rows                                                      */
+  /* ======================================================================== */
+
+  .settings-language-list
+  {
+    list-style: none;
+    margin: .8rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+  }
+
+  .settings-language-option
+  {
+    width: 100%;
+    padding: .65rem .85rem;
+    border: 1px solid var(--gray-300);
+    background: var(--white-100);
+    border-radius: var(--radius-md);
+    font-family: var(--font-standard);
+    font-size: .9rem;
+    font-weight: var(--font-weight-semibold);
+    text-align: left;
+    color: var(--dark-900);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+
+    &:hover
+    {
+      border-color: var(--purple);
+    }
+
+    &[aria-pressed="true"]
+    {
+      border-color: var(--purple);
+      background: color-mix(in srgb, var(--purple) 12%, var(--white-100));
+      color: var(--purple);
+    }
+  }
+
+  /* ======================================================================== */
+  /* Password form                                                             */
+  /* ======================================================================== */
+
+  .settings-password-form
+  {
+    padding-top: .85rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+
+    .form-group
+    {
+      margin: 0;
+    }
+  }
+
+  .settings-password-feedback
+  {
+    margin: 0;
+    font-size: .8rem;
+    color: var(--red-dark);
+
+    &[data-settings-feedback-tone="ok"]
+    {
+      color: var(--green-dark);
+    }
+  }
+
+  .settings-password-submit
+  {
+    align-self: flex-end;
+    min-width: 12rem;
+  }
+
+  /* ======================================================================== */
+  /* Danger zone                                                               */
+  /* ======================================================================== */
+
+  .settings-section-danger
+  {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .settings-delete-account-btn
+  {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .7rem 1.25rem;
+    background: color-mix(in srgb, #ff5b4f 18%, var(--white-100));
+    color: #ff4d43;
+    border: 1px solid color-mix(in srgb, #ff5b4f 28%, transparent);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-standard);
+    font-size: .78rem;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    &:hover
+    {
+      background: color-mix(in srgb, #ff5b4f 26%, var(--white-100));
+      border-color: color-mix(in srgb, #ff5b4f 38%, transparent);
+      color: #d6362c;
+    }
+
+    &:focus-visible
+    {
+      outline: 2px solid #ff4d43;
+      outline-offset: 2px;
+    }
+  }
+}
+
+/* ============================================================================ */
+/* Dialogues (live outside `.main-layout` so they cannot nest under .settings-page) */
+/* ============================================================================ */
+
+/* Shared dialog wrapper: removes the UA `<dialog>` chrome and uses `margin: auto`
+   with the implicit `position: fixed; inset: 0` so the dialog centers on viewport. */
+.settings-name-dialogue,
+.settings-delete-account-dialogue
+{
+  border: none;
+  padding: 0;
+  background: transparent;
+  margin: auto;
+
+  &::backdrop
+  {
+    background: color-mix(in srgb, var(--dark-900) 45%, transparent);
+  }
+}
+
+.settings-name-dialogue
+{
+  width: min(20rem, calc(100vw - 2rem));
+
+  .settings-name-dialogue-panel.card
+  {
+    position: relative;
+    padding: .9rem 1rem .85rem;
+    border-color: var(--gray-300);
+    box-shadow: var(--shadows-popup);
+    border-radius: var(--radius-lg);
+  }
+
+  .settings-name-dialogue-header
+  {
+    margin: 0 0 .85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 0;
+  }
+
+  .settings-name-dialogue-heading
+  {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--dark-900);
+  }
+
+  .settings-name-dialogue-close
+  {
+    background: transparent;
+    border: none;
+    color: var(--gray-700);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: .2rem .3rem;
+    border-radius: var(--radius-sm);
+
+    &:hover
+    {
+      background: var(--gray-100);
+    }
+  }
+
+  .settings-name-dialogue-actions
+  {
+    margin-top: .85rem;
+    display: flex;
+    gap: .6rem;
+    justify-content: flex-end;
+  }
+}
+
+.settings-delete-account-dialogue
+{
+  width: min(28rem, calc(100vw - 2rem));
+
+  .settings-delete-account-dialogue-panel.card
+  {
+    position: relative;
+    padding: 1.1rem 1.1rem 1rem;
+    border-color: var(--gray-300);
+    box-shadow: var(--shadows-popup);
+    border-radius: var(--radius-lg);
+  }
+
+  .settings-delete-account-dialogue-body
+  {
+    text-align: center;
+    padding: .25rem 0 0;
+  }
+
+  /* Pinned to the panel (which is `position: relative`) so it sits flush to the
+     top-right corner regardless of the centered body content beneath it. */
+  .settings-delete-account-dialogue-close
+  {
+    position: absolute;
+    top: .5rem;
+    right: .5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: transparent;
+    border: none;
+    color: var(--gray-700);
+    font-size: .95rem;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover
+    {
+      background: var(--gray-100);
+      color: var(--dark-900);
+    }
+
+    &:focus-visible
+    {
+      outline: 2px solid var(--purple);
+      outline-offset: 2px;
+    }
+  }
+
+  .settings-delete-account-dialogue-icon
+  {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    font-size: 1.1rem;
+    color: #ff4d43;
+    background: color-mix(in srgb, #ff5b4f 14%, var(--white-100));
+    border-radius: 50%;
+    margin-bottom: .55rem;
+  }
+
+  .settings-delete-account-dialogue-heading
+  {
+    margin: 0 0 .35rem;
+    font-size: 1.05rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--dark-900);
+  }
+
+  .settings-delete-account-dialogue-text
+  {
+    margin: 0 0 1rem;
+    color: var(--gray-700);
+    font-size: .9rem;
+  }
+
+  .settings-delete-account-dialogue-actions
+  {
+    display: flex;
+    gap: .6rem;
+    justify-content: center;
+  }
+
+  .settings-delete-account-confirm-btn
+  {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .65rem 1.1rem;
+    background: #ff4d43;
+    color: var(--white-100);
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-standard);
+    font-size: .78rem;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover
+    {
+      background: #d6362c;
+    }
+  }
+}

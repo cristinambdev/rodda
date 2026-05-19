@@ -1,0 +1,285 @@
+﻿@{
+    Layout = "_PortalLayout";
+    ViewData["Title"] = "New Event";
+}
+
+<!-- New event toolbar -->
+<div class="newevent-toolbar">
+    <button type="button" class="newevent-back" id="newevent-back" aria-label="Go back">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+    </button>
+    <h1 class="newevent-title">New Event</h1>
+</div>
+
+<!-- New event form -->
+<form class="newevent-form" id="edit-event-form" action="#" method="post" novalidate data-is-new="true">
+    <!-- Event image input and preview -->
+    <div class="newevent-cover-container">
+        <input type="file" id="cover-input" name="cover" class="visually-hidden" accept="image/*" />
+        <!-- The Upload Trigger (Camera Icon) -->
+        <label class="cover-label" for="cover-input" id="cover-label-empty">
+            <i class="fa-solid fa-camera" aria-hidden="true"></i>
+            <span class="visually-hidden">Add event cover image</span>
+        </label>
+        <!-- The Preview (Only shows when image is selected) -->
+        <div class="cover-preview" id="cover-preview" hidden>
+            <img id="cover-img" alt="Cover preview" />
+            <div class="cover-actions">
+                <button type="button" id="cover-edit" aria-label="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button type="button" id="cover-delete" class="danger" aria-label="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event title -->
+    <div class="form-group">
+        <label class="form-label" for="newevent-title">Title <span class="newevent-required" aria-hidden="true">*</span></label>
+        <input type="text"
+               id="newevent-title"
+               name="title"
+               class="form-input-field"
+               placeholder="Write a name"
+               required
+               autocomplete="off" />
+    </div>
+
+    <!-- Event date and time -->
+    <div class="form-group newevent-datetime-group">
+        <div class="newevent-datetime-row">
+            <div class="form-group">
+                <label class="form-label" for="newevent-date">Date</label>
+                <div class="form-input-field">
+                    <i class="fa-regular fa-calendar form-input-field-icon" aria-hidden="true"></i>
+                    <input id="newevent-date" name="date" type="date" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="newevent-time">Time</label>
+                <div class="form-input-field">
+                    <i class="fa-regular fa-clock form-input-field-icon" aria-hidden="true"></i>
+                    <input id="newevent-time" name="time" type="time" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event location -->
+    <div class="form-group">
+        <label class="form-label" for="newevent-location">Location</label>
+        <div class="form-input-field">
+            <i class="fa-solid fa-location-dot form-input-field-icon" aria-hidden="true"></i>
+            <input id="newevent-location"
+                   name="location"
+                   type="text"
+                   placeholder="Where is it?"
+                   autocomplete="street-address" />
+        </div>
+    </div>
+
+    <!-- Event description -->
+    <div class="form-group newevent-description-group">
+        <!-- Code generated with AI help -->
+        <label class="form-label" for="newevent-description">Description</label>
+        <div class="newevent-description-shell">
+            <textarea id="newevent-description"
+                      name="description"
+                      class="form-input-field newevent-description-field"
+                      rows="5"
+                      placeholder="Tell people about it ..."></textarea>
+            <div class="newevent-description-toolbar" role="toolbar" aria-label="Text formatting">
+                <button type="button" class="newevent-toolbar-btn" aria-label="Bold" data-desc-cmd="bold">
+                    <i class="fa-solid fa-bold" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Italic" data-desc-cmd="italic">
+                    <i class="fa-solid fa-italic" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Underline" data-desc-cmd="underline">
+                    <i class="fa-solid fa-underline" aria-hidden="true"></i>
+                </button>
+                <span class="newevent-toolbar-sep" aria-hidden="true"></span>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Align left">
+                    <i class="fa-solid fa-align-left" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Align center">
+                    <i class="fa-solid fa-align-center" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Align right">
+                    <i class="fa-solid fa-align-right" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Link">
+                    <i class="fa-solid fa-link" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Bullet list">
+                    <i class="fa-solid fa-list-ul" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="newevent-toolbar-btn" aria-label="Numbered list">
+                    <i class="fa-solid fa-list-ol" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event expenses -->
+    <div class="form-group newevent-expenses-group">
+        <div class="newevent-expenses-card newevent-disclosure" id="newevent-shared-expenses">
+            <input type="checkbox"
+                   id="newevent-expenses-toggle"
+                   name="expensesEnabled"
+                   value="1"
+                   class="visually-hidden"
+                   tabindex="-1"
+                   aria-hidden="true" />
+            <button type="button"
+                    class="newevent-disclosure-trigger"
+                    id="newevent-expenses-trigger"
+                    aria-expanded="false"
+                    aria-controls="newevent-expenses-panel">
+                <span class="newevent-disclosure-trigger-text">
+                    <span class="form-label newevent-join-heading">Shared expenses</span>
+                    <span class="newevent-join-sub">Add payment details if you want to collect money for the event.</span>
+                </span>
+                <span class="newevent-disclosure-chevron" aria-hidden="true">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </span>
+            </button>
+
+            <div class="newevent-expenses-content" id="newevent-expenses-panel" data-newevent-expenses-panel hidden>
+                <div class="newevent-expenses-grid">
+                    <label class="newevent-expenses-field">
+                        <span class="newevent-expenses-label">Payment method</span>
+                        <input type="text"
+                               name="expensesMethod"
+                               class="newevent-expenses-input"
+                               placeholder="e.g. swish, bank transfer, etc."
+                               autocomplete="off" />
+                    </label>
+                    <label class="newevent-expenses-field">
+                        <span class="newevent-expenses-label">Amount</span>
+                        <input type="text"
+                               name="expensesAmount"
+                               placeholder="e.g. 50kr"
+                               class="newevent-expenses-input"
+                               inputmode="text"
+                               autocomplete="off" />
+                    </label>
+                    <label class="newevent-expenses-field newevent-expenses-field-full">
+                        <span class="newevent-expenses-label">Number</span>
+                        <input type="tel"
+                               name="expensesPhone"
+                               class="newevent-expenses-input"
+                               placeholder="e.g. phone, bank number, etc."
+                               inputmode="tel"
+                               autocomplete="tel" />
+                    </label>
+                </div>
+                <label class="newevent-expenses-field newevent-expenses-field-full newevent-expenses-name-row">
+                    <span class="newevent-expenses-label">Name (and comments)</span>
+                    <input type="text"
+                           name="expensesName"
+                           placeholder="e.g. Sarah"
+                           class="newevent-expenses-input"
+                           autocomplete="name" />
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event items and tasks -->
+    <div class="form-group newevent-items-group">
+        <div class="newevent-items-disclosure-card newevent-disclosure" id="newevent-items-tasks-card">
+            <input type="checkbox"
+                   id="newevent-items-tasks-toggle"
+                   name="itemsTasksEnabled"
+                   value="1"
+                   class="visually-hidden"
+                   tabindex="-1"
+                   aria-hidden="true" />
+            <button type="button"
+                    class="newevent-disclosure-trigger"
+                    id="newevent-items-tasks-trigger"
+                    aria-expanded="false"
+                    aria-controls="newevent-items-panel">
+                <span class="newevent-disclosure-trigger-text">
+                    <span class="form-label newevent-items-heading-label">Include Items &amp; Tasks</span>
+                    <span class="newevent-items-sub">Add items and tasks for this event and/or let guests add their own.</span>
+                </span>
+                <span class="newevent-disclosure-chevron" aria-hidden="true">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </span>
+            </button>
+            <section class="newevent-items-section" id="newevent-items-panel" aria-labelledby="newevent-items-heading">
+                <label class="form-label newevent-items-heading" id="newevent-items-heading">Items and tasks</label>
+                <p class="newevent-items-lead">Add your ideas and let people add their own.</p>
+                <div class="eventitem-mini-grid" data-eventitem-mini-grid="guest">
+                    <!--Items to bring-->
+                    <button type="button"
+                            class="eventitem-mini-card eventitem-mini-card-items"
+                            data-open-bring-items-modal
+                            aria-expanded="false"
+                            aria-haspopup="dialog">
+                        <span class="eventitem-mini-icon-circle" aria-hidden="true">
+                            <i class="fa-solid fa-box" aria-hidden="true"></i>
+                        </span>
+                        <span class="eventitem-mini-label">ITEMS TO BRING</span>
+                        <span class="eventitem-mini-sub" id="eventitem-items-count">0 items</span>
+                    </button>
+                    <!--Tasks to do-->
+                    <button type="button"
+                            class="eventitem-mini-card eventitem-mini-card-tasks"
+                            data-open-eventtasks-modal
+                            aria-haspopup="dialog"
+                            aria-expanded="false"
+                            aria-controls="eventtasks-modal">
+                        <span class="eventtask-mini-icon-circle" aria-hidden="true">
+                            <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+                        </span>
+                        <span class="eventtask-mini-label">TASKS TO DO</span>
+                        <span class="eventtask-mini-sub" id="eventtasks-count">0 tasks</span>
+                    </button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Event join button -->
+    <div class="form-group newevent-join-group">
+        <div class="newevent-join-block">
+            <div class="newevent-join-copy">
+                <label class="form-label newevent-join-heading" for="newevent-join-toggle">Add Join button</label>
+                <p class="newevent-join-sub">Track how many people will attend and let others see who has joined.</p>
+            </div>
+            <label class="newevent-switch">
+                <input type="checkbox" id="newevent-join-toggle" name="joinButton" value="1" />
+                <span class="newevent-switch-track" aria-hidden="true"></span>
+            </label>
+        </div>
+    </div>
+
+
+
+    <!-- Event chat -->
+    <div class="form-group newevent-chat-group">
+        <div class="newevent-join-block">
+            <div class="newevent-join-copy">
+                <label class="form-label newevent-join-heading" for="newevent-chat-toggle">Include a chat section</label>
+                <p class="newevent-join-sub">Let guests leave comments on the event page.</p>
+            </div>
+            <label class="newevent-switch">
+                <input type="checkbox" id="newevent-chat-toggle" name="chatEnabled" value="1" />
+                <span class="newevent-switch-track" aria-hidden="true"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Event submit button -->
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary newevent-submit">Create event</button>
+    </div>
+</form>
+
+<div id="eventitem-modals-root">
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" />
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" />
+</div>

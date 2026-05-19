@@ -1,5 +1,66 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+
 }
 
-<h1>@ViewData["Title"]</h1>
+<!-- To-Dos -->
+<section class="home-section" aria-labelledby="todos-heading">
+    <h2 class="section-header" id="todos-heading">My To-Dos</h2>
+    <div class="home-todos-block" data-home-todos>
+        <!-- To-do time-range selector buttons -->
+        <div class="segmented-control" role="group" aria-label="To-do time range">
+            <button type="button" class="segmented-control-option" data-todo-range="week">This week</button>
+            <button type="button" class="segmented-control-option active" data-todo-range="month">This month</button>
+            <button type="button" class="segmented-control-option" data-todo-range="year">This year</button>
+        </div>
+        <p class="empty-state-card below-segment" data-todo-empty aria-live="polite">
+            Nothing on your plate this month.
+        </p>
+        <!-- Filled by initHomeTodoSegment() from EVENTS (week / month / year) -->
+        <ul class="todos-list" data-todos-list hidden></ul>
+    </div>
+</section>
+
+<!-- Calendar Highlights -->
+<!-- Code generated with AI help -->
+<section class="home-section" aria-labelledby="calendar-heading">
+    <h2 class="section-header" id="calendar-heading">Calendar Highlights</h2>
+    <!-- Mini calendar -->
+    <div class="calendar-mini">
+        <div class="calendar-mini-month-row">
+            <button type="button" class="calendar-mini-month-nav" aria-label="Previous month">
+                <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <p class="calendar-mini-month"></p>
+            <button type="button" class="calendar-mini-month-nav" aria-label="Next month">
+                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="calendar-mini-weekdays">
+            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+        <div class="calendar-mini-grid"></div>
+    </div>
+</section>
+<!-- Events from calendar-->
+<section class="home-section" aria-labelledby="today-heading">
+    <h4 class="section-subhead" id="today-heading"> Today, <span class="home-section-subhead-date"></span></h4>
+    <p class="empty-state-card">No events today.</p>
+</section>
+<!-- Upcoming Events -->
+<section class="home-section" aria-labelledby="upcoming-heading">
+    <h2 class="section-header" id="upcoming-heading">Upcoming Events</h2>
+    <div class="home-upcoming-block" data-home-upcoming>
+        <div class="segmented-control" role="group" aria-label="Upcoming time range">
+            <button type="button" class="segmented-control-option" data-event-range="week">This week</button>
+            <button type="button" class="segmented-control-option active" data-event-range="month">This month</button>
+            <button type="button" class="segmented-control-option" data-event-range="year">This year</button>
+        </div>
+        <p class="empty-state-card below-segment" data-event-empty>No events found.</p>
+        <ul class="home-events-list" data-events-list hidden data-home-events-list></ul>
+    </div>
+</section>
+
+<div hidden aria-hidden="true">
+    <partial name="~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml" />
+</div>

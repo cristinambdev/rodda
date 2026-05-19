@@ -1,0 +1,105 @@
+<!--  Add/edit task  modal -->
+<div id="eventitem-add-task-modal" class="modal modal-add-task" hidden role="presentation">
+  <button type="button" class="modal-backdrop" data-close-add-task-modal tabindex="-1" aria-label="Close"></button>
+  <div
+    id="eventitem-add-task-dialogue"
+    class="modal-panel edit-add-task-dialogue form"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="eventitem-add-task-modal-title"
+    data-is-new="true"
+  >
+
+    <!-- Modal header -->
+    <header class="modal-header-split">
+      <div class="modal-header-lead">
+        <span class="modal-header-icon" aria-hidden="true">
+          <i class="fa-solid fa-clipboard-list"></i>
+        </span>
+        <div class="modal-header-text">
+          <h2 class="modal-title" id="eventitem-add-task-modal-title">Add task</h2>
+          <p class="modal-subtitle" id="eventitem-add-task-modal-subtitle"></p>
+        </div>
+      </div>
+      <button type="button" class="modal-dismiss" data-close-add-task-modal aria-label="Close">×</button>
+    </header>
+
+    <!-- Modal content -->
+    <form id="eventitem-add-task-form" class="add-item-form">
+      <div class="modal-content modal-content-padded">
+        <!-- Name -->
+        <div class="add-item-card">
+          <label class="add-item-label" for="eventitem-add-task-name">
+            TASK NAME<span class="add-item-required" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="eventitem-add-task-name"
+            name="taskName"
+            class="add-item-input"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. pick up tables"
+            required
+          />
+
+          <!-- Location -->
+          <label class="add-item-label" for="eventitem-add-task-location">LOCATION</label>
+          <input
+            id="eventitem-add-task-location"
+            name="taskLocation"
+            class="add-item-input"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. school kitchen"
+          />
+
+          <!-- Time -->
+          <div class="add-item-row">
+            <div class="add-item-field">
+              <label class="add-item-label" for="eventitem-add-task-time">TIME</label>
+              <input
+                id="eventitem-add-task-time"
+                name="taskTime"
+                class="add-item-input"
+                type="text"
+                autocomplete="off"
+                placeholder="e.g. 16.30"
+              />
+            </div>
+
+            <!-- Amiunt of people needed -->
+            <div class="add-item-field">
+              <label class="add-item-label" for="eventitem-add-task-people">PEOPLE NEEDED</label>
+              <div class="add-item-people">
+                <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                <input
+                  id="eventitem-add-task-people"
+                  name="people"
+                  class="add-item-input add-item-input--people"
+                  type="number"
+                  min="1"
+                  max="99"
+                  step="1"
+                  inputmode="numeric"
+                  value="1"
+                  aria-label="People needed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal footer -->
+      <footer class="modal-footer modal-footer-add-item">
+        <button type="submit" class="btn btn-add-task" id="eventitem-add-task-save">
+          <span class="eventitem-join-label">SAVE</span>
+          <span class="eventitem-join-pill">
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+            Saved
+          </span>
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

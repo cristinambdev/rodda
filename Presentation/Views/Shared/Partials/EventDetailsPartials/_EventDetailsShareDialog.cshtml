@@ -1,0 +1,30 @@
+<!-- Share event dialogue -->
+<dialog
+  class="dialogue event-details-share-dialogue"
+  id="event-details-share-dialog"
+  aria-labelledby="event-details-share-dialog-heading"
+>
+  <div class="card card-share">
+    <div class="card-body card-body-share">
+      <i class="fa-solid fa-share-nodes icon" aria-hidden="true"></i>
+      <h5 class="card-title card-title-share" id="event-details-share-dialog-heading">Share event</h5>
+      <p class="card-text card-text-share">Share a link to this event.</p>
+      <div class="card-actions card-actions-share">
+        <button
+          type="button"
+          class="btn btn-share btn-share-link"
+          data-event-details-share-action="link"
+        >
+          Share link
+        </button>
+        <button
+          type="button"
+          class="btn btn-share btn-share-cancel"
+          data-event-details-share-action="cancel"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>

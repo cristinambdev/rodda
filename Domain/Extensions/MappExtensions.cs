@@ -5,6 +5,7 @@ namespace Domain.Extensions;
 // Extension methods for mapping objects from one type to another.
 public static class MapExtensions
 {
+    // **************************************************************************************************************************
     public static TDestination MapTo<TDestination>(this object source)
     {
         // Null check for the source object.
@@ -17,6 +18,7 @@ public static class MapExtensions
     }
 
     // Copies matching properties onto an existing instance (e.g. form data onto a tracked entity).
+    // **************************************************************************************************************************
     public static void MapOnto<TDestination>(this object source, TDestination destination)
     {
         ArgumentNullException.ThrowIfNull(source, nameof(source));

@@ -1,0 +1,650 @@
+/* Home dashboard (index.html) — sections, segmented control, calendar */
+
+.home-section
+{
+  margin-bottom: 1rem;
+}
+
+.home-section-subhead-date
+{
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-800);
+  font-size: .9rem;
+}
+
+/* Mini calendar */
+.calendar-mini
+{
+  background: var(--white-200);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: var(--shadow-card), 0 2px 8px color-mix(in srgb, var(--dark-700) 2%, transparent);
+  border: 1px solid var(--gray-300);
+}
+
+.calendar-mini-month-row
+{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: .5rem;
+  margin-bottom: .75rem;
+  border-bottom: 1px solid var(--gray-500);
+}
+
+.calendar-mini-month-nav
+{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gray-800);
+  cursor: pointer;
+  font-size: .75rem;
+
+  &:hover
+  {
+    background: var(--gray-200);
+  }
+}
+
+.calendar-mini-month
+{
+  font-size: .8125rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--gray-800);
+  text-align: center;
+  flex: 1;
+}
+
+.calendar-mini-weekdays
+{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: .25rem;
+  margin-bottom: .35rem;
+  text-align: center;
+  font-size: .6rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-700);
+  text-transform: uppercase;
+}
+
+.calendar-mini-grid
+{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: .35rem;
+  text-align: center;
+}
+
+.calendar-mini-day
+{
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 2.6rem;
+  margin: 0 auto;
+  font-size: .75rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--gray-800);
+  border-radius: 50%;
+}
+
+.calendar-mini-day-empty
+{
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.calendar-mini-day.selected
+{
+  background: var(--green-primary-low-profile);
+  color: var(--white-100);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-xl);
+}
+
+.calendar-mini-star
+{
+  position: absolute;
+  bottom: .2rem;
+  right:1.2rem;
+  top: auto;
+  font-size: .5rem;
+  color: var(--yellow-semilight);
+  line-height: 1;
+}
+
+/* To-dos — "This year" task list */
+.home-todos-block
+{
+  margin-top: 0;
+}
+
+.home-todos-block [data-todo-empty][hidden],
+.home-todos-block [data-todos-list][hidden]
+{
+  display: none !important;
+}
+
+.todos-list
+{
+  list-style: none;
+  margin: .75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.todo-item
+{
+  margin: 0;
+}
+
+/* Event fallback cards inside My To-Dos (vertical column, not horizontal upcoming strip). */
+.todos-list > .home-event-item
+{
+  width: 100%;
+  flex: 0 0 auto;
+  justify-content: stretch;
+  max-width: 100%;
+  scroll-snap-align: unset;
+}
+
+.todos-list > .home-event-item .card.event-card
+{
+  width: 100%;
+  max-width: 100%;
+}
+
+.todo-task-card
+{
+  border-radius: var(--radius-sm);
+  background: var(--white-100);
+  border: 1px solid var(--gray-300);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.todo-task-card-summary
+{
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  list-style: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.todo-task-card-summary::-webkit-details-marker
+{
+  display: none;
+}
+
+.todo-task-card-summary::marker
+{
+  content: "";
+}
+
+.todo-task-card-accent
+{
+  width: 5px;
+  flex-shrink: 0;
+  align-self: stretch;
+  min-height: 4.5rem;
+}
+
+.todo-task-card.teal .todo-task-card-accent
+{
+  background: var(--green-primary);
+}
+
+.todo-task-card.tan .todo-task-card-accent
+{
+  background: #c9a574;
+}
+
+.todo-task-card-inner
+{
+  flex: 1;
+  min-width: 0;
+  padding: .85rem .75rem .85rem .65rem;
+}
+
+.todo-task-card-header-row
+{
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: start;
+  gap: .35rem .5rem;
+}
+
+.todo-task-card-title
+{
+  margin: 0;
+  font-family: var(--font-standard);
+  font-size: .8125rem;
+  font-weight: var(--font-weight-black);
+  line-height: var(--leading-tight);
+  color: var(--dark-900);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.todo-task-card-title-link
+{
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover
+  {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  &:focus-visible
+  {
+    outline: 2px solid var(--green-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.todo-task-card-badge
+{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .2rem .5rem;
+  border-radius: var(--radius-xl);
+  font-size: .5625rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.todo-task-card-badge.teal
+{
+  background: color-mix(in srgb, var(--green-primary) 22%, var(--white-100));
+  color: color-mix(in srgb, var(--green-primary) 55%, var(--dark-900));
+}
+
+.todo-task-card-badge.tan
+{
+  background: color-mix(in srgb, #c9a574 28%, var(--white-100));
+  color: color-mix(in srgb, #8b6914 40%, var(--dark-900));
+}
+
+.todo-task-card-chevron
+{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-700);
+  font-size: .65rem;
+  padding-top: .1rem;
+  transition: transform 0.2s ease;
+}
+
+.todo-task-card
+{
+  &[open]
+  {
+    .todo-task-card-chevron
+    {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+
+
+.todo-task-card-meta
+{
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem .85rem;
+  font-size: .625rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+/* Visual breathing room between the title row and the date/time/location row. */
+.todo-task-card-header-row + .todo-task-card-meta
+{
+  margin-top: .5rem;
+}
+
+.todo-task-card-meta-item
+{
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+
+  i
+  {
+    font-size: .6rem;
+    opacity: 0.9;
+  }
+}
+
+/* Expandable list (toggled by <details> / summary chevron) */
+.todo-task-card-body
+{
+  border-top: 1px solid var(--gray-300);
+  padding: .65rem .75rem .75rem calc(5px + .65rem);
+}
+
+.todo-task-lines
+{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.todo-task-line
+{
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: .45rem;
+  padding: .5rem .55rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: var(--white-100);
+  cursor: pointer;
+}
+
+.todo-task-line-check
+{
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--gray-600);
+  margin-top: .05rem;
+}
+
+.todo-task-line.done .todo-task-line-check
+{
+  color: var(--green-dark);
+}
+
+.todo-task-line.done .todo-task-line-name,
+.todo-task-line.done .todo-task-line-qty,
+.todo-task-line.done .todo-task-line-tag
+{
+  text-decoration: line-through;
+}
+
+.todo-task-line.done .todo-task-line-name
+{
+  color: var(--gray-700);
+  font-weight: var(--font-weight-medium);
+}
+
+.todo-task-line.done .todo-task-line-submeta
+{
+  opacity: 0.75;
+  text-decoration: line-through;
+}
+
+.todo-task-line-main
+{
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-task-line-row
+{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .5rem;
+  width: 100%;
+}
+
+.todo-task-line-name
+{
+  flex: 1;
+  min-width: 0;
+  font-size: .875rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--dark-900);
+}
+
+.todo-task-line-qty
+{
+  flex-shrink: 0;
+  font-size: .625rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-700);
+  background: var(--gray-200);
+  padding: .15rem .4rem;
+  border-radius: var(--radius-sm);
+}
+
+.todo-task-line-tag
+{
+  flex-shrink: 0;
+  font-size: .5625rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: .15rem .4rem;
+  border-radius: var(--radius-sm);
+}
+
+.todo-task-line-tag-item
+{
+  background: color-mix(in srgb, var(--purple) 18%, var(--white-100));
+  color: var(--purple-dark);
+}
+
+.todo-task-line-tag-task
+{
+  background: color-mix(in srgb, var(--green-dark) 15%, var(--white-100));
+  color: var(--green-dark);
+}
+
+.todo-task-line-submeta
+{
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem .65rem;
+  margin-top: .4rem;
+  font-size: .5625rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+
+  i
+  {
+    font-size: .55rem;
+    margin-right: .15rem;
+    opacity: 0.9;
+  }
+}
+
+.todo-task-line-submeta-icons
+{
+  gap: .55rem;
+  text-transform: none;
+  letter-spacing: normal;
+
+  span
+  {
+    display: inline-flex;
+    align-items: center;
+    color: var(--gray-600);
+  }
+
+  i
+  {
+    font-size: .7rem;
+    margin-right: 0;
+  }
+}
+
+
+
+/* Stronger typography inside Home to-do cards */
+.todos-list .todo-task-card-title,
+.todos-list .todo-task-card-title-link,
+.todos-list .todo-task-card-badge,
+.todos-list .todo-task-card-meta,
+.todos-list .todo-task-card-meta-item,
+.todos-list .todo-task-line-name,
+.todos-list .todo-task-line-qty,
+.todos-list .todo-task-line-tag,
+.todos-list .todo-task-line-submeta,
+.todos-list .todo-task-line-submeta-icons span,
+.todos-list .todo-task-card-chevron
+{
+  font-weight: var(--font-weight-bold);
+}
+
+/* Upcoming events list by date */
+.home-upcoming-block [data-event-empty][hidden],
+.home-upcoming-block [data-events-list][hidden]
+{
+  display: none !important;
+}
+
+.home-section .empty-state-card[hidden],
+.home-section [data-home-today-events][hidden]
+{
+  display: none !important;
+}
+
+.home-events-list
+{
+  list-style: none;
+  margin: .75rem 0 1rem;
+  padding: 0 0 .85rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  /* Important for horizontal scrolling: keep start reachable. */
+  justify-content: flex-start;
+  gap: .75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+}
+
+/* Center only when there's a single card (so scrolling still reaches the start when there are multiple). */
+@supports selector(.home-events-list:has(> .home-event-item:nth-child(2)))
+{
+  .home-events-list:not(:has(> .home-event-item:nth-child(2)))
+  {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 430px)
+{
+  .calendar-mini
+  {
+    padding: .65rem;
+    border-radius: var(--radius-md);
+  }
+
+  .calendar-mini-month-row
+  {
+    padding-bottom: .5rem;
+    margin-bottom: .45rem;
+  }
+
+  .calendar-mini-month
+  {
+    font-size: .78rem;
+  }
+
+  .calendar-mini-month-nav
+  {
+    width: 1.45rem;
+    height: 1.45rem;
+    font-size: .7rem;
+  }
+
+  .calendar-mini-weekdays
+  {
+    margin-bottom: .28rem;
+    font-size: .62rem;
+    gap: .18rem;
+  }
+
+  .calendar-mini-grid
+  {
+    gap: .22rem;
+  }
+
+  .calendar-mini-day
+  {
+    max-height: 1.9rem;
+    font-size: .68rem;
+  }
+
+  .calendar-mini-star
+  {
+    right: .36em;
+    bottom: .16em;
+    font-size: 1rem;
+  }
+}
+
+.home-today-events-list
+{
+  list-style: none;
+  margin: .75rem 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: .75rem;
+}
+
+.home-today-events-item
+{
+  margin: 0;
+}
+
+.home-event-item
+{
+  display: flex;
+  justify-content: center;
+  flex: 0 0 min(17.5rem, calc(100% - 1.25rem));
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  margin: 0;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce)
+{
+  .home-events-list {
+    scroll-behavior: auto;
+  }
+}

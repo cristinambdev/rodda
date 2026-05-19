@@ -1,0 +1,29 @@
+<dialog
+  class="dialogue community-remove-member-dialogue"
+  id="community-remove-member-dialog"
+  aria-labelledby="community-remove-member-heading"
+>
+  <div class="card community-remove-member-dialogue-panel">
+    <div class="card-header community-remove-member-dialogue-header">
+      <button type="button" class="btn-close community-remove-member-dialogue-close" aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="card-body community-remove-member-dialogue-body">
+      <i class="fa-regular fa-trash-can community-remove-member-dialogue-icon" aria-hidden="true"></i>
+      <h5 class="community-remove-member-dialogue-heading" id="community-remove-member-heading">Remove from Community</h5>
+      <p class="community-remove-member-dialogue-text" id="community-remove-member-text">
+        Are you sure that you want to remove “<strong id="community-remove-member-name"></strong>” from your community list?
+      </p>
+      <div class="community-remove-member-dialogue-actions">
+        <button
+          type="button"
+          class="btn community-remove-member-dialogue-action community-remove-member-dialogue-action-confirm"
+          data-community-remove-confirm
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>

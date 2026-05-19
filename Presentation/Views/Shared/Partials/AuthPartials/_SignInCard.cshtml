@@ -1,0 +1,72 @@
+@model SignInViewModel
+
+<section id="signin">
+  <div class="card">
+    <div class="card-header">
+      <div class="auth-brand">
+        <img class="auth-brand-logo" src="~/images/logo.svg" width="91" height="85" alt="Rodda logo" decoding="async" />
+      </div>
+    </div>
+    <div class="card-body">
+      <h1 class="card-title">Sign in</h1>
+
+      @if (ViewBag.ErrorMessage is string errorMessage)
+      {
+        <p class="auth-error" role="alert">@errorMessage</p>
+      }
+
+      <form action="#" method="post" novalidate>
+        <button type="button" class="btn btn-external">
+          <img src="~/images/google_logo.svg" alt="Google logo" decoding="async" />
+          Sign in with Google
+        </button>
+      </form>
+
+      <p class="auth-divider" role="separator">OR</p>
+
+      <form asp-controller="Auth" asp-action="SignIn" method="post" novalidate>
+        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+        <div asp-validation-summary="ModelOnly" class="auth-error" role="alert"></div>
+
+        <div class="form-group">
+          <label class="form-label" asp-for="Email"></label>
+          <div class="form-input-field">
+            <span class="form-input-field-icon" aria-hidden="true">
+              <i class="fa-solid fa-envelope"></i>
+            </span>
+            <input asp-for="Email" autocomplete="email" />
+          </div>
+          <span asp-validation-for="Email" class="auth-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" asp-for="Password"></label>
+          <div class="form-input-field">
+            <span class="form-input-field-icon" aria-hidden="true">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input asp-for="Password" autocomplete="current-password" />
+            <button type="button" class="form-input-field-toggle" data-password-toggle aria-controls="Password" aria-label="Show password">
+              <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+            </button>
+          </div>
+          <span asp-validation-for="Password" class="auth-error"></span>
+        </div>
+
+        <div class="auth-row auth-row-between">
+          <label class="form-check-label">
+            <input asp-for="IsPersistent" type="checkbox" />
+            <span>Remember me</span>
+          </label>
+          <a class="auth-link-muted" href="#">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Sign in</button>
+      </form>
+    </div>
+    <div class="card-footer">
+      Don’t have an account?
+      <a asp-controller="Auth" asp-action="SignUp">Sign up</a>
+    </div>
+  </div>
+</section>

@@ -70,6 +70,8 @@ public class AddEventViewModel
     [StringLength(200)]
     public string? PaymentComment { get; set; }
 
+    // **************************************************************************************************************************
+
     public AddEventFormData ToFormData() => new()
     {
         Title = Title,

@@ -1,0 +1,36 @@
+<header class="header" role="banner">
+  <a class="header-brand" asp-controller="Home" asp-action="Index" aria-label="Rodda home">
+    <img class="header-logo" src="~/images/logo.svg" alt="Rodda logo" decoding="async" />
+    <span class="header-title">Rodda</span>
+  </a>
+  <div class="header-actions">
+    <a class="header-notification" href="#" aria-label="Notification settings">
+      <i class="fa-regular fa-bell" aria-hidden="true"></i>
+    </a>
+    <div class="header-auth-buttons">
+      <a
+        class="btn btn-primary-low-profile header-auth-btn login"
+        asp-controller="Auth"
+        asp-action="SignIn"
+        data-header-login
+        hidden
+      >
+        Log in
+      </a>
+      <a
+        class="btn btn-secondary-low-profile header-auth-btn signup"
+        asp-controller="Auth"
+        asp-action="SignUp"
+        data-header-signup
+        hidden
+      >
+        Sign up
+      </a>
+    </div>
+    <button type="button" class="header-notification header-profile" aria-label="Profile menu" data-header-profile>
+      <i class="fa-regular fa-user" aria-hidden="true"></i>
+    </button>
+  </div>
+</header>
+
+<partial name="~/Views/Shared/Partials/AuthPartials/_LoginRequiredDialog.cshtml" />

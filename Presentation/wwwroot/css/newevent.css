@@ -1,0 +1,581 @@
+/* ============================================================================
+   New Event form styles
+   - Scope: Rodda_app/html/newevent.html
+   - Purpose: keep form-specific layout/UI here so `common.css` stays generic.
+   ========================================================================== */
+
+/* ============================================================================ */
+/* TOOLBAR                                                                     */
+/* ============================================================================ */
+
+.newevent-toolbar
+{
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 1rem;
+  padding: 0 .25rem;
+}
+
+.newevent-back
+{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--gray-200);
+  color: var(--dark-900);
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+
+  &:hover
+  {
+    background: var(--gray-300);
+  }
+
+  &:focus-visible
+  {
+    outline: none;
+    box-shadow: var(--navlink-focus-ring);
+  }
+}
+
+.newevent-title
+{
+  margin: 0;
+  font-family: var(--font-standard);
+  font-size: 1.375rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -.02em;
+  color: var(--dark-900);
+  line-height: var(--leading-tight);
+}
+
+/* ============================================================================ */
+/* FORM LAYOUT                                                                  */
+/* ============================================================================ */
+
+.newevent-form
+{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* ============================================================================ */
+/* COVER IMAGE (UPLOAD + PREVIEW)                                               */
+/* ============================================================================ */
+
+
+
+
+
+
+
+
+
+/* Image upload preview */
+.newevent-cover-container
+{
+  position: relative;
+  box-sizing: border-box;
+  width: 150px;
+  height: 150px;
+  margin-inline: auto;
+  margin-bottom: 1.5rem;
+}
+
+.cover-label
+{
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 2px dashed var(--gray-400);
+  border-radius: var(--radius-md);
+  background: var(--white-100);
+  cursor: pointer;
+
+  &:hover
+  {
+    border-color: var(--gray-400);
+  }
+
+  i
+  {
+    font-size: 1.5rem;
+    color: var(--gray-500);
+  }
+}
+
+/* Force the `hidden` attribute to win even if later rules set flex/grid. */
+[hidden]
+{
+  display: none;
+}
+
+.cover-preview
+{
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--gray-400);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--gray-200) 65%, var(--white-100));
+  overflow: hidden;
+
+  /* Beat `.cover-preview { display: flex }` so `hidden` on the preview actually hides it. */
+  &[hidden]
+  {
+    display: none;
+  }
+
+  img
+  {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+  }
+}
+
+/* Actions Overlay */
+.cover-actions
+{
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 10;
+
+  /* Individual Buttons */
+  button
+  {
+    background: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active
+    {
+      transform: scale(0.96);
+    }
+
+    &.danger
+    {
+      color: #d93025;
+    }
+  }
+}
+
+/* ============================================================================ */
+/* DATE + TIME                                                                  */
+/* ============================================================================ */
+
+/* Date and time */
+.newevent-datetime-row
+{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+
+  .form-group
+  {
+    margin: 0;
+  }
+}
+
+.newevent-required
+{
+  color: var(--red-dark);
+  font-weight: var(--font-weight-bold);
+}
+
+.newevent-description-group .form-label
+{
+  margin-bottom: .35rem;
+}
+
+/* ============================================================================ */
+/* DESCRIPTION (RICH TEXT SHELL)                                                */
+/* ============================================================================ */
+
+.newevent-description-shell
+{
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: var(--white-100);
+  overflow: hidden;
+
+  &:focus-within
+  {
+    border-color: var(--form-input-border-focus-color);
+    box-shadow: var(--form-focus-ring);
+  }
+}
+
+.newevent-description-field
+{
+  display: block;
+  width: 100%;
+  border: none !important;
+  border-radius: 0;
+  resize: vertical;
+  min-height: 6rem;
+  padding: .75rem 1rem !important;
+  box-shadow: none !important;
+
+  &:focus
+  {
+    outline: none;
+  }
+}
+
+.newevent-description-toolbar
+{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .15rem;
+  padding: .35rem .5rem;
+  border-top: 1px solid var(--gray-300);
+  background: var(--white-300);
+}
+
+.newevent-toolbar-btn
+{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gray-800);
+  font-size: .85rem;
+  cursor: pointer;
+
+  &:hover
+  {
+    background: var(--gray-200);
+    color: var(--dark-900);
+  }
+
+  &:focus-visible
+  {
+    outline: none;
+    box-shadow: var(--navlink-focus-ring);
+  }
+}
+
+.newevent-toolbar-sep
+{
+  width: 1px;
+  height: 1.1rem;
+  background: var(--gray-400);
+  margin: 0 .15rem;
+}
+
+/* Filled-state tint helps users confirm what has been captured before submit. */
+.newevent-form
+{
+  :is(input.form-input-field, textarea.form-input-field, select.form-input-field).newevent-field-filled,
+  .newevent-expenses-input.newevent-field-filled,
+  div.form-input-field.newevent-field-shell-filled
+  {
+    background: color-mix(in srgb, var(--green-primary) 12%, var(--white-100));
+  }
+}
+
+/* Expenses card (toggle + fields inside one bordered panel) */
+.newevent-expenses-card
+{
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  background: var(--white-100);
+  overflow: hidden;
+}
+
+.newevent-expenses-toggle-row .newevent-join-heading
+{
+  margin: 0;
+}
+
+.newevent-expenses-toggle-row .newevent-join-sub
+{
+  margin: .25rem 0 0;
+}
+
+.newevent-expenses-content
+{
+  border-top: 1px solid var(--gray-300);
+  padding: .6rem;
+}
+
+.newevent-expenses-grid
+{
+  display: grid;
+  /* Payment method should have more room than amount. */
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: .5rem;
+}
+
+.newevent-expenses-field
+{
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.newevent-expenses-label
+{
+  display: block;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--form-label-color);
+  line-height: var(--line-height-base);
+}
+
+.newevent-expenses-input
+{
+  width: 100%;
+  max-width: 100%;
+  min-height: 2.625rem;
+  border: 1px solid var(--form-input-border-color);
+  border-radius: var(--radius-sm);
+  background: var(--form-input-background-color);
+  padding: .625rem .875rem;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: var(--font-weight-regular);
+  color: var(--form-input-text-color);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.newevent-expenses-input::placeholder
+{
+  color: var(--form-input-placeholder-color);
+}
+
+.newevent-expenses-input:hover:not(:disabled)
+{
+  border-color: var(--gray-500);
+}
+
+.newevent-expenses-input:focus-visible
+{
+  outline: none;
+  border-color: var(--form-input-border-focus-color);
+  box-shadow: var(--form-focus-ring);
+}
+
+.newevent-expenses-field-full
+{
+  grid-column: 1 / -1;
+  margin-top: .45rem;
+}
+
+/* Inside the grid, the gap already provides vertical rhythm. */
+.newevent-expenses-grid .newevent-expenses-field-full
+{
+  margin-top: 0;
+}
+
+/* Outside the grid (Name row), add consistent separation from the grid. */
+.newevent-expenses-name-row
+{
+  margin-top: .75rem;
+}
+
+.newevent-join-block,
+.newevent-items-block
+{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .85rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--white-100);
+  border: 1px solid var(--gray-300);
+}
+
+.newevent-join-copy,
+.newevent-items-copy
+{
+  min-width: 0;
+}
+
+/* Same card treatment as `.newevent-join-block` (new event form only).
+   Note: the event item/task modals use their own `.newtask-join-block` styling
+   in `eventitem.css`; keep this scoped so it doesn’t shift modal layout. */
+.newevent-page .newtask-join-block
+{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-sizing: border-box;
+  margin: 1rem;
+  padding: .85rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--white-100);
+  border: 1px solid var(--gray-300);
+}
+
+.newtask-join-copy
+{
+  min-width: 0;
+}
+
+.newevent-join-heading,
+.newevent-items-heading-label
+{
+  margin: 0;
+}
+
+.newevent-join-sub,
+.newevent-items-sub
+{
+  margin: .2rem 0 0;
+  font-size: .9rem;
+  color: var(--gray-800);
+}
+
+.newevent-switch,
+.newetask-switch,
+.newitem-switch
+{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.newevent-switch input,
+.newetask-switch input,
+.newitem-switch input
+{
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.newevent-switch-track,
+.newetask-switch-track,
+.newitem-switch-track
+{
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--gray-400);
+  transition: background 0.2s ease;
+  position: relative;
+}
+
+.newevent-switch-track::after,
+.newetask-switch-track::after,
+.newitem-switch-track::after
+{
+  content: "";
+  position: absolute;
+  top: .15rem;
+  left: .15rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--white-100);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease;
+}
+
+.newevent-switch input:checked + .newevent-switch-track
+{
+  background: var(--green-primary);
+}
+
+/* Tasks modals: match `.modal-footer-eventtasks .btn-save-task` / add-task SAVE (#10b981). */
+.newetask-switch input:checked + .newetask-switch-track
+{
+  background: #10b981;
+}
+
+/* Items modals: match `.modal-footer-items .btn-save-item` (var(--purple)). */
+.newitem-switch input:checked + .newitem-switch-track
+{
+  background: var(--purple);
+}
+
+.newevent-switch input:checked + .newevent-switch-track::after,
+.newetask-switch input:checked + .newetask-switch-track::after,
+.newitem-switch input:checked + .newitem-switch-track::after
+{
+  transform: translateX(1.2rem);
+}
+
+.newevent-switch input:focus-visible + .newevent-switch-track,
+.newetask-switch input:focus-visible + .newetask-switch-track,
+.newitem-switch input:focus-visible + .newitem-switch-track
+{
+  box-shadow: var(--navlink-focus-ring);
+}
+
+.newevent-items-section
+{
+  margin-top: 1rem;
+  padding-inline: .6rem;
+
+}
+
+.newevent-items-heading
+{
+  margin: 0;
+}
+
+.newevent-items-lead
+{
+  margin: .35rem 0 .75rem;
+  font-size: .9rem;
+  color: var(--gray-800);
+}
+
+.newevent-submit
+{
+  width: 100%;
+  margin-top: .5rem;
+  padding: .9rem 1rem;
+  font-size: .95rem;
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}

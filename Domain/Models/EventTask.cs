@@ -8,6 +8,7 @@ public class EventTask
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string EventId { get; set; } = null!;
+    public string? EventTitle { get; set; }
 
     // --- Current State ---
     public string Title { get; set; } = null!;

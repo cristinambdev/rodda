@@ -10,6 +10,7 @@ public class EventItem
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public string EventId { get; set; } = null!;
+    public string? EventTitle { get; set; }
 
     // CURRENT DISPLAY DATA (What the UI shows)
     // If an assignee edits the item, it changes THESE fields.

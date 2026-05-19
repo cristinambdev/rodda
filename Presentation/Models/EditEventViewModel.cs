@@ -72,6 +72,8 @@ public class EditEventViewModel
     [StringLength(200)]
     public string? PaymentComment { get; set; }
 
+    // **************************************************************************************************************************
+
     public UpdateEventFormData ToFormData() => new()
     {
         Title = Title,

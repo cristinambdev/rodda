@@ -1,0 +1,67 @@
+<!-- Event items modal: list of items added and allow guest items toggle row-->
+<div id="eventitems-modal" class="modal modal-event-items" data-eventitems-modal hidden role="presentation">
+  <button type="button" class="modal-backdrop" data-close-bring-items-modal tabindex="-1" aria-label="Close"></button>
+  <div class="modal-panel edit-add-item-dialogue" role="dialog" aria-modal="true" aria-labelledby="eventitems-modal-title">
+    <!-- Modal dismiss button -->
+    <button
+      type="button"
+      id="eventitems-modal-dismiss"
+      class="modal-dismiss modal-dismiss-corner"
+      data-close-bring-items-modal
+      aria-label="Close"
+    >
+      ×
+    </button>
+
+    <!-- Modal header -->
+    <header class="modal-header">
+      <span class="modal-header-icon" aria-hidden="true">
+        <i class="fa-solid fa-box"></i>
+      </span>
+      <div class="modal-header-text">
+        <h2 class="modal-title" id="eventitems-modal-title">Items to Bring</h2>
+        <p class="modal-subtitle" id="eventitems-modal-subtitle"></p>
+      </div>
+    </header>
+
+    <!-- Modal content -->
+    <div class="modal-content modal-content-items">
+      <div id="eventitems-modal-list" class="modal-list">
+        <div class="modal-list-scroll">
+          <!-- List of items to bring -->
+          <div id="eventitems-modal-rows" class="modal-list-rows"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Container: Add item button and allow guest items toggle row -->
+    <div class="add-event-items-container">
+      <button type="button" class="modal-content-add item" id="eventitems-modal-add">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        <span>ADD AN ITEM</span>
+      </button>
+
+      <!-- Allow guest items toggle row -->
+      <div class="newtask-join-block" id="eventitem-items-guest-policy-row">
+        <div class="newtask-join-copy">
+          <label class="form-label" for="eventitem-allow-guest-bring-toggle">Let people add their own items</label>
+        </div>
+        <label class="newitem-switch">
+          <input type="checkbox" id="eventitem-allow-guest-bring-toggle" name="allowGuestBringItems" value="1" />
+          <span class="newitem-switch-track" aria-hidden="true"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Modal footer -->
+    <footer class="modal-footer modal-footer-items">
+      <button type="button" class="btn btn-save-item" id="eventitems-modal-save">
+        <span class="eventitem-join-label">SAVE</span>
+        <span class="eventitem-join-pill">
+          <i class="fa-solid fa-check" aria-hidden="true"></i>
+          Saved
+        </span>
+      </button>
+    </footer>
+  </div>
+</div>

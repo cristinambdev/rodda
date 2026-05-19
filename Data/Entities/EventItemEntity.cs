@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Data.Entities;
 
 
-//Generated with help of AI
+// Generated with help of AI
 // Represents an item that guests can bring to an event.
-//Display fields may be edited by the assigned user; owner fields hold the baseline for revert when the assignee leaves the slot
+// Display fields may be edited by the assigned user; owner fields hold the baseline for revert when the assignee leaves the slot
 
 [Index(nameof(EventId))]
 [Table("EventItems")]
@@ -27,7 +27,7 @@ public class EventItemEntity
     [ForeignKey(nameof(EventId))]
     public virtual EventEntity Event { get; set; } = null!;
 
-    // CURRENT DISPLAY DATA (What the UI shows)
+    // Current display data (What the UI shows)
     // If an assignee edits the item, it changes THESE fields.
     [Required]
     [StringLength(300)]
@@ -38,7 +38,7 @@ public class EventItemEntity
 
     public SignupMode SignupMode { get; set; } = SignupMode.Available;
 
-    // THE ORIGINAL BACKUP (Event creator data)
+    // The original backup (Event creator data)
     // Used ONLY to revert the item if the assignee cancels.
     [Required]
     [StringLength(300)]

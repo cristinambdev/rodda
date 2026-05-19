@@ -1,4 +1,6 @@
 ﻿using Business.Services;
+using Domain.Extensions;
+using Domain.Models;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.Models;
 
@@ -8,48 +10,70 @@ public class AuthController(IAuthService authService) : Controller
 {
     private readonly IAuthService _authService = authService;
 
+
     [HttpGet]
-    public IActionResult SignIn() => View(new SignInViewModel());
+    // **************************************************************************************************************************
+    public IActionResult SignIn(string returnUrl = "~/")
+    {
+        ViewBag.ReturnUrl = returnUrl;
+        return View(new SignInViewModel());
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SignIn(SignInViewModel model)
+    // **************************************************************************************************************************
+    public async Task<IActionResult> SignIn(SignInViewModel model, string returnUrl = "~/")
     {
+        ViewBag.ErrorMessage = null;
+        ViewBag.ReturnUrl = returnUrl;
+
         if (!ModelState.IsValid)
             return View(model);
 
-        var result = await _authService.SignInAsync(model.ToFormData());
+        var signInFormData = model.MapTo<SignInFormData>();
+
+        var result = await _authService.SignInAsync(signInFormData);
         if (!result.Succeeded)
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Invalid email or password.");
+            ViewBag.ErrorMessage = result.ErrorMessage;
             return View(model);
         }
 
-        return RedirectToAction("Index", "Home");
+        return LocalRedirect(returnUrl);
     }
 
     [HttpGet]
-    public IActionResult SignUp() => View(new SignUpViewModel());
+    // **************************************************************************************************************************
+    public IActionResult SignUp()
+    {
+        return View();
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    // **************************************************************************************************************************
     public async Task<IActionResult> SignUp(SignUpViewModel model)
     {
+        ViewBag.ErrorMessage = null;
+
         if (!ModelState.IsValid)
             return View(model);
 
-        var result = await _authService.SignUpAsync(model.ToFormData());
+        var signUpFormData = model.MapTo<SignUpFormData>();
+
+        var result = await _authService.SignUpAsync(signUpFormData);
         if (!result.Succeeded)
         {
-            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Registration failed.");
+            ViewBag.ErrorMessage = result.ErrorMessage;
             return View(model);
         }
 
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("SignIn", "Auth");
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    // **************************************************************************************************************************
     public async Task<IActionResult> Logout()
     {
         await _authService.SignOutAsync();

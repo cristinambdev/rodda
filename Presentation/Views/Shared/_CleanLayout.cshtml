@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="~/images/logo.svg" type="image/svg+xml" />
+    <meta name="description" content="Log in to Rodda" />
+    <link rel="stylesheet" href="~/css/common.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <script src="https://kit.fontawesome.com/771aedd07a.js" crossorigin="anonymous"></script>
+    <title>@ViewData["Title"] | Rodda</title>
+</head>
+<body>
+
+    <div class="center-wrapper">
+
+        <main>
+            @RenderBody()
+        </main>
+    </div>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

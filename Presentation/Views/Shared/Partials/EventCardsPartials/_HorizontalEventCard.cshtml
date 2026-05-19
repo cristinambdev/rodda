@@ -1,0 +1,39 @@
+<template id="rodda-horizontal-event-card-template">
+  <article class="card event-card horizontal" data-event-card>
+    <a class="event-card-link-overlay" data-event-card-link href="#" aria-label=""></a>
+    <!--Thumbnail Column-->
+    <div class="event-thumb" data-event-card-thumb>
+        <img class="event-card-image" data-event-card-image alt="" width="400" height="400" decoding="async" hidden />
+        <a class="event-thumb-link" data-event-card-thumb-link href="#" aria-label="" hidden>
+          <div class="event-card-hero-placeholder" aria-hidden="true">
+            <i class="fa-solid fa-camera" aria-hidden="true"></i>
+          </div>
+        </a>
+        <span class="badge badge-green event-card-role-badge" data-event-card-role-badge hidden></span>
+    </div>
+
+    <!--Main Content Column-->
+    <div class="event-stack" data-event-card-stack>
+      <div class="card-header">
+        <div class="event-card-datetime-row" data-event-card-dt-row>
+          <p class="event-card-datetime" data-event-card-datetime></p>
+          <div class="event-card-status-stack" data-event-card-status-stack>
+            <!-- Note: status badges: blue-unfilled tasks / orange- you have tasks -->
+            <span class="badge badge-blue" data-event-card-status-pill hidden></span>
+            <span class="badge badge-orange status-you" data-event-card-you-pill hidden></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <h3 class="event-card-title" data-event-card-title></h3>
+      </div>
+
+      <div class="card-footer">
+        <p class="event-card-location" data-event-card-location></p>
+        <p class="event-card-attendance" data-event-card-attendance hidden></p>
+      </div>
+    </div>
+  </article>
+</template>
+

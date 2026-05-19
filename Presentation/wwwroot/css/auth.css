@@ -1,0 +1,179 @@
+/* Rodda sign in / sign up — load after common.css */
+
+/* Auth pages inside the app shell (header + bottom nav) */
+.main-layout.auth-portal-page .app-main 
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.main-layout.auth-portal-page #signin,
+.main-layout.auth-portal-page #signup 
+{
+    width: 100%;
+    max-width: 480px;
+}
+
+#signup,
+#signin
+{
+  .card
+  {
+    width: 480px;
+    padding: 1.5rem 2rem;
+
+    .card-header
+    {
+      margin-bottom: 1.25rem;
+      margin-top: 3rem;
+    }
+    .btn-primary
+    {
+      margin-top: 1rem;
+    }
+    .card-footer
+    {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--gray-200);
+      text-align: center;
+      font-size: 1rem;
+      color: var(--dark-900);
+      font-weight: var(--font-weight-bold);
+    }
+  }
+}
+
+.auth-brand
+{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.btn-external
+{
+  margin-top: 1.5rem;
+  background-color: var(--btn-external-background-color);
+  border: 1px solid var(--btn-external-border-color);
+  color: var(--btn-external-text-color);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  font-style: normal;
+  font-family: var(--font-standard);
+  display: grid;
+  align-items: center;
+  grid-template-columns: auto 1fr auto;
+  transition: background-color 0.1s ease-in-out, border-color 0.1s ease-in-out, color 0.1s ease-in-out;
+
+  img
+  {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover
+  {
+    color: var(--btn-external-hover-text-color);
+    background-color: var(--btn-external-hover-background-color);
+    border-color: var(--btn-external-hover-border-color);
+  }
+
+  &:focus-visible
+  {
+    outline: 2px solid var(--green-primary-low-profile);
+    outline-offset: 2px;
+  }
+}
+
+.auth-row
+{
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: .5rem;
+}
+
+.auth-row-between
+{
+  justify-content: space-between;
+}
+
+.auth-divider
+{
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  color: var(--gray-700);
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+
+  &::before,
+  &::after
+  {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--gray-300);
+  }
+}
+
+/* ============================================================================ */
+/* AUTH: Reason Dialog                                                         */
+/* ============================================================================ */
+
+.auth-reason-dialog
+{
+  top: 25%;
+
+  &::backdrop
+  {
+    background: color-mix(in srgb, var(--dark-900) 45%, transparent);
+  }
+}
+
+.auth-reason-card
+{
+  width: min(28rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 1.25rem 1.25rem 1rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card), 0 14px 44px color-mix(in srgb, var(--dark-900) 20%, transparent);
+}
+
+
+
+.auth-reason-text
+{
+  margin: 0 0 1rem;
+}
+
+.auth-reason-actions
+{
+  display: flex;
+  flex-wrap: nowrap;
+  gap: .75rem;
+
+  .btn
+  {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 360px)
+{
+  .auth-reason-actions
+  {
+    flex-wrap: wrap;
+  }
+}
+

@@ -1,0 +1,61 @@
+﻿@model EventsViewModel
+@{
+    ViewData["Title"] = "Events";
+}
+
+<!-- All Events page header -->
+<div class="page-head">
+    <div class="page-meta">
+        <h1 class="page-title" id="allevents-heading">
+            <i class="fa-solid fa-calendar-check"></i>
+            All Events
+        </h1>
+        <p class="page-lead">All events that you are a part of.</p>
+    </div>
+    <!-- All Events page toolbar -->
+    <div class="page-toolbar" role="toolbar" aria-label="Event list actions">
+        <a class="events-list-toolbar-btn add-event-btn" asp-controller="Events" asp-action="CreateNewEvent" aria-label="Add event">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        </a>
+    </div>
+</div>
+
+<!-- All events list (Upcoming / Past segmented control) -->
+<section class="page-section events-list-section-uncategorized" aria-labelledby="allevents-heading">
+    <div data-allevents-list>
+        <section class="events-list-panels" aria-labelledby="allevents-list-filter-label">
+            <h2 class="visually-hidden" id="allevents-list-filter-label">Filter events by time</h2>
+            <div class="segmented-control events-list-segment" role="group" aria-label="Event time range">
+                <button type="button"
+                        class="segmented-control-option active"
+                        data-allevents-range="upcoming"
+                        aria-pressed="true">
+                    Upcoming
+                </button>
+                <button type="button"
+                        class="segmented-control-option"
+                        data-allevents-range="past"
+                        aria-pressed="false">
+                    Past events
+                </button>
+            </div>
+            <!-- Events panel -->
+            <div class="events-list-panel" data-allevents-panel="upcoming">
+                <ul class="page-items-list" data-allevents-list-items="upcoming"></ul>
+                <p class="empty-state-card events-list-empty" data-allevents-empty="upcoming" hidden>
+                    No upcoming events.
+                </p>
+            </div>
+            <div class="events-list-panel" data-allevents-panel="past" hidden>
+                <ul class="page-items-list" data-allevents-list-items="past"></ul>
+                <p class="empty-state-card events-list-empty" data-allevents-empty="past" hidden>
+                    No past events.
+                </p>
+            </div>
+        </section>
+    </div>
+</section>
+
+<div hidden aria-hidden="true">
+    <partial name="~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml" />
+</div>

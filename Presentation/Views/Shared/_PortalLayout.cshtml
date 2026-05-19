@@ -1,0 +1,27 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="icon" href="~/images/logo.svg" type="image/svg+xml" />
+    <meta name="description" content="Rodda — account" />
+    <link rel="stylesheet" href="~/css/common.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <script src="https://kit.fontawesome.com/771aedd07a.js" crossorigin="anonymous"></script>
+    <title>@ViewData["Title"] | Rodda</title>
+</head>
+<body>
+    <div class="main-layout auth-portal-page">
+
+        <partial name="~/Views/Shared/Partials/LayoutPartials/_Header.cshtml" />
+
+        <main class="app-main" id="main-content">
+            @RenderBody()
+        </main>
+
+        <partial name="~/Views/Shared/Partials/LayoutPartials/_BottomNav.cshtml" />
+    </div>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

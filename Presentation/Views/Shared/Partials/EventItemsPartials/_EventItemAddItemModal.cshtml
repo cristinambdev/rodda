@@ -1,0 +1,94 @@
+<!--  Add/edit item  modal -->
+<div id="eventitem-add-item-modal" class="modal modal-add-item" hidden role="presentation">
+  <button type="button" class="modal-backdrop" data-close-add-item-modal tabindex="-1" aria-label="Close"></button>
+  <div
+    id="eventitem-add-item-dialogue"
+    class="modal-panel edit-add-item-dialogue form"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="eventitem-add-item-modal-title"
+    data-is-new="true"
+  >
+
+    <!-- Modal header -->
+    <header class="modal-header-split">
+      <div class="modal-header-lead">
+        <span class="modal-header-icon" aria-hidden="true">
+          <i class="fa-solid fa-box-open"></i>
+        </span>
+        <div class="modal-header-text">
+          <h2 class="modal-title" id="eventitem-add-item-modal-title">Add item</h2>
+          <p class="modal-subtitle" id="eventitem-add-item-modal-subtitle"></p>
+        </div>
+      </div>
+      <button type="button" class="modal-dismiss" data-close-add-item-modal aria-label="Close">×</button>
+    </header>
+
+    <!-- Modal content -->
+    <form id="eventitem-add-item-form" class="add-item-form">
+      <div class="modal-content modal-content-padded">
+        <!-- Name -->
+        <div class="add-item-card">
+          <label class="add-item-label" for="eventitem-add-item-name">
+            ITEM NAME<span class="add-item-required" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="eventitem-add-item-name"
+            name="itemName"
+            class="add-item-input"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. coffee, napkins"
+            required
+          />
+
+          <!-- Amount -->
+          <div class="add-item-row">
+            <div class="add-item-field">
+              <label class="add-item-label" for="eventitem-add-item-amount">AMOUNT</label>
+              <input
+                id="eventitem-add-item-amount"
+                name="amount"
+                class="add-item-input"
+                type="text"
+                autocomplete="off"
+                placeholder="e.g. 1 kg, 2 boxes"
+              />
+            </div>
+
+            <!-- Amount of people needed -->
+            <div class="add-item-field">
+              <label class="add-item-label" for="eventitem-add-item-people">PEOPLE NEEDED</label>
+              <div class="add-item-people">
+                <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                <input
+                  id="eventitem-add-item-people"
+                  name="people"
+                  class="add-item-input add-item-input--people"
+                  type="number"
+                  min="1"
+                  max="99"
+                  step="1"
+                  inputmode="numeric"
+                  value="1"
+                  aria-label="People needed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal footer -->
+      <footer class="modal-footer modal-footer-add-item">
+        <button type="submit" class="btn btn-add-item" id="eventitem-add-item-save">
+          <span class="eventitem-join-label">SAVE</span>
+          <span class="eventitem-join-pill">
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+            Saved
+          </span>
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

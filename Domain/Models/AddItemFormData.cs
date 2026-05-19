@@ -4,6 +4,7 @@ namespace Domain.Models;
 
 public class AddItemFormData
 {
+    public string EventId { get; set; } = null!;
     public string Title { get; set; } = null!;
     public string? Amount { get; set; }
     public SignupMode SignupMode { get; set; } = SignupMode.Available;

@@ -26,14 +26,5 @@ public class AddTaskViewModel
 
     public bool IsActive { get; set; } = true;
 
-    public AddTaskFormData ToFormData() => new()
-    {
-        Title = Title,
-        ScheduledAt = ScheduledAt,
-        TaskTime = TaskTime,
-        TaskLocation = TaskLocation,
-        SignupMode = SignupMode,
-        SortOrder = SortOrder,
-        IsActive = IsActive
-    };
+
 }

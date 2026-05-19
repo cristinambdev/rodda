@@ -17,11 +17,11 @@ builder.Services.AddIdentity<UserEntity, IdentityRole>(x =>
 }).AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
 builder.Services.ConfigureApplicationCookie(x =>
 {
-    x.LoginPath = "auth/login";
-    x.AccessDeniedPath = "auth/accessdenied";
+    x.LoginPath = "/auth/signin";
+    x.AccessDeniedPath = "/auth/accessdenied";
     x.Cookie.HttpOnly = true;
     x.Cookie.IsEssential = true;
-    x.Cookie.Expiration = TimeSpan.FromHours(1);
+    x.ExpireTimeSpan = TimeSpan.FromHours(1);
     x.SlidingExpiration = true;
 });
 
@@ -38,12 +38,13 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
-//builder.Services.AddScoped<IEventItemService, EventItemService>();
-//builder.Services.AddScoped<IEventTaskService, EventTaskService>();
+builder.Services.AddScoped<IEventItemService, EventItemService>();
+builder.Services.AddScoped<IEventTaskService, EventTaskService>();
 
 var app = builder.Build();
 app.UseHsts();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
@@ -51,10 +52,10 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
-app.UseRewriter(new RewriteOptions().AddRedirect("^$", "/index"));
+app.UseRewriter(new RewriteOptions().AddRedirect("^$", "/auth/signin"));
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Auth}/{action=SignIn}/{id?}")
     .WithStaticAssets();
 
 

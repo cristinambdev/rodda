@@ -1,0 +1,33 @@
+<!-- Join event for user's group dialog -->
+<dialog class="dialogue event-details-join-dialogue" id="event-details-join-dialog" aria-labelledby="event-details-join-dialog-heading">
+  <div class="card event-details-join-dialogue-panel">
+    <div class="card-header">
+      <h2 class="event-details-join-dialogue-heading" id="event-details-join-dialog-heading">Join event</h2>
+      <button type="button" class="btn-close event-details-join-dialogue-close" aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <form id="event-details-join-dialogue-form" class="event-details-join-dialogue-form">
+      <div class="card-body">
+        <!-- Group size input -->
+        <div class="form-group">
+          <label class="form-label" for="event-details-join-group-size">How many people in your group?</label>
+          <input
+            type="number"
+            id="event-details-join-group-size"
+            name="groupSize"
+            class="form-input-field"
+            min="1"
+            value="1"
+            required
+            inputmode="numeric"
+          />
+        </div>
+      </div>
+      <div class="card-footer event-details-join-dialogue-footer">
+        <button type="submit" class="btn btn-primary">Confirm</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+

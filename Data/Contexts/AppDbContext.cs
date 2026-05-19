@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public virtual DbSet<EventAttendanceEntity> Attendances { get; set; } 
     public virtual DbSet<EventChatEntity> ChatMessages { get; set; }
 
+    // **************************************************************************************************************************
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

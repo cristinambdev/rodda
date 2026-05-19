@@ -20,12 +20,14 @@ public class UserService(IUserRepository userRepository, UserManager<UserEntity>
     private readonly UserManager<UserEntity> _userManager = userManager;
 
 
+    // **************************************************************************************************************************
     public async Task<UserResult> GetUsersAsync()
     {
         var result = await _userRepository.GetAllAsync(e => e);
         return result.MapTo<UserResult>();
     }
 
+    // **************************************************************************************************************************
     public async Task<UserResult> CreateUserAsync(SignUpFormData formData)
     {
         if (formData == null)
