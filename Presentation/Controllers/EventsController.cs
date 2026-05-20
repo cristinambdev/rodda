@@ -1,4 +1,5 @@
 ﻿using Business.Services;
+using Domain.Enums;
 using Domain.Extensions;
 using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -9,9 +10,11 @@ using System.Security.Claims;
 namespace Presentation.Controllers;
 
 [Authorize]
-public class EventsController(IEventService eventService) : Controller
+public class EventsController( IEventService eventService, IEventItemService eventItemService, IEventTaskService eventTaskService) : Controller
 {
     private readonly IEventService _eventService = eventService;
+    private readonly IEventItemService _eventItemService = eventItemService;
+    private readonly IEventTaskService _eventTaskService = eventTaskService;
 
     // **************************************************************************************************************************
     [HttpGet]
@@ -95,7 +98,59 @@ public class EventsController(IEventService eventService) : Controller
         if (!response.Succeeded || response.Result == null)
             return NotFound();
 
-        var model = response.Result.MapTo<EventDetailsViewModel>();
+        var eventData = response.Result;
+        var model = eventData.MapTo<EventDetailsViewModel>();
+        model.EventRoles = eventData.Roles;
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        model.CanManageItemsTasks = userId != null && eventData.Roles.Any(r =>
+            r.UserId == userId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+
+        var itemsResponse = await _eventItemService.GetItemsForEventAsync(id);
+        if (itemsResponse.Succeeded && itemsResponse.Result != null)
+        {
+            var itemList = itemsResponse.Result.ToList();
+            ViewData["EventItemsData"] = itemList;
+            model.Items = itemList.Select(item =>
+            {
+                var row = item.MapTo<EventItemViewModel>();
+                row.CreatedByDisplayName = item.CreatedByUser?.DisplayName;
+                row.Assignments = item.Assignments.Select(a => new EventAssignmentSlotViewModel
+                {
+                    Id = a.Id,
+                    AssigneeType = a.AssigneeType,
+                    UserId = a.UserId,
+                    DisplayName = a.User?.DisplayName,
+                    PlaceholderLabel = a.PlaceholderLabel,
+                    Status = a.Status
+                }).ToList();
+                return row;
+            }).ToList();
+        }
+
+        var tasksResponse = await _eventTaskService.GetTasksForEventAsync(id);
+        if (tasksResponse.Succeeded && tasksResponse.Result != null)
+        {
+            var taskList = tasksResponse.Result.ToList();
+            ViewData["EventTasksData"] = taskList;
+            model.Tasks = taskList.Select(task =>
+            {
+                var row = task.MapTo<EventTaskViewModel>();
+                row.TaskLocation = task.TaskLocationName ?? task.TaskLocation?.Street;
+                row.CreatedByDisplayName = task.CreatedByUser?.DisplayName;
+                row.Assignments = task.Assignments.Select(a => new EventAssignmentSlotViewModel
+                {
+                    Id = a.Id,
+                    AssigneeType = a.AssigneeType,
+                    UserId = a.UserId,
+                    DisplayName = a.User?.DisplayName,
+                    PlaceholderLabel = a.PlaceholderLabel,
+                    Status = a.Status
+                }).ToList();
+                return row;
+            }).ToList();
+        }
 
         return View(model);
     }

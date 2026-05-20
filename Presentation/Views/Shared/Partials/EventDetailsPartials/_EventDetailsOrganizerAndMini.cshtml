@@ -1,3 +1,9 @@
+@model Presentation.Models.EventDetailsViewModel
+@{
+    var itemCount = Model.Items?.Count ?? 0;
+    var taskCount = Model.Tasks?.Count ?? 0;
+}
+
 <!-- Organizer/co-owner-only section -->
 <div class="event-details-organizer" data-event-details-organizer hidden>
   <section class="event-details-organizer-section" aria-labelledby="event-details-organizer-table-heading">
@@ -25,7 +31,8 @@
       <button
         type="button"
         class="eventitem-mini-card eventitem-mini-card-items"
-        data-open-bring-items-modal
+        data-type="modal"
+        data-target="#eventitems-modal"
         aria-expanded="false"
         aria-haspopup="dialog"
       >
@@ -33,12 +40,13 @@
           <i class="fa-solid fa-box" aria-hidden="true"></i>
         </span>
         <span class="eventitem-mini-label">ITEMS TO BRING</span>
-        <span class="eventitem-mini-sub" id="eventitem-organizer-items-count">0 items</span>
+        <span class="eventitem-mini-sub" id="eventitem-organizer-items-count">@itemCount @(itemCount == 1 ? "item" : "items")</span>
       </button>
       <button
         type="button"
         class="eventitem-mini-card eventitem-mini-card-tasks"
-        data-open-eventtasks-modal
+        data-type="modal"
+        data-target="#eventtasks-modal"
         aria-haspopup="dialog"
         aria-expanded="false"
         aria-controls="eventtasks-modal"
@@ -47,7 +55,7 @@
           <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
         </span>
         <span class="eventtask-mini-label">TASKS TO DO</span>
-        <span class="eventtask-mini-sub" id="eventitem-organizer-eventtasks-count">0 tasks</span>
+        <span class="eventtask-mini-sub" id="eventitem-organizer-eventtasks-count">@taskCount @(taskCount == 1 ? "task" : "tasks")</span>
       </button>
     </div>
   </section>
@@ -58,7 +66,8 @@
   <button
     type="button"
     class="eventitem-mini-card eventitem-mini-card-items"
-    data-open-bring-items-modal
+    data-type="modal"
+    data-target="#eventitems-modal"
     aria-expanded="false"
     aria-haspopup="dialog"
   >
@@ -66,12 +75,13 @@
       <i class="fa-solid fa-box"></i>
     </span>
     <span class="eventitem-mini-label">ITEMS TO BRING</span>
-    <span class="eventitem-mini-sub" id="eventitem-items-count">0 items</span>
+    <span class="eventitem-mini-sub" id="eventitem-items-count">@itemCount @(itemCount == 1 ? "item" : "items")</span>
   </button>
   <button
     type="button"
     class="eventitem-mini-card eventitem-mini-card-tasks"
-    data-open-eventtasks-modal
+    data-type="modal"
+    data-target="#eventtasks-modal"
     aria-haspopup="dialog"
     aria-expanded="false"
     aria-controls="eventtasks-modal"
@@ -80,6 +90,6 @@
       <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
     </span>
     <span class="eventtask-mini-label">TASKS TO DO</span>
-    <span class="eventtask-mini-sub" id="eventtasks-count">5 tasks</span>
+    <span class="eventtask-mini-sub" id="eventtasks-count">@taskCount @(taskCount == 1 ? "task" : "tasks")</span>
   </button>
 </div>

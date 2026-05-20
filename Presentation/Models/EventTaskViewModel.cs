@@ -16,4 +16,6 @@ public class EventTaskViewModel
     public bool IsActive { get; set; }
     public string? CreatedByUserId { get; set; }
     public string? CreatedByDisplayName { get; set; }
+
+    public List<EventAssignmentSlotViewModel> Assignments { get; set; } = new();
 }

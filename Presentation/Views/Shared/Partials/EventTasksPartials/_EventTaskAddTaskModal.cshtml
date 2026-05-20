@@ -1,6 +1,12 @@
+@model Presentation.Models.EventDetailsViewModel?
+@{
+    var eventId = Model?.Id ?? ViewContext.RouteData.Values["id"]?.ToString();
+    var canPost = !string.IsNullOrEmpty(eventId) && Model?.CanManageItemsTasks == true;
+}
+
 <!--  Add/edit task  modal -->
-<div id="eventitem-add-task-modal" class="modal modal-add-task" hidden role="presentation">
-  <button type="button" class="modal-backdrop" data-close-add-task-modal tabindex="-1" aria-label="Close"></button>
+<div id="eventitem-add-task-modal" class="modal modal-add-task" role="presentation">
+  <button type="button" class="modal-backdrop" data-type="close" data-target="#eventitem-add-task-modal" data-reopen="#eventtasks-modal" tabindex="-1" aria-label="Close"></button>
   <div
     id="eventitem-add-task-dialogue"
     class="modal-panel edit-add-task-dialogue form"
@@ -21,11 +27,24 @@
           <p class="modal-subtitle" id="eventitem-add-task-modal-subtitle"></p>
         </div>
       </div>
-      <button type="button" class="modal-dismiss" data-close-add-task-modal aria-label="Close">×</button>
+      <button type="button" class="modal-dismiss" data-type="close" data-target="#eventitem-add-task-modal" data-reopen="#eventtasks-modal" aria-label="Close">×</button>
     </header>
 
     <!-- Modal content -->
-    <form id="eventitem-add-task-form" class="add-item-form">
+    @if (canPost)
+    {
+    <form id="eventitem-add-task-form"
+          class="add-item-form"
+          method="post"
+          asp-controller="EventTasks"
+          asp-action="CreateTask"
+          asp-route-eventId="@eventId"
+          data-edit-url-template="@Url.Action("EditTask", "EventTasks", new { eventId = eventId, taskId = "__TASKID__" })">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="eventitem-add-task-id" value="" />
+      <input type="hidden" name="SignupMode" value="@((int)Domain.Enums.SignupMode.Available)" />
+      <input type="hidden" name="SortOrder" value="0" />
+      <input type="hidden" name="IsActive" value="true" />
       <div class="modal-content modal-content-padded">
         <!-- Name -->
         <div class="add-item-card">
@@ -34,7 +53,7 @@
           </label>
           <input
             id="eventitem-add-task-name"
-            name="taskName"
+            name="Title"
             class="add-item-input"
             type="text"
             autocomplete="off"
@@ -46,7 +65,7 @@
           <label class="add-item-label" for="eventitem-add-task-location">LOCATION</label>
           <input
             id="eventitem-add-task-location"
-            name="taskLocation"
+            name="TaskLocation"
             class="add-item-input"
             type="text"
             autocomplete="off"
@@ -59,7 +78,7 @@
               <label class="add-item-label" for="eventitem-add-task-time">TIME</label>
               <input
                 id="eventitem-add-task-time"
-                name="taskTime"
+                name="TaskTime"
                 class="add-item-input"
                 type="text"
                 autocomplete="off"
@@ -101,5 +120,10 @@
         </button>
       </footer>
     </form>
+    }
+    else
+    {
+    <p class="modal-empty modal-content-padded">Only the event organizer can add tasks.</p>
+    }
   </div>
 </div>

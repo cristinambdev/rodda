@@ -1733,13 +1733,16 @@ tbody td
   position: fixed;
   inset: 0;
   z-index: 10040;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   padding: 1rem;
 }
 
-
+.modal.modal-show
+{
+  display: flex;
+}
 
 /* Clickable backdrop */
 .modal-backdrop

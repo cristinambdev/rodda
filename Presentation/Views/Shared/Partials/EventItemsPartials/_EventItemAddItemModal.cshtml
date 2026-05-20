@@ -1,6 +1,12 @@
+@model Presentation.Models.EventDetailsViewModel?
+@{
+    var eventId = Model?.Id ?? ViewContext.RouteData.Values["id"]?.ToString();
+    var canPost = !string.IsNullOrEmpty(eventId) && Model?.CanManageItemsTasks == true;
+}
+
 <!--  Add/edit item  modal -->
-<div id="eventitem-add-item-modal" class="modal modal-add-item" hidden role="presentation">
-  <button type="button" class="modal-backdrop" data-close-add-item-modal tabindex="-1" aria-label="Close"></button>
+<div id="eventitem-add-item-modal" class="modal modal-add-item" role="presentation">
+  <button type="button" class="modal-backdrop" data-type="close" data-target="#eventitem-add-item-modal" data-reopen="#eventitems-modal" tabindex="-1" aria-label="Close"></button>
   <div
     id="eventitem-add-item-dialogue"
     class="modal-panel edit-add-item-dialogue form"
@@ -21,11 +27,23 @@
           <p class="modal-subtitle" id="eventitem-add-item-modal-subtitle"></p>
         </div>
       </div>
-      <button type="button" class="modal-dismiss" data-close-add-item-modal aria-label="Close">×</button>
+      <button type="button" class="modal-dismiss" data-type="close" data-target="#eventitem-add-item-modal" data-reopen="#eventitems-modal" aria-label="Close">×</button>
     </header>
 
-    <!-- Modal content -->
-    <form id="eventitem-add-item-form" class="add-item-form">
+    @if (canPost)
+    {
+    <form id="eventitem-add-item-form"
+          class="add-item-form"
+          method="post"
+          asp-controller="EventItems"
+          asp-action="CreateItem"
+          asp-route-eventId="@eventId"
+          data-edit-url-template="@Url.Action("EditItem", "EventItems", new { eventId = eventId, itemId = "__ITEMID__" })">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="eventitem-add-item-id" value="" />
+      <input type="hidden" name="SignupMode" value="@((int)Domain.Enums.SignupMode.Available)" />
+      <input type="hidden" name="SortOrder" value="0" />
+      <input type="hidden" name="IsActive" value="true" />
       <div class="modal-content modal-content-padded">
         <!-- Name -->
         <div class="add-item-card">
@@ -34,7 +52,7 @@
           </label>
           <input
             id="eventitem-add-item-name"
-            name="itemName"
+            name="Title"
             class="add-item-input"
             type="text"
             autocomplete="off"
@@ -90,5 +108,10 @@
         </button>
       </footer>
     </form>
+    }
+    else
+    {
+    <p class="modal-empty modal-content-padded">Only the event organizer can add items.</p>
+    }
   </div>
 </div>

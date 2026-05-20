@@ -1,99 +1,89 @@
-﻿@{
+﻿@model Presentation.Models.EventDetailsViewModel
+@{
     Layout = "_PortalLayout";
-    ViewData["Title"] = "Event details";
+    ViewData["Title"] = Model.Title;
+    var itemCount = Model.Items?.Count ?? 0;
+    var taskCount = Model.Tasks?.Count ?? 0;
 }
 
-<!-- Event hero -->
+<link rel="stylesheet" href="~/css/eventitem.css" asp-append-version="true" />
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="auth-banner auth-banner--success" role="status">@successMessage</div>
+}
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="auth-banner auth-banner--error" role="alert">@errorMessage</div>
+}
+
 <section class="eventitem-hero" aria-label="Event cover">
     <img id="eventitem-hero-img"
          class="eventitem-hero-image"
+         src="@Model.CoverImageUrl"
          alt=""
          width="1200"
          height="675"
          decoding="async"
-         hidden />
-    <!-- Event hero buttons -->
+         @(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : null) />
     <div class="eventitem-hero-overlay">
-        <button type="button" class="eventitem-hero-fab" id="eventitem-back" aria-label="Go back">
+        <a class="eventitem-hero-fab" id="eventitem-back" aria-label="Go back" asp-controller="Events" asp-action="Events">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        </button>
+        </a>
         <button type="button" class="eventitem-hero-fab" id="eventitem-hero-options" aria-label="Event options">
             <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
         </button>
     </div>
 </section>
-<!-- Event body -->
+
 <div class="eventitem-body">
-    <!-- Event title and creator -->
     <div class="eventitem-title-block">
-        <h3 class="eventitem-title" id="eventitem-title"></h3>
+        <h3 class="eventitem-title" id="eventitem-title">@Model.Title</h3>
         <p class="eventitem-creator">
-            Created by <strong id="eventitem-creator-name"></strong>
+            Created by <strong id="eventitem-creator-name">Organizer</strong>
         </p>
     </div>
 
-    <!-- Event info card -->
     <div class="eventitem-info-card">
-        <!-- Event date -->
         <div class="eventitem-info-row">
             <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-            <p class="eventitem-info-text eventitem-info-date" id="eventitem-date-line"></p>
+            <p class="eventitem-info-text eventitem-info-date" id="eventitem-date-line">@Model.StartAt.ToString("dddd, MMM d")</p>
         </div>
-        <!-- Event time -->
         <div class="eventitem-info-row">
             <i class="fa-regular fa-clock" aria-hidden="true"></i>
-            <p class="eventitem-info-text" id="eventitem-time"></p>
+            <p class="eventitem-info-text" id="eventitem-time">@Model.StartAt.ToString("HH:mm")</p>
         </div>
-        <!-- Event location -->
-        <div class="eventitem-info-row location">
-            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-            <div>
-                <p class="eventitem-location-name" id="eventitem-location-name"></p>
-                <p class="eventitem-location-address" id="eventitem-location-address"></p>
+        @if (Model.Location != null)
+        {
+            <div class="eventitem-info-row location">
+                <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                <div>
+                    <p class="eventitem-location-name" id="eventitem-location-name">@Model.Location.Name</p>
+                    <p class="eventitem-location-address" id="eventitem-location-address">@Model.Location.Street</p>
+                </div>
             </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Description))
+    {
+        <div class="eventitem-description">
+            <p class="eventitem-description-label">DESCRIPTION:</p>
+            <p id="eventitem-description" class="eventitem-description-text">@Model.Description</p>
         </div>
-        <!-- Event expenses line -->
-        <hr class="eventitem-info-divider" />
-        <div class="eventitem-info-row expenses">
-            <i class="fa-solid fa-wallet" aria-hidden="true"></i>
-            <div>
-                <p class="eventitem-payment-method-line" id="eventitem-payment-method-line"></p>
-                <p class="eventitem-amount-line" id="eventitem-amount-line"></p>
-            </div>
-        </div>
-    </div>
+    }
 
-    <!-- Event description -->
-    <div class="eventitem-description">
-        <p class="eventitem-description-label">DESCRIPTION:</p>
-        <p id="eventitem-description" class="eventitem-description-text"></p>
-    </div>
+    @if (Model.ItemsTasksEnabled)
+    {
+        <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsOrganizerAndMini.cshtml" model="Model" />
+    }
 
-    <!-- Event join button -->
-    <div class="eventitem-join" data-eventitem-guest-join>
-        <button type="button" class="btn btn-primary btn-save-item">
-            <span class="eventitem-join-label">JOIN</span>
-            <span class="eventitem-join-pill">
-                <i class="fa-solid fa-check" aria-hidden="true"></i>
-                <span class="eventitem-join-pill-text">You joined</span>
-            </span>
-        </button>
-        <button type="button"
-                class="eventitem-join-count"
-                id="eventitem-join-count-btn"
-                aria-label="View who is attending"
-                aria-haspopup="dialog"
-                aria-controls="event-details-guests-modal">
-            <i class="fa-solid fa-user-group" aria-hidden="true"></i>
-            <span id="eventitem-join-badge" role="status"></span>
-        </button>
-    </div>
-
-    <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsOrganizerAndMini.cshtml" />
-    <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsChat.cshtml" />
+    @if (Model.ChatEnabled)
+    {
+        <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsChat.cshtml" />
+    }
 </div>
 
-<!-- Event item dialogues -->
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsGuestsModal.cshtml" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsAddCommunityGuestDialog.cshtml" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsJoinDialog.cshtml" />
@@ -102,8 +92,12 @@
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsContextMenu.cshtml" />
 
 <div id="eventitem-modals-root">
-    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" />
-    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" />
-    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" />
-    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" />
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" model="Model" />
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" model="Model" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" model="Model" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" model="Model" />
 </div>
+
+@section Scripts {
+    <script src="~/js/eventdetails-modals.js" asp-append-version="true"></script>
+}

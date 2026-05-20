@@ -22,4 +22,6 @@ public class Event
 
     public Address? Location { get; set; }
     public PaymentDetails? Payment { get; set; }
+
+    public ICollection<EventRole> Roles { get; set; } = new List<EventRole>();
 }

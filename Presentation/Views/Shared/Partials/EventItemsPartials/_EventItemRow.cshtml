@@ -1,0 +1,159 @@
+@using Domain.Enums
+@model (Presentation.Models.EventItemViewModel Item, string EventId, string? CurrentUserId, bool CanManage)
+
+@{
+    var item = Model.Item;
+    var eventId = Model.EventId;
+    var currentUserId = Model.CurrentUserId;
+    var canManage = Model.CanManage;
+
+    var assignments = item.Assignments.Where(a => a.Status != AssignmentStatus.Removed).ToList();
+    var openSlots = assignments
+        .Where(a => a.AssigneeType == AssigneeType.OpenSlot && string.IsNullOrEmpty(a.UserId))
+        .ToList();
+    var assigneeSlots = assignments.Except(openSlots).ToList();
+
+    var isEveryone = assignments.Any(a => a.AssigneeType == AssigneeType.Everyone);
+    var myClaim = assignments.FirstOrDefault(a =>
+        !string.IsNullOrEmpty(currentUserId) &&
+        a.UserId == currentUserId &&
+        a.Status is AssignmentStatus.SignedUp or AssignmentStatus.Assigned);
+    var hasMyClaim = myClaim != null;
+
+    var showSignup = false;
+    if (!isEveryone && !hasMyClaim)
+    {
+        if (item.SignupMode == SignupMode.Available || item.SignupMode == SignupMode.Disabled)
+            showSignup = true;
+        else if (item.SignupMode == SignupMode.Hidden && (openSlots.Count > 0 || canManage))
+            showSignup = true;
+    }
+
+    var signupDisabled = item.SignupMode == SignupMode.Disabled;
+}
+
+<article class="eventitem-bring-row@(hasMyClaim ? " eventitem-bring-row--has-you" : "")"
+         data-item-id="@item.Id"
+         data-bring-signup="@item.SignupMode.ToString().ToLowerInvariant()">
+    <div class="eventitem-bring-row-head@(canManage ? " eventitem-bring-row-head--with-edit" : "")">
+        <h3 class="eventitem-bring-row-title">@item.Title</h3>
+        @if (canManage)
+        {
+            <button type="button"
+                    class="eventitem-bring-row-edit"
+                    data-edit-item
+                    data-item-id="@item.Id"
+                    data-item-title="@item.Title"
+                    data-item-amount="@item.Amount"
+                    data-item-people="@item.PeopleNeeded"
+                    aria-label="Edit item">
+                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(item.Amount))
+    {
+        <div class="eventitem-bring-row-meta">
+            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
+            <span>@item.Amount</span>
+        </div>
+    }
+
+    <div class="eventitem-bring-row-footer">
+        @if (assignments.Count > 0)
+        {
+            <div class="eventitem-bring-tags">
+                @for (var i = 0; i < openSlots.Count; i++)
+                {
+                    <span class="eventitem-bring-tag eventitem-bring-tag--muted">Person @(i + 1)</span>
+                }
+                @foreach (var slot in assigneeSlots)
+                {
+                    @if (slot.AssigneeType == AssigneeType.Everyone)
+                    {
+                        <span class="eventitem-bring-tag eventitem-bring-tag--dark">EVERYONE</span>
+                    }
+                    else if (!string.IsNullOrEmpty(currentUserId) && slot.UserId == currentUserId)
+                    {
+                        <span class="eventitem-bring-tag eventitem-bring-tag--you">Myself</span>
+                    }
+                    else
+                    {
+                        <span class="eventitem-bring-tag eventitem-bring-tag--dark">@(string.IsNullOrWhiteSpace(slot.DisplayName) ? "Guest" : slot.DisplayName)</span>
+                    }
+                }
+            </div>
+        }
+
+        @if (showSignup)
+        {
+            <div class="eventitem-bring-rail eventitem-bring-rail-signup">
+                <form method="post"
+                      asp-controller="EventItems"
+                      asp-action="ClaimItem"
+                      asp-route-eventId="@eventId"
+                      asp-route-itemId="@item.Id"
+                      class="eventitem-bring-signup-form no-ajax">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="eventitem-bring-signup@(signupDisabled ? " eventitem-bring-signup--disabled" : "")"
+                            @(signupDisabled ? "disabled" : null)>
+                        SIGN UP
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+
+    @if (hasMyClaim || canManage)
+    {
+        <div class="eventitem-bring-rail eventitem-bring-rail-trash">
+            <div class="eventitem-bring-trash-wrap">
+                <details class="eventitem-bring-trash-details">
+                    <summary class="eventitem-bring-trash-summary" aria-label="Item actions">
+                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                    </summary>
+                    <div class="eventitem-bring-trash-menu" role="menu">
+                        @if (hasMyClaim && myClaim != null)
+                        {
+                            <form method="post"
+                                  asp-controller="EventItems"
+                                  asp-action="UnclaimItem"
+                                  asp-route-eventId="@eventId"
+                                  asp-route-itemId="@item.Id"
+                                  class="no-ajax"
+                                  role="none">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="assignmentId" value="@myClaim.Id" />
+                                <button type="submit" class="eventitem-bring-trash-menu-item" role="menuitem">
+                                    <i class="fa-solid fa-user-minus" aria-hidden="true"></i>
+                                    <span>Remove my name</span>
+                                </button>
+                            </form>
+                        }
+                        @if (canManage)
+                        {
+                            <form method="post"
+                                  asp-controller="EventItems"
+                                  asp-action="DeleteItem"
+                                  asp-route-eventId="@eventId"
+                                  asp-route-itemId="@item.Id"
+                                  class="no-ajax"
+                                  role="none"
+                                  onsubmit="return confirm('Remove this item from the list?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit"
+                                        class="eventitem-bring-trash-menu-item eventitem-bring-trash-menu-item-danger"
+                                        role="menuitem">
+                                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                    <span>Remove item</span>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </details>
+            </div>
+        </div>
+    }
+</article>

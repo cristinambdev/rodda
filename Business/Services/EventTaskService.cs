@@ -111,7 +111,11 @@ public class EventTaskService(
             selector: t => t,
             where: t => t.EventId == eventId && t.IsActive,
             sortBy: t => t.SortOrder,
-            includes: [x => x.Assignments]);
+            includeChains:
+            [
+                q => q.Include(t => t.Assignments).ThenInclude(a => a.User),
+                q => q.Include(t => t.CreatedByUser)
+            ]);
 
         if (!response.Succeeded || response.Result == null)
             return new EventTaskResult<IEnumerable<EventTask>>
@@ -121,12 +125,15 @@ public class EventTaskService(
                 ErrorMessage = response.ErrorMessage ?? "Could not load event tasks."
             };
 
-        return new EventTaskResult<IEnumerable<EventTask>>
+        var tasks = response.Result.Select(entity =>
         {
-            Succeeded = true,
-            StatusCode = 200,
-            Result = response.Result.MapTo<IEnumerable<EventTask>>()
-        };
+            var task = entity.MapTo<EventTask>();
+            task.Assignments = entity.Assignments.Select(a => a.MapTo<EventTaskAssignment>()).ToList();
+            task.CreatedByUser = entity.CreatedByUser?.MapTo<User>();
+            return task;
+        });
+
+        return new EventTaskResult<IEnumerable<EventTask>> { Succeeded = true, StatusCode = 200, Result = tasks };
     }
 
     // **************************************************************************************************************************

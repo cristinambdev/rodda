@@ -85,7 +85,7 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     // READ
     public async Task<EventResult<Event>> GetEventAsync(string id)
     {
-        var response = await _eventRepository.GetAsync
+        var response = await _eventRepository.GetEntityAsync
             (
                 where: e => e.Id == id,
                 includes:
@@ -99,9 +99,15 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
                     q => q.Include(x => x.ChatMessages).ThenInclude(c => c.AuthorUser)
                 ]
             );
-        return response.Succeeded
-            ? new EventResult<Event> { Succeeded = true, StatusCode = 200, Result = response.Result }
-            : new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = $"Event with id {id} was not found" };
+
+        if (!response.Succeeded || response.Result == null)
+            return new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = $"Event with id {id} was not found" };
+
+        var entity = response.Result;
+        var result = entity.MapTo<Event>();
+        result.Roles = entity.Roles.Select(r => r.MapTo<EventRole>()).ToList();
+
+        return new EventResult<Event> { Succeeded = true, StatusCode = 200, Result = result };
     }
 
     // **************************************************************************************************************************

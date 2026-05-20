@@ -108,15 +108,27 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
                 selector: i => i,
                 where: i => i.EventId == eventId && i.IsActive,
                 sortBy: i => i.SortOrder,
-                includes: [x => x.Assignments]
+                includeChains:
+                [
+                    q => q.Include(i => i.Assignments).ThenInclude(a => a.User),
+                    q => q.Include(i => i.CreatedByUser)
+                ]
             );
 
         if (!response.Succeeded || response.Result == null)
             return new EventItemResult<IEnumerable<EventItem>>
             { Succeeded = false, StatusCode = response.StatusCode, ErrorMessage = response.ErrorMessage ?? "Could not load event items." };
 
+        var items = response.Result.Select(entity =>
+        {
+            var item = entity.MapTo<EventItem>();
+            item.Assignments = entity.Assignments.Select(a => a.MapTo<EventItemAssignment>()).ToList();
+            item.CreatedByUser = entity.CreatedByUser?.MapTo<User>();
+            return item;
+        });
+
         return new EventItemResult<IEnumerable<EventItem>>
-        { Succeeded = true, StatusCode = 200, Result = response.Result.MapTo<IEnumerable<EventItem>>() };
+        { Succeeded = true, StatusCode = 200, Result = items };
     }
 
     // **************************************************************************************************************************
@@ -449,7 +461,7 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
     }
 
     // **************************************************************************************************************************
-    // Enforces the core business rules for guest interactions. Validates event role permissions, 
+    // Enforces the core business rules for guest interactions. Validates event role permissions,
     // global event volunteer settings, attendance status, and task-level signup visibility.
     private static EventItemResult? ValidateGuestItemInteraction(EventItemEntity item, string userId, bool requireOpenSlot)
     {

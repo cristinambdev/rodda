@@ -5,7 +5,6 @@ namespace Presentation.Models;
 
 public class EventDetailsViewModel
 {
-    // CORE EVENT DETAILS
     public string Id { get; set; } = null!;
     public string Title { get; set; } = null!;
     public string? Slug { get; set; }
@@ -18,20 +17,19 @@ public class EventDetailsViewModel
     public JoinMode JoinMode { get; set; }
     public EventStatus Status { get; set; }
 
-    // SETTINGS
     public bool ChatEnabled { get; set; }
     public bool ItemsTasksEnabled { get; set; }
     public bool AllowGuestBringItems { get; set; }
     public bool AllowGuestTasks { get; set; }
 
+    public bool CanManageItemsTasks { get; set; }
+
     public Address? Location { get; set; }
     public PaymentDetails? Payment { get; set; }
 
-    // THE NESTED DATA (The missing pieces!)
     public List<EventItemViewModel> Items { get; set; } = new();
     public List<EventTaskViewModel> Tasks { get; set; } = new();
     public List<EventAttendeeViewModel> Attendees { get; set; } = new();
-
-
+    public IEnumerable<EventRole> EventRoles { get; set; } = new List<EventRole>();
     public List<ChatMessageViewModel> ChatMessages { get; set; } = new();
 }
