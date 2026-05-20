@@ -1,6 +1,8 @@
-﻿@{
+﻿@model Presentation.Models.AddEventViewModel
+@{
     Layout = "_PortalLayout";
     ViewData["Title"] = "New Event";
+    ViewData["EventModalDraft"] = true;
 }
 
 <!-- New event toolbar -->
@@ -12,7 +14,8 @@
 </div>
 
 <!-- New event form -->
-<form class="newevent-form" id="edit-event-form" action="#" method="post" novalidate data-is-new="true">
+<form class="newevent-form" id="edit-event-form" asp-controller="Events" asp-action="Add" method="post" novalidate data-is-new="true">
+    @Html.AntiForgeryToken()
     <!-- Event image input and preview -->
     <div class="newevent-cover-container">
         <input type="file" id="cover-input" name="cover" class="visually-hidden" accept="image/*" />
@@ -122,13 +125,6 @@
     <!-- Event expenses -->
     <div class="form-group newevent-expenses-group">
         <div class="newevent-expenses-card newevent-disclosure" id="newevent-shared-expenses">
-            <input type="checkbox"
-                   id="newevent-expenses-toggle"
-                   name="expensesEnabled"
-                   value="1"
-                   class="visually-hidden"
-                   tabindex="-1"
-                   aria-hidden="true" />
             <button type="button"
                     class="newevent-disclosure-trigger"
                     id="newevent-expenses-trigger"
@@ -187,13 +183,9 @@
     <!-- Event items and tasks -->
     <div class="form-group newevent-items-group">
         <div class="newevent-items-disclosure-card newevent-disclosure" id="newevent-items-tasks-card">
-            <input type="checkbox"
-                   id="newevent-items-tasks-toggle"
-                   name="itemsTasksEnabled"
-                   value="1"
-                   class="visually-hidden"
-                   tabindex="-1"
-                   aria-hidden="true" />
+            <input type="hidden" name="ItemsTasksEnabled" id="newevent-items-tasks-enabled" value="false" />
+            <input type="hidden" name="AllowGuestBringItems" id="newevent-allow-guest-items" value="false" />
+            <input type="hidden" name="AllowGuestTasks" id="newevent-allow-guest-tasks" value="false" />
             <button type="button"
                     class="newevent-disclosure-trigger"
                     id="newevent-items-tasks-trigger"
@@ -214,7 +206,8 @@
                     <!--Items to bring-->
                     <button type="button"
                             class="eventitem-mini-card eventitem-mini-card-items"
-                            data-open-bring-items-modal
+                            data-type="modal"
+                            data-target="#eventitems-modal"
                             aria-expanded="false"
                             aria-haspopup="dialog">
                         <span class="eventitem-mini-icon-circle" aria-hidden="true">
@@ -277,9 +270,16 @@
     </div>
 </form>
 
-<div id="eventitem-modals-root">
-    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" />
-    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" />
-    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" />
-    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" />
+@{
+    var eventModalViewData = new ViewDataDictionary(ViewData)
+    {
+        ["EventModalDraft"] = true
+    };
+}
+
+<div id="eventitem-modals-root" data-event-modal-draft="true">
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
 </div>

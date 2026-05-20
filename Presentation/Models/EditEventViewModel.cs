@@ -6,6 +6,8 @@ namespace Presentation.Models;
 
 public class EditEventViewModel
 {
+    public string Id { get; set; } = null!;
+
     public string EventId { get; set; } = null!;
 
     [Required]
@@ -54,9 +56,9 @@ public class EditEventViewModel
 
     public bool? ItemsTasksEnabled { get; set; }
 
-    public bool? AllowGuestBringItems { get; set; }
+    public bool AllowGuestBringItems { get; set; }
 
-    public bool? AllowGuestTasks { get; set; }
+    public bool AllowGuestTasks { get; set; }
 
     [StringLength(120)]
     public string? PaymentMethod { get; set; }

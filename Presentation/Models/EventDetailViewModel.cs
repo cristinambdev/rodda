@@ -23,6 +23,8 @@ public class EventDetailsViewModel
     public bool AllowGuestTasks { get; set; }
 
     public bool CanManageItemsTasks { get; set; }
+    public bool CanAddItems { get; set; }
+    public bool CanAddTasks { get; set; }
 
     public Address? Location { get; set; }
     public PaymentDetails? Payment { get; set; }

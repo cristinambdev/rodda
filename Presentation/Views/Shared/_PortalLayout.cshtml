@@ -6,12 +6,17 @@
     <link rel="icon" href="~/images/logo.svg" type="image/svg+xml" />
     <meta name="description" content="Rodda — account" />
     <link rel="stylesheet" href="~/css/common.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/index.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/eventitem.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/newevent.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/community.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/settings.css" asp-append-version="true" />
     <script src="https://kit.fontawesome.com/771aedd07a.js" crossorigin="anonymous"></script>
     <title>@ViewData["Title"] | Rodda</title>
 </head>
 <body>
-    <div class="main-layout auth-portal-page">
+    <div class="main-layout">
 
         <partial name="~/Views/Shared/Partials/LayoutPartials/_Header.cshtml" />
 
@@ -22,6 +27,8 @@
         <partial name="~/Views/Shared/Partials/LayoutPartials/_BottomNav.cshtml" />
     </div>
 
+    <script src="~/js/newevent.js" asp-append-version="true"></script>
+    <script src="~/js/eventdetails-modals.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

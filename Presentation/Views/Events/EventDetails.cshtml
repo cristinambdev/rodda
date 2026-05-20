@@ -6,8 +6,6 @@
     var taskCount = Model.Tasks?.Count ?? 0;
 }
 
-<link rel="stylesheet" href="~/css/eventitem.css" asp-append-version="true" />
-
 @if (TempData["SuccessMessage"] is string successMessage)
 {
     <div class="auth-banner auth-banner--success" role="status">@successMessage</div>
@@ -92,12 +90,9 @@
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsContextMenu.cshtml" />
 
 <div id="eventitem-modals-root">
+    @Html.AntiForgeryToken()
     <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" model="Model" />
     <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" model="Model" />
     <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" model="Model" />
     <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" model="Model" />
 </div>
-
-@section Scripts {
-    <script src="~/js/eventdetails-modals.js" asp-append-version="true"></script>
-}

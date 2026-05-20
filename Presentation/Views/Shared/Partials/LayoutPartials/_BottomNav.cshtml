@@ -13,12 +13,12 @@
       </a>
     </li>
     <li class="navigation-menu-item">
-      <a class="navlink fab btn-round-add" href="#" aria-label="Add event or task">
+      <a class="navlink fab btn-round-add" asp-controller="Events" asp-action="CreateNewEvent" aria-label="Add event or task">
         <span class="fab-icon btn-round-add-icon" aria-hidden="true"><i class="fa-solid fa-plus"></i></span>
       </a>
     </li>
     <li class="navigation-menu-item">
-      <a class="navlink" data-nav="events-mine" href="#">
+      <a class="navlink" data-nav="events-mine" asp-controller="Profiles" asp-action="MyEvents">
         <span class="navigation-menu-icon"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i></span>
         <span>My Events</span>
       </a>

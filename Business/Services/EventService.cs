@@ -12,18 +12,23 @@ namespace Business.Services;
 public interface IEventService
 {
     Task<EventResult> CreateEventAsync(string userId, AddEventFormData formData);
-    Task<EventResult<IEnumerable<Event>>> GetEventsAsync();
-    Task<EventResult<Event>> GetEventAsync(string id);
+    Task<EventResult<IEnumerable<Event>>> GetEventsForUserAsync(string userId);
+    Task<EventResult<Event>> GetEventForUserAsync(string userId, string id);
     Task<EventResult> UpdateEventAsync(string userId, string eventId, UpdateEventFormData formData);
-    Task<EventResult> DeleteEventAsync(string id);
+    Task<EventResult> UpdateEventSettingsAsync(string userId, string eventId, bool allowGuestBringItems, bool allowGuestTasks);
+    Task<EventResult> DeleteEventAsync(string userId, string id);
     Task<EventResult> AddChatMessageAsync(string eventId, string userId, AddChatMessageFormData formData);
     Task<EventResult> DeleteChatMessageAsync(string messageId, string currentUserId);
+    Task<EventResult> JoinEventAsync(string userId, string eventId, int guestCount = 1);
+    Task<EventResult> LeaveEventAsync(string userId, string eventId);
 }
 
-public class EventService(IEventRepository eventRepository, IEventChatRepository eventChatRepository) : IEventService
+public class EventService(IEventRepository eventRepository, IEventChatRepository eventChatRepository, IEventAttendanceRepository eventAttendanceRepository, IEventAccessService eventAccessService) : IEventService
 {
     private readonly IEventRepository _eventRepository = eventRepository;
     private readonly IEventChatRepository _eventChatRepository = eventChatRepository;
+    private readonly IEventAttendanceRepository _eventAttendanceRepository = eventAttendanceRepository;
+    private readonly IEventAccessService _eventAccessService = eventAccessService;
 
     // **************************************************************************************************************************
     // CREATE
@@ -35,6 +40,7 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
 
         // Set the Creator ID
         eventEntity.CreatedByUserId = userId;
+        eventEntity.Visibility = EventVisibility.Private;
 
         // Add user "Owner"
         eventEntity.Roles.Add(new EventRoleEntity
@@ -58,15 +64,20 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     }
 
     // **************************************************************************************************************************
-    // READ
-    public async Task<EventResult<IEnumerable<Event>>> GetEventsAsync()
+    // READ: events the user actively belongs to (host/co-host or accepted attendance).
+    public async Task<EventResult<IEnumerable<Event>>> GetEventsForUserAsync(string userId)
     {
         var response = await _eventRepository.GetAllAsync
             (
                 selector: e => e,
                 orderByDescending: true,
                 sortBy: e => e.CreatedAt,
-                where: null,
+                where: e =>
+                    e.Roles.Any(r =>
+                        r.UserId == userId &&
+                        (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner)) ||
+                    e.Attendances.Any(a =>
+                        a.UserId == userId && a.Status == AttendanceStatus.Accepted),
                 includes:
                 [
                     x => x.CreatedByUser,
@@ -78,13 +89,21 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
                     q => q.Include(x => x.ChatMessages).ThenInclude(c => c.AuthorUser)
                 ]
             );
-        return new EventResult<IEnumerable<Event>> { Succeeded = true, StatusCode = 200, Result = response.Result!.MapTo<IEnumerable<Event>>() };
+        if (!response.Succeeded || response.Result == null)
+            return new EventResult<IEnumerable<Event>> { Succeeded = false, StatusCode = response.StatusCode, ErrorMessage = response.ErrorMessage };
+
+        var events = response.Result.Select(MapEvent).ToList();
+        return new EventResult<IEnumerable<Event>> { Succeeded = true, StatusCode = 200, Result = events };
     }
 
     // **************************************************************************************************************************
-    // READ
-    public async Task<EventResult<Event>> GetEventAsync(string id)
+    // READ: single event when the caller has active membership; otherwise 404.
+    public async Task<EventResult<Event>> GetEventForUserAsync(string userId, string id)
     {
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, id);
+        if (!access.Succeeded)
+            return new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         var response = await _eventRepository.GetEntityAsync
             (
                 where: e => e.Id == id,
@@ -101,11 +120,14 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
             );
 
         if (!response.Succeeded || response.Result == null)
-            return new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = $"Event with id {id} was not found" };
+            return new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
         var entity = response.Result;
-        var result = entity.MapTo<Event>();
-        result.Roles = entity.Roles.Select(r => r.MapTo<EventRole>()).ToList();
+
+        if (!_eventAccessService.HasViewAccess(entity, userId))
+            return new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var result = MapEvent(entity);
 
         return new EventResult<Event> { Succeeded = true, StatusCode = 200, Result = result };
     }
@@ -139,14 +161,111 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     }
 
     // **************************************************************************************************************************
-    // DELETE
-    public async Task<EventResult> DeleteEventAsync(string id)
+    // UPDATE: guest item/task policy toggles from event details modals
+    // Generated with help of AI
+    public async Task<EventResult> UpdateEventSettingsAsync(string userId, string eventId, bool allowGuestBringItems, bool allowGuestTasks)
     {
-        var fetchResponse = await _eventRepository.GetEntityAsync(e => e.Id == id);
-        if (!fetchResponse.Succeeded || fetchResponse.Result == null)
-            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Event with id {id} was not found" };
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
-        // Delete
+        var fetchResponse = await _eventRepository.GetEntityAsync(
+            e => e.Id == eventId,
+            includes: [x => x.Roles]);
+
+        var eventEntity = fetchResponse.Result;
+        if (!fetchResponse.Succeeded || eventEntity == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var isOwnerOrCoOwner = eventEntity.Roles.Any(r =>
+            r.UserId == userId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+
+        if (!isOwnerOrCoOwner)
+            return new EventResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to edit this event." };
+
+        eventEntity.AllowGuestBringItems = allowGuestBringItems;
+        eventEntity.AllowGuestTasks = allowGuestTasks;
+        eventEntity.UpdatedAt = DateTime.UtcNow;
+
+        var updateResponse = await _eventRepository.UpdateAsync(eventEntity);
+        return updateResponse.Succeeded
+            ? new EventResult { Succeeded = true, StatusCode = 200 }
+            : new EventResult { Succeeded = false, StatusCode = updateResponse.StatusCode, ErrorMessage = updateResponse.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    // JOIN EVENT: Updates party size for members who already have view access (use share link to enter first).
+    public async Task<EventResult> JoinEventAsync(string userId, string eventId, int guestCount = 1)
+    {
+        if (guestCount < 1)
+            return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Guest count must be at least 1." };
+
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var attendanceResponse = await _eventAttendanceRepository.GetEntityAsync(
+            a => a.UserId == userId && a.EventId == eventId);
+
+        if (!attendanceResponse.Succeeded || attendanceResponse.Result == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var attendance = attendanceResponse.Result;
+        if (attendance.Status != AttendanceStatus.Accepted)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        attendance.GuestCount = guestCount;
+        attendance.RespondedAt = DateTime.UtcNow;
+
+        var updateResult = await _eventAttendanceRepository.UpdateAsync(attendance);
+        return updateResult.Succeeded
+            ? new EventResult { Succeeded = true, StatusCode = 200 }
+            : new EventResult { Succeeded = false, StatusCode = updateResult.StatusCode, ErrorMessage = updateResult.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    // LEAVE EVENT: Marks the user's attendance as declined (keeps the row for history / re-join).
+    public async Task<EventResult> LeaveEventAsync(string userId, string eventId)
+    {
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var response = await _eventAttendanceRepository.GetEntityAsync(
+            a => a.UserId == userId && a.EventId == eventId);
+
+        if (!response.Succeeded || response.Result == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Attendance record not found." };
+
+        var attendance = response.Result;
+        attendance.Status = AttendanceStatus.Declined;
+        attendance.RespondedAt = DateTime.UtcNow;
+
+        var updateResult = await _eventAttendanceRepository.UpdateAsync(attendance);
+        return updateResult.Succeeded
+            ? new EventResult { Succeeded = true, StatusCode = 200 }
+            : new EventResult { Succeeded = false, StatusCode = updateResult.StatusCode, ErrorMessage = updateResult.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    // DELETE
+    public async Task<EventResult> DeleteEventAsync(string userId, string id)
+    {
+        var fetchResponse = await _eventRepository.GetEntityAsync(
+            e => e.Id == id,
+            includes: [x => x.Roles]);
+
+        if (!fetchResponse.Succeeded || fetchResponse.Result == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var isHost = fetchResponse.Result.Roles.Any(r =>
+            r.UserId == userId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+
+        if (!isHost)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         var response = await _eventRepository.DeleteAsync(fetchResponse.Result);
         return response.Succeeded
             ? new EventResult { Succeeded = true, StatusCode = 200 }
@@ -161,6 +280,10 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     {
         if (formData == null)
             return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Message cannot be empty." };
+
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
         var newChatMessage = formData.MapTo<EventChatEntity>();
         var result = await _eventChatRepository.AddAsync(newChatMessage);
@@ -207,6 +330,19 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
         return deleteResult.Succeeded
             ? new EventResult { Succeeded = true, StatusCode = 200 }
             : new EventResult { Succeeded = false, StatusCode = 500, ErrorMessage = deleteResult.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    private static Event MapEvent(EventEntity entity)
+    {
+        var result = entity.MapTo<Event>();
+        result.Roles = entity.Roles.Select(r => r.MapTo<EventRole>()).ToList();
+        result.Attendances = entity.Attendances.Select(a => a.MapTo<EventAttendance>()).ToList();
+        result.AllowGuestBringItems = entity.AllowGuestBringItems == true;
+        result.AllowGuestTasks = entity.AllowGuestTasks == true;
+        result.ItemsTasksEnabled = entity.ItemsTasksEnabled == true;
+        result.Visibility = entity.Visibility;
+        return result;
     }
 
 }

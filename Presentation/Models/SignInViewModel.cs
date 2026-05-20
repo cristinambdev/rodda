@@ -12,7 +12,6 @@ public class SignInViewModel
     public string Email { get; set; } = null!;
 
     [Required(ErrorMessage = "Password is required.")]
-    [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", ErrorMessage = "Password must be at least 8 characters long and contain at least one letter and one number.")]
     [Display(Name = "Password", Prompt = "Password")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = null!;

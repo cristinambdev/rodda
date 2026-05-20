@@ -136,7 +136,7 @@
   padding: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .eventitem-body
@@ -1046,10 +1046,19 @@ body.eventtasks-modal-open
 .modal-event-items .modal-header
 {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: .65rem;
   padding: 1.1rem 2.75rem .75rem 1.1rem;
   flex-shrink: 0;
+}
+
+.modal-event-tasks .modal-header-text,
+.modal-event-items .modal-header-text
+{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
 }
 
 .modal-event-tasks .modal-header-icon,
@@ -1433,7 +1442,7 @@ body.eventtasks-modal-open
 .modal-add-item .modal-header-split
 {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: .65rem;
   padding: 1.1rem 2.75rem .75rem 1.1rem;
   flex-shrink: 0;
@@ -1443,7 +1452,7 @@ body.eventtasks-modal-open
 .modal-add-item .modal-header-lead
 {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: .65rem;
   min-width: 0;
   flex: 1;

@@ -1,16 +1,21 @@
 @using System.Security.Claims
 @model Presentation.Models.EventDetailsViewModel?
 @{
+    var isDraft = ViewData["EventModalDraft"] as bool? == true
+        || string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "CreateNewEvent", StringComparison.OrdinalIgnoreCase)
+        || (ViewContext.HttpContext.Request.Path.Value?.StartsWith("/events/create", StringComparison.OrdinalIgnoreCase) ?? false);
     var eventId = Model?.Id ?? ViewContext.RouteData.Values["id"]?.ToString() ?? "";
     var tasks = Model?.Tasks ?? new List<Presentation.Models.EventTaskViewModel>();
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    var canManage = Model?.CanManageItemsTasks == true;
+    var canManage = Model?.CanManageItemsTasks == true || isDraft;
+    var canAddTasks = Model?.CanAddTasks == true || isDraft;
 }
 
 <div id="eventtasks-modal"
      class="modal modal-event-tasks"
      data-eventtasks-modal
      data-can-manage="@(canManage ? "true" : "false")"
+     data-can-add="@(canAddTasks ? "true" : "false")"
      role="presentation">
   <button type="button" class="modal-backdrop" data-type="close" data-target="#eventtasks-modal" tabindex="-1" aria-label="Close"></button>
   <div class="modal-panel edit-add-task-dialogue" role="dialog" aria-modal="true" aria-labelledby="eventtasks-modal-title">
@@ -54,19 +59,22 @@
     </div>
 
     <div class="add-event-tasks-container">
-      @if (canManage)
+      @if (canAddTasks)
       {
       <button type="button" class="modal-content-add task" id="eventtasks-modal-add" data-type="modal" data-target="#eventitem-add-task-modal" data-close-parent="#eventtasks-modal" data-reset-add-task>
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
         <span>ADD A TASK</span>
       </button>
+      }
 
+      @if (canManage)
+      {
       <div class="newtask-join-block" id="eventtasks-guest-policy-row">
         <div class="newtask-join-copy">
-          <label class="form-label" for="eventitem-allow-guest-tasks-toggle">Let people add their own tasks</label>
+          <label class="form-label" for="toggle-allow-tasks">Let people add their own tasks</label>
         </div>
         <label class="newetask-switch">
-          <input type="checkbox" id="eventitem-allow-guest-tasks-toggle" name="allowGuestTasks" value="1" @(Model?.AllowGuestTasks == true ? "checked" : null) />
+          <input type="checkbox" id="toggle-allow-tasks" name="allowGuestTasks" value="1" @(Model?.AllowGuestTasks == true ? "checked" : null) />
           <span class="newetask-switch-track" aria-hidden="true"></span>
         </label>
       </div>

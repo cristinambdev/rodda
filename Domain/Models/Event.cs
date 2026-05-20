@@ -11,10 +11,11 @@ public class Event
     public DateTimeOffset StartAt { get; set; }
     public DateTimeOffset? EndAt { get; set; }
     public string Timezone { get; set; } = null!;
+    public EventVisibility Visibility { get; set; }
     public JoinMode JoinMode { get; set; }
     public EventStatus Status { get; set; }
 
- 
+
     public bool ChatEnabled { get; set; }
     public bool ItemsTasksEnabled { get; set; }
     public bool AllowGuestBringItems { get; set; }
@@ -24,4 +25,5 @@ public class Event
     public PaymentDetails? Payment { get; set; }
 
     public ICollection<EventRole> Roles { get; set; } = new List<EventRole>();
+    public ICollection<EventAttendance> Attendances { get; set; } = new List<EventAttendance>();
 }

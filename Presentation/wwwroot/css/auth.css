@@ -1,7 +1,7 @@
 /* Rodda sign in / sign up — load after common.css */
 
 /* Auth pages inside the app shell (header + bottom nav) */
-.main-layout.auth-portal-page .app-main 
+.main-layout.auth-portal-page .app-main
 {
     display: flex;
     flex-direction: column;
@@ -9,7 +9,7 @@
 }
 
 .main-layout.auth-portal-page #signin,
-.main-layout.auth-portal-page #signup 
+.main-layout.auth-portal-page #signup
 {
     width: 100%;
     max-width: 480px;
@@ -123,6 +123,13 @@
     height: 1px;
     background: var(--gray-300);
   }
+}
+
+/* Sign-in / sign-up error copy uses tokens from common.css (.auth-error) */
+#signin .auth-error,
+#signup .auth-error
+{
+  color: var(--form-error-message-text-color);
 }
 
 /* ============================================================================ */

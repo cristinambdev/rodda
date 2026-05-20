@@ -62,6 +62,7 @@
   --purple-dark: #581c87;
   /* --- Reds --- */
   --red: #ef4444;
+  --red-pale: #fef2f2;
   --red-light: #e57373;
   --red-semilight: #f87171;
   --red-dark: #dc2626;
@@ -323,7 +324,7 @@
   --form-error-input-border-focus-color: var(--blue-semilight);
   /*form- error message*/
   --form-error-message-text-color: var(--red-dark);
-  --form-error-message-background-color: var(--red-light);
+  --form-error-message-background-color: var(--red-pale);
 
   /* wysiwyg-editor*/
   --wysiwyg-text-color: var(--form-input-text-color);
@@ -334,7 +335,7 @@
 
   /*alert error*/
   --alert-notification-error-text-color: var(--red-dark);
-  --alert-notification-error-background-color: var(--red-light);
+  --alert-notification-error-background-color: var(--red-pale);
 
   /*alert warning*/
   --alert-notification-warning-text-color: var(--yellow-dark);
@@ -1353,6 +1354,71 @@ select.form-input-field.form-input-field-error:focus-visible
   border-color: var(--form-error-input-border-focus-color);
 }
 
+/* Error messages (auth, validation, flash banners) */
+.auth-error,
+.text-danger,
+.field-validation-error,
+.validation-summary-errors,
+.validation-summary-errors li
+{
+  color: var(--form-error-message-text-color);
+}
+
+.auth-error[role="alert"],
+div.auth-error.validation-summary-errors
+{
+  display: block;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  background-color: var(--form-error-message-background-color);
+  border: 1px solid var(--red-semilight);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: var(--font-weight-medium);
+}
+
+span.auth-error
+{
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.auth-banner
+{
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.auth-banner--error
+{
+  color: var(--alert-notification-error-text-color);
+  background-color: var(--alert-notification-error-background-color);
+  border: 1px solid var(--red-semilight);
+}
+
+.auth-banner--success
+{
+  color: var(--alert-notification-success-text-color);
+  background-color: var(--alert-notification-success-background-color);
+  border: 1px solid var(--green-primary-low-profile);
+}
+
+.input-validation-error,
+input.input-validation-error,
+textarea.input-validation-error,
+select.input-validation-error
+{
+  border-color: var(--form-error-input-border-color) !important;
+}
+
 input[type="radio"]
 {
   accent-color: var(--form-checkbox-checked-color);
@@ -1958,8 +2024,6 @@ body:has(.main-layout)
   padding: 1rem 1rem calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Anchor scoped floating UI (e.g. `.event-card-context-menu--scoped`) to the main column so
-   `top`/`left` math that uses `#main-content.getBoundingClientRect()` matches layout. */
 #main-content
 {
   position: relative;

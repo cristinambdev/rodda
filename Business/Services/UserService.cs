@@ -1,10 +1,10 @@
-﻿using Business.Dtos;
+﻿using System.Diagnostics;
+using Business.Dtos;
 using Data.Entities;
 using Data.Repositories;
 using Domain.Extensions;
 using Domain.Models;
 using Microsoft.AspNetCore.Identity;
-using System.Diagnostics;
 
 namespace Business.Services;
 
@@ -31,25 +31,30 @@ public class UserService(IUserRepository userRepository, UserManager<UserEntity>
     public async Task<UserResult> CreateUserAsync(SignUpFormData formData)
     {
         if (formData == null)
-            return new UserResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Not all required fields are supplied." };
-        var existsResult = await _userRepository.ExistsAsync(u => u.Email == formData.Email);
-        if (existsResult.Succeeded)
-            return new UserResult { Succeeded = false, StatusCode = 409, ErrorMessage = "User with this emaail already exists." };
+            return new UserResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Form data can't be null." };
 
+        var email = formData.Email.Trim();
+        if (await _userManager.FindByEmailAsync(email) != null)
+            return new UserResult { Succeeded = false, StatusCode = 409, ErrorMessage = "User with same email already exists." };
 
         try
         {
             var userEntity = formData.MapTo<UserEntity>();
+            userEntity.UserName = email;
+            userEntity.Email = email;
+            userEntity.EmailConfirmed = true;
+
             var result = await _userManager.CreateAsync(userEntity, formData.Password);
-            return result.Succeeded
-                ? new UserResult { Succeeded = false, StatusCode = 409, ErrorMessage = "Unable to create user." }
-                : new UserResult { Succeeded = true, StatusCode = 201 };
+            if (result.Succeeded)
+                return new UserResult { Succeeded = true, StatusCode = 201 };
+
+            var message = string.Join(" ", result.Errors.Select(e => e.Description));
+            return new UserResult { Succeeded = false, StatusCode = 400, ErrorMessage = message };
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex);
+            Debug.WriteLine(ex.Message);
             return new UserResult { Succeeded = false, StatusCode = 500, ErrorMessage = ex.Message };
         }
-
     }
 }

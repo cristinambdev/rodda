@@ -1,7 +1,11 @@
 @model Presentation.Models.EventDetailsViewModel?
 @{
+    var isDraft = ViewData["EventModalDraft"] as bool? == true
+        || string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "CreateNewEvent", StringComparison.OrdinalIgnoreCase)
+        || (ViewContext.HttpContext.Request.Path.Value?.StartsWith("/events/create", StringComparison.OrdinalIgnoreCase) ?? false);
     var eventId = Model?.Id ?? ViewContext.RouteData.Values["id"]?.ToString();
-    var canPost = !string.IsNullOrEmpty(eventId) && Model?.CanManageItemsTasks == true;
+    var canPost = !isDraft && !string.IsNullOrEmpty(eventId) && Model?.CanAddTasks == true;
+    var canDraft = isDraft;
 }
 
 <!--  Add/edit task  modal -->
@@ -121,9 +125,80 @@
       </footer>
     </form>
     }
+    else if (canDraft)
+    {
+    <form id="eventitem-add-task-form"
+          class="add-item-form no-ajax"
+          method="post"
+          action="#"
+          data-draft-only="true"
+          novalidate>
+      <div class="modal-content modal-content-padded">
+        <div class="add-item-card">
+          <label class="add-item-label" for="eventitem-add-task-name">
+            TASK NAME<span class="add-item-required" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="eventitem-add-task-name"
+            name="Title"
+            class="add-item-input"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. pick up tables"
+            required
+          />
+          <label class="add-item-label" for="eventitem-add-task-location">LOCATION</label>
+          <input
+            id="eventitem-add-task-location"
+            name="TaskLocation"
+            class="add-item-input"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. school kitchen"
+          />
+          <div class="add-item-row">
+            <div class="add-item-field">
+              <label class="add-item-label" for="eventitem-add-task-time">TIME</label>
+              <input
+                id="eventitem-add-task-time"
+                name="TaskTime"
+                class="add-item-input"
+                type="text"
+                autocomplete="off"
+                placeholder="e.g. 16.30"
+              />
+            </div>
+            <div class="add-item-field">
+              <label class="add-item-label" for="eventitem-add-task-people">PEOPLE NEEDED</label>
+              <div class="add-item-people">
+                <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                <input
+                  id="eventitem-add-task-people"
+                  name="PeopleNeeded"
+                  class="add-item-input add-item-input--people"
+                  type="number"
+                  min="1"
+                  max="99"
+                  step="1"
+                  inputmode="numeric"
+                  value="1"
+                  aria-label="People needed"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer modal-footer-add-item">
+        <button type="submit" class="btn btn-add-task" id="eventitem-add-task-save">
+          <span class="eventitem-join-label">SAVE</span>
+        </button>
+      </footer>
+    </form>
+    }
     else
     {
-    <p class="modal-empty modal-content-padded">Only the event organizer can add tasks.</p>
+    <p class="modal-empty modal-content-padded">You cannot add tasks for this event. Join the event or ask the organizer to allow guest tasks.</p>
     }
   </div>
 </div>

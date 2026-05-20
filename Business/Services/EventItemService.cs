@@ -16,7 +16,7 @@ public interface IEventItemService
     Task<EventItemResult> DeleteEventItemAsync(string userId, string eventId, string eventItemId);
     Task<EventItemResult<EventItem>> GetEventItemAsync(string eventId, string eventItemId);
     Task<EventItemResult<IEnumerable<EventItem>>> GetItemsClaimedByUserAsync(string userId);
-    Task<EventItemResult<IEnumerable<EventItem>>> GetItemsForEventAsync(string eventId);
+    Task<EventItemResult<IEnumerable<EventItem>>> GetItemsForEventAsync(string userId, string eventId);
     Task<EventItemResult> UpdateEventItemAsync(string userId, string eventId, string eventItemId, EditItemFormData formData);
     Task<EventItemResult> ClaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null);
     Task<EventItemResult> UnclaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null);
@@ -24,11 +24,12 @@ public interface IEventItemService
 
 // Handles EventItemEntity, EventItemAssignmentEntity
 
-public class EventItemService(IEventItemRepository eventItemRepository, IEventItemAssignmentRepository eventItemAssignmentRepository, IEventRepository eventRepository) : IEventItemService
+public class EventItemService( IEventItemRepository eventItemRepository, IEventItemAssignmentRepository eventItemAssignmentRepository, IEventRepository eventRepository, IEventAccessService eventAccessService) : IEventItemService
 {
     private readonly IEventItemRepository _eventItemRepository = eventItemRepository;
     private readonly IEventRepository _eventRepository = eventRepository;
     private readonly IEventItemAssignmentRepository _eventItemAssignmentRepository = eventItemAssignmentRepository;
+    private readonly IEventAccessService _eventAccessService = eventAccessService;
 
     // **************************************************************************************************************************
     // CREATE
@@ -37,23 +38,22 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
         if (formData == null)
             return new EventItemResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Not all required fields are supplied" };
 
-        // Fetch the event with roles to check permissions
+        // Fetch the event with roles and attendances to check permissions
         var fetchResponse = await _eventRepository.GetEntityAsync
         (
             e => e.Id == formData.EventId,
-            includes: [x => x.Roles]
+            includes: [x => x.Roles, x => x.Attendances]
         );
         var fetchEvent = fetchResponse.Result;
         if (!fetchResponse.Succeeded || fetchEvent == null)
             return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Event with id {formData.EventId} was not found" };
 
-        // Permssion check
-        bool isOwnerOrCoOwner = fetchEvent.Roles.Any(r =>
-            r.UserId == userId &&
-            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+        if (!_eventAccessService.HasViewAccess(fetchEvent, userId))
+            return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
-        if (!isOwnerOrCoOwner)
-            return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to create an item for this event." };
+        var permissionError = ValidateCreateItemPermission(fetchEvent, userId);
+        if (permissionError != null)
+            return permissionError;
 
         var newEventItem = formData.MapTo<EventItemEntity>();
         newEventItem.EventId = formData.EventId;
@@ -100,8 +100,12 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
 
     // **************************************************************************************************************************
     // READ: Get all items for an event page
-    public async Task<EventItemResult<IEnumerable<EventItem>>> GetItemsForEventAsync(string eventId)
+    public async Task<EventItemResult<IEnumerable<EventItem>>> GetItemsForEventAsync(string userId, string eventId)
     {
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventItemResult<IEnumerable<EventItem>> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         // Grab only active (non-soft-deleted) items for this event, complete with user assignments
         var response = await _eventItemRepository.GetAllAsync
             (
@@ -168,13 +172,17 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
         if (formData == null)
             return new EventItemResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Not all required fields are supplied" };
 
-        // Include the event and its roles
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        // Include the event, roles, and assignments so people-needed edits can sync placeholder slots
         var fetchResponse = await _eventItemRepository.GetEntityAsync(
             e => e.Id == eventItemId && e.EventId == eventId,
             includeChains:
             [
-                q => q.Include(i => i.Event)
-                .ThenInclude(e => e.Roles)
+                q => q.Include(i => i.Event).ThenInclude(e => e.Roles),
+                q => q.Include(i => i.Assignments)
             ]);
 
         var eventItemEntity = fetchResponse.Result;
@@ -189,8 +197,18 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
         if (!isOwnerOrCoOwner)
             return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to edit this event item." };
 
+        var previousPeopleNeeded = eventItemEntity.PeopleNeeded;
         formData.MapOnto(eventItemEntity);
-        eventItemEntity.PeopleNeeded = ClampPeopleNeeded(formData.PeopleNeeded);
+        var newPeopleNeeded = ClampPeopleNeeded(formData.PeopleNeeded);
+        eventItemEntity.PeopleNeeded = newPeopleNeeded;
+
+        if (newPeopleNeeded != previousPeopleNeeded)
+        {
+            var syncError = SyncAssignmentSlotsForPeopleNeeded(eventItemEntity, newPeopleNeeded);
+            if (syncError != null)
+                return syncError;
+        }
+
         eventItemEntity.OriginalPeopleNeeded = eventItemEntity.PeopleNeeded;
         eventItemEntity.UpdatedAt = DateTime.UtcNow;
 
@@ -205,6 +223,10 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
     // DELETE
     public async Task<EventItemResult> DeleteEventItemAsync(string userId, string eventId, string eventItemId)
     {
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         // Include the event and its roles
         var fetchResponse = await _eventItemRepository.GetEntityAsync
         (
@@ -244,6 +266,10 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
     // Guest claims an open PERSON # slot
     public async Task<EventItemResult> ClaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null)
     {
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         // Include the item, assignments, event, and roles
         var fetchResponse = await _eventItemRepository.GetEntityAsync
         (
@@ -321,6 +347,10 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
     //  Guest unclaims — slot reverts in place to PERSON #
     public async Task<EventItemResult> UnclaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null)
     {
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventItemResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         // Include the item and assignments
         var fetchResponse = await _eventItemRepository.GetEntityAsync(
             i => i.Id == eventItemId && i.EventId == eventId && i.IsActive,
@@ -363,6 +393,83 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
         return result.Succeeded
             ? new EventItemResult { Succeeded = true, StatusCode = 200 }
             : new EventItemResult { Succeeded = false, StatusCode = result.StatusCode, ErrorMessage = result.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    // Keeps open PERSON # placeholders in sync when an organizer changes people needed on edit.
+    private static EventItemResult? SyncAssignmentSlotsForPeopleNeeded(EventItemEntity item, int newPeopleNeeded)
+    {
+        if (item.Assignments.Any(a =>
+                a.AssigneeType == AssigneeType.Everyone && a.Status != AssignmentStatus.Removed))
+            return null;
+
+        var activeAssignments = item.Assignments
+            .Where(a => a.Status != AssignmentStatus.Removed)
+            .ToList();
+
+        var activeUserCount = activeAssignments.Count(IsActiveUserAssignment);
+        var openSlots = activeAssignments.Where(IsOpenSlot).ToList();
+
+        if (newPeopleNeeded < activeUserCount)
+        {
+            return new EventItemResult
+            {
+                Succeeded = false,
+                StatusCode = 409,
+                ErrorMessage =
+                    $"Cannot set people needed below {activeUserCount} because that many people have already signed up."
+            };
+        }
+
+        var currentCapacity = activeUserCount + openSlots.Count;
+        var slotsToAdd = newPeopleNeeded - currentCapacity;
+
+        if (slotsToAdd > 0)
+        {
+            for (var i = 0; i < slotsToAdd; i++)
+            {
+                var slotNumber = NextPersonSlotNumber(item.Assignments);
+                item.Assignments.Add(CreateOpenSlotAssignment(item.Id, slotNumber));
+            }
+
+            if (item.SignupMode == SignupMode.Disabled)
+            {
+                item.SignupMode = item.OriginalSignupMode != SignupMode.Disabled
+                    ? item.OriginalSignupMode
+                    : SignupMode.Available;
+            }
+        }
+        else if (slotsToAdd < 0)
+        {
+            var slotsToRemove = -slotsToAdd;
+            if (openSlots.Count < slotsToRemove)
+            {
+                return new EventItemResult
+                {
+                    Succeeded = false,
+                    StatusCode = 409,
+                    ErrorMessage =
+                        "Cannot reduce people needed: not enough open slots. Ask someone to unclaim first."
+                };
+            }
+
+            var removableSlots = openSlots
+                .OrderByDescending(a =>
+                {
+                    var match = Regex.Match(a.PlaceholderLabel ?? string.Empty, @"^PERSON\s+(\d+)$",
+                        RegexOptions.IgnoreCase);
+                    return match.Success && int.TryParse(match.Groups[1].Value, out var n) ? n : 0;
+                })
+                .Take(slotsToRemove);
+
+            foreach (var slot in removableSlots)
+            {
+                slot.Status = AssignmentStatus.Removed;
+                slot.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        return null;
     }
 
     // **************************************************************************************************************************
@@ -458,6 +565,30 @@ public class EventItemService(IEventItemRepository eventItemRepository, IEventIt
             Status = AssignmentStatus.Assigned,
             CreatedAt = DateTime.UtcNow
         };
+    }
+
+    // **************************************************************************************************************************
+    // Owners/co-owners may always add items; guests may add when the event allows it and they have accepted.
+    // Generated with help from AI
+    private static EventItemResult? ValidateCreateItemPermission(EventEntity fetchEvent, string userId)
+    {
+        var isOwnerOrCoOwner = fetchEvent.Roles.Any(r =>
+            r.UserId == userId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+
+        if (isOwnerOrCoOwner)
+            return null;
+
+        if (fetchEvent.AllowGuestBringItems != true)
+            return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to create an item for this event." };
+
+        var hasAcceptedAttendance = fetchEvent.Attendances.Any(a =>
+            a.UserId == userId && a.Status == AttendanceStatus.Accepted);
+
+        if (!hasAcceptedAttendance)
+            return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You must join the event before adding an item." };
+
+        return null;
     }
 
     // **************************************************************************************************************************

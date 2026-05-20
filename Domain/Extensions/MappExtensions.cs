@@ -17,8 +17,8 @@ public static class MapExtensions
         return destination;
     }
 
-    // Copies matching properties onto an existing instance (e.g. form data onto a tracked entity).
     // **************************************************************************************************************************
+    // Copies matching properties onto an existing instance (e.g. form data onto a tracked entity).
     public static void MapOnto<TDestination>(this object source, TDestination destination)
     {
         ArgumentNullException.ThrowIfNull(source, nameof(source));

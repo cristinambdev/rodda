@@ -49,6 +49,7 @@ public class EventEntity
     [StringLength(100)]
     public string? LocationCountry { get; set; }
 
+    public EventVisibility Visibility { get; set; } = EventVisibility.Private;
     public JoinMode JoinMode { get; set; } = JoinMode.Open;
     public EventStatus Status { get; set; } = EventStatus.Active;
 
@@ -83,4 +84,5 @@ public class EventEntity
     public virtual ICollection<EventRoleEntity> Roles { get; set; } = new List<EventRoleEntity>();
     public virtual ICollection<EventAttendanceEntity> Attendances { get; set; } = new List<EventAttendanceEntity>();
     public virtual ICollection<EventChatEntity> ChatMessages { get; set; } = new List<EventChatEntity>();
+    public virtual ICollection<EventShareLinkEntity> ShareLinks { get; set; } = new List<EventShareLinkEntity>();
 }

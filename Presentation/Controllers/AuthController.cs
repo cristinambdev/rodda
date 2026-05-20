@@ -10,22 +10,24 @@ public class AuthController(IAuthService authService) : Controller
 {
     private readonly IAuthService _authService = authService;
 
-
-    [HttpGet]
     // **************************************************************************************************************************
-    public IActionResult SignIn(string returnUrl = "~/")
+    [HttpGet]
+    public IActionResult SignIn(string? returnUrl = null)
     {
-        ViewBag.ReturnUrl = returnUrl;
+        if (User.Identity?.IsAuthenticated == true)
+            return Redirect("/events");
+
+        ViewBag.ReturnUrl = returnUrl ?? "/events";
         return View(new SignInViewModel());
     }
 
+    // **************************************************************************************************************************
     [HttpPost]
     [ValidateAntiForgeryToken]
-    // **************************************************************************************************************************
-    public async Task<IActionResult> SignIn(SignInViewModel model, string returnUrl = "~/")
+    public async Task<IActionResult> SignIn(SignInViewModel model, string? returnUrl = null)
     {
         ViewBag.ErrorMessage = null;
-        ViewBag.ReturnUrl = returnUrl;
+        ViewBag.ReturnUrl = returnUrl ?? "/events";
 
         if (!ModelState.IsValid)
             return View(model);
@@ -36,22 +38,23 @@ public class AuthController(IAuthService authService) : Controller
         if (!result.Succeeded)
         {
             ViewBag.ErrorMessage = result.ErrorMessage;
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign in failed.");
             return View(model);
         }
 
-        return LocalRedirect(returnUrl);
+        return RedirectToLocal(returnUrl);
     }
 
-    [HttpGet]
     // **************************************************************************************************************************
+    [HttpGet]
     public IActionResult SignUp()
     {
-        return View();
+        return View(new SignUpViewModel());
     }
 
+    // **************************************************************************************************************************
     [HttpPost]
     [ValidateAntiForgeryToken]
-    // **************************************************************************************************************************
     public async Task<IActionResult> SignUp(SignUpViewModel model)
     {
         ViewBag.ErrorMessage = null;
@@ -65,18 +68,28 @@ public class AuthController(IAuthService authService) : Controller
         if (!result.Succeeded)
         {
             ViewBag.ErrorMessage = result.ErrorMessage;
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign up failed.");
             return View(model);
         }
 
-        return RedirectToAction("SignIn", "Auth");
+        return Redirect("/events");
     }
 
+    // **************************************************************************************************************************
     [HttpPost]
     [ValidateAntiForgeryToken]
-    // **************************************************************************************************************************
     public async Task<IActionResult> Logout()
     {
         await _authService.SignOutAsync();
         return RedirectToAction("SignIn");
+    }
+
+    // **************************************************************************************************************************
+    private IActionResult RedirectToLocal(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl) || returnUrl is "~/" or "/")
+            return Redirect("/events");
+
+        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : Redirect("/events");
     }
 }

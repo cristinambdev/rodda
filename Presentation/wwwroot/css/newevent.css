@@ -12,9 +12,9 @@
 {
   display: flex;
   align-items: center;
-  gap: .75rem;
-  margin-bottom: 1rem;
-  padding: 0 .25rem;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
 }
 
 .newevent-back
@@ -86,10 +86,9 @@
 {
   position: relative;
   box-sizing: border-box;
-  width: 150px;
-  height: 150px;
-  margin-inline: auto;
-  margin-bottom: 1.5rem;
+  width: min(45vw, 10.5rem);
+  height: min(45vw, 10.5rem);
+  margin: 0.5rem auto 1.75rem;
 }
 
 .cover-label
@@ -102,18 +101,20 @@
   justify-content: center;
   margin: 0;
   border: 2px dashed var(--gray-400);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--white-100);
   cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
 
   &:hover
   {
-    border-color: var(--gray-400);
+    border-color: var(--gray-500);
+    background: var(--gray-200);
   }
 
   i
   {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     color: var(--gray-500);
   }
 }
@@ -133,7 +134,7 @@
   position: absolute;
   inset: 0;
   border: 2px dashed var(--gray-400);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--gray-200) 65%, var(--white-100));
   overflow: hidden;
 
@@ -315,7 +316,45 @@
 }
 
 /* Expenses card (toggle + fields inside one bordered panel) */
-.newevent-expenses-card
+.newevent-disclosure-trigger
+{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+  width: 100%;
+  padding: .85rem 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.newevent-disclosure-trigger-text
+{
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 0;
+}
+
+.newevent-disclosure-chevron
+{
+  flex-shrink: 0;
+  margin-top: .15rem;
+  color: var(--gray-600);
+  transition: transform 0.2s ease;
+}
+
+.newevent-disclosure-open .newevent-disclosure-chevron
+{
+  transform: rotate(180deg);
+}
+
+.newevent-expenses-card,
+.newevent-items-disclosure-card
 {
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-md);
