@@ -1500,6 +1500,7 @@ body.eventtasks-modal-open
 }
 
 /* Form shell + padded content */
+.add-item-form,
 .eventitem-add-item-form,
 .eventitem-add-task-form
 {
@@ -1510,35 +1511,178 @@ body.eventtasks-modal-open
   padding: 0;
 }
 
+.modal-add-item .modal-content-padded,
+.modal-add-task .modal-content-padded
+{
+  padding: 0 1rem 1rem;
+}
 
 /* Form card */
-
+.add-item-card
+{
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  padding: .85rem .9rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--gray-50) 42%, var(--white-100));
+}
 
 /* Labels + required token */
+.add-item-label
+{
+  display: block;
+  margin: 0;
+  font-size: .6875rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: .06em;
+  color: var(--gray-700);
+  line-height: 1.3;
+}
+
+.add-item-card > .add-item-label + .add-item-input,
+.add-item-card > .add-item-label + .add-item-row
+{
+  margin-top: -.15rem;
+}
+
+.add-item-field .add-item-label
+{
+  margin: 0;
+}
+
+.add-item-required
+{
+  margin-left: .12rem;
+  color: #6366f1;
+}
+
+.modal-add-task .add-item-required
+{
+  color: #10b981;
+}
 
 
+.add-item-input
+{
+  width: 100%;
+  max-width: 100%;
+  min-height: 2.5rem;
+  margin: 0;
+  padding: .55rem .75rem;
+  border: 1px solid var(--form-input-border-color);
+  border-radius: var(--radius-sm);
+  background: var(--form-input-background-color);
+  font: inherit;
+  font-size: .9375rem;
+  line-height: 1.4;
+  color: var(--form-input-text-color);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
 
+.add-item-input::placeholder
+{
+  color: var(--form-input-placeholder-color);
+}
 
+.modal-add-item .add-item-input:hover:not(:disabled)
+{
+  border-color: var(--gray-500);
+}
 
+.modal-add-item .add-item-input:focus-visible
+{
+  outline: none;
+  border-color: var(--form-input-items-to-bring-border-focus-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple) 18%, transparent);
+}
 
+.modal-add-task .add-item-input:hover:not(:disabled)
+{
+  border-color: var(--gray-500);
+}
 
+.modal-add-task .add-item-input:focus-visible
+{
+  outline: none;
+  border-color: var(--form-input-to-do-border-focus-color);
+  box-shadow: 0 0 0 3px var(--form-input-to-do-focus-ring-opacity);
+}
 
-/* Inputs */
+.add-item-row
+{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: .5rem;
+}
 
+.add-item-field
+{
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  min-width: 0;
+}
 
+.add-item-people
+{
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 2.5rem;
+  padding: 0 .55rem 0 .45rem;
+  border: 1px solid var(--form-input-border-color);
+  border-radius: var(--radius-sm);
+  background: var(--form-input-background-color);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
 
+.modal-add-item .add-item-people:focus-within
+{
+  border-color: var(--form-input-items-to-bring-border-focus-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple) 18%, transparent);
+}
 
+.modal-add-task .add-item-people:focus-within
+{
+  border-color: var(--form-input-to-do-border-focus-color);
+  box-shadow: 0 0 0 3px var(--form-input-to-do-focus-ring-opacity);
+}
 
+.add-item-people .add-item-input,
+.add-item-people .add-item-input--people
+{
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: .55rem 0;
+  box-shadow: none;
+}
 
+.add-item-people .add-item-input:focus-visible,
+.add-item-people .add-item-input--people:focus-visible
+{
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
 
+.add-item-input--people
+{
+  text-align: center;
+  -moz-appearance: textfield;
+}
 
-/* 2-column field rows + “people” input affordances */
+.add-item-input--people::-webkit-outer-spin-button,
+.add-item-input--people::-webkit-inner-spin-button
+{
+  -webkit-appearance: none;
+  margin: 0;
+}
 
-
-
-
-
-
+.add-item-people .fa-user-group,
 .eventitem-add-item-people-wrap .fa-user-group,
 .eventitem-add-task-people-wrap .fa-user-group
 {
@@ -2478,8 +2622,10 @@ body.eventtasks-modal-open
 .eventitem-page-past .eventitem-bring-row-edit,
 .eventitem-page-past .eventitem-bring-trash-details,
 .eventitem-page-past .eventitem-bring-trash-menu-item,
+.eventitem-page-past .modal-add-item .add-item-input,
 .eventitem-page-past .modal-add-item .eventitem-add-item-input,
 .eventitem-page-past .modal-add-item .eventitem-add-item-assign-trigger,
+.eventitem-page-past .modal-add-task .add-item-input,
 .eventitem-page-past .modal-add-item .btn-save-item,
 .eventitem-page-past .modal-add-item .btn-add-item,
 .eventitem-page-past .modal-eventtasks .btn-save-task,

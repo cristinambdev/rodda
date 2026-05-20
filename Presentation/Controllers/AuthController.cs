@@ -26,7 +26,6 @@ public class AuthController(IAuthService authService) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SignIn(SignInViewModel model, string? returnUrl = null)
     {
-        ViewBag.ErrorMessage = null;
         ViewBag.ReturnUrl = returnUrl ?? "/events";
 
         if (!ModelState.IsValid)
@@ -37,7 +36,6 @@ public class AuthController(IAuthService authService) : Controller
         var result = await _authService.SignInAsync(signInFormData);
         if (!result.Succeeded)
         {
-            ViewBag.ErrorMessage = result.ErrorMessage;
             ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign in failed.");
             return View(model);
         }
@@ -57,8 +55,6 @@ public class AuthController(IAuthService authService) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SignUp(SignUpViewModel model)
     {
-        ViewBag.ErrorMessage = null;
-
         if (!ModelState.IsValid)
             return View(model);
 
@@ -67,7 +63,6 @@ public class AuthController(IAuthService authService) : Controller
         var result = await _authService.SignUpAsync(signUpFormData);
         if (!result.Succeeded)
         {
-            ViewBag.ErrorMessage = result.ErrorMessage;
             ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Sign up failed.");
             return View(model);
         }

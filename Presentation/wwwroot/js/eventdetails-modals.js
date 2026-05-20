@@ -1,11 +1,21 @@
 // === GUEST POLICY SETTINGS (EventsController.Update / update-settings) ===
 
+function isEventModalDraft() {
+    return document.getElementById('eventitem-modals-root')?.dataset.eventModalDraft === 'true'
+}
+
+function isPersistableEventId(eventId) {
+    return Boolean(eventId) && eventId !== 'create'
+}
+
 // Syncs guest policy toggles with the backend (EditEventViewModel + update-settings).
 async function updateEventSettings() {
-    const pathSegments = window.location.pathname.split('/')
-    const eventId = pathSegments[pathSegments.indexOf('events') + 1]
+    if (isEventModalDraft()) {
+        return
+    }
 
-    if (!eventId) {
+    const eventId = getEventIdFromPath()
+    if (!isPersistableEventId(eventId)) {
         console.error('Could not resolve Event ID from the URL pathway configuration.')
         return
     }
@@ -60,6 +70,10 @@ async function updateEventSettings() {
 }
 
 function bindGuestPolicyToggles() {
+    if (isEventModalDraft()) {
+        return
+    }
+
     const allowItemsCheckbox = document.getElementById('toggle-allow-items')
     const allowTasksCheckbox = document.getElementById('toggle-allow-tasks')
 
@@ -202,13 +216,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const addItemForm = document.getElementById('eventitem-add-item-form')
     const addTaskForm = document.getElementById('eventitem-add-task-form')
 
-    const scrollLockByModalId = {
-        'eventitems-modal': 'eventitem-items-modal-open',
-        'eventtasks-modal': 'eventtasks-modal-open'
-    }
-
     applyManageGates()
     bindGuestPolicyToggles()
+
+    document.addEventListener('portal-ui:before-modal-open', (e) => {
+        const trigger = e.detail?.trigger
+        if (!trigger) return
+        if (trigger.hasAttribute('data-reset-add-item')) {
+            resetAddItemForm()
+        }
+        if (trigger.hasAttribute('data-reset-add-task')) {
+            resetAddTaskForm()
+        }
+    })
 
     function applyManageGates() {
         if (modalsRoot.dataset.eventModalDraft === 'true') {
@@ -235,72 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('eventtasks-modal-add')?.remove()
         }
     }
-
-    // Toggles modal-show and optional body scroll lock used by eventitem.css.
-    function setModalVisible(modal, visible) {
-        if (!modal) return
-        modal.classList.toggle('modal-show', visible)
-        const bodyClass = scrollLockByModalId[modal.id]
-        if (bodyClass) {
-            document.body.classList.toggle(bodyClass, visible)
-        }
-    }
-
-    function openModalBySelector(targetSelector) {
-        const modal = document.querySelector(targetSelector)
-        if (modal) setModalVisible(modal, true)
-    }
-
-    function closeModalBySelector(targetSelector) {
-        const modal = document.querySelector(targetSelector)
-        if (modal) setModalVisible(modal, false)
-    }
-
-    // Legacy new-event mini cards (`data-open-*`) — same as `data-type="modal"`.
-    document.querySelectorAll('[data-open-bring-items-modal]').forEach((btn) => {
-        btn.addEventListener('click', () => openModalBySelector('#eventitems-modal'))
-    })
-    document.querySelectorAll('[data-open-eventtasks-modal]').forEach((btn) => {
-        btn.addEventListener('click', () => openModalBySelector('#eventtasks-modal'))
-    })
-
-    // === MODALS ===
-    const modalTriggers = document.querySelectorAll('[data-type="modal"]')
-
-    modalTriggers.forEach(modal => {
-        modal.addEventListener('click', function () {
-            const targetId = modal.getAttribute('data-target')
-            const closeParentId = modal.getAttribute('data-close-parent')
-
-            if (modal.hasAttribute('data-reset-add-item')) {
-                resetAddItemForm()
-            }
-            if (modal.hasAttribute('data-reset-add-task')) {
-                resetAddTaskForm()
-            }
-            if (closeParentId) {
-                closeModalBySelector(closeParentId)
-            }
-            if (targetId) {
-                openModalBySelector(targetId)
-            }
-        })
-    })
-
-    const closeButtons = document.querySelectorAll('[data-type="close"]')
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const targetId = button.getAttribute('data-target')
-            const reopenId = button.getAttribute('data-reopen')
-
-            if (targetId) {
-                closeModalBySelector(targetId)
-            }
-            if (reopenId) {
-                openModalBySelector(reopenId)
-            }
-        })
-    })
 
     // === ADD / EDIT ITEM & TASK FORMS ===
     function resetAddItemForm() {
@@ -344,8 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleEl = document.getElementById('eventitem-add-item-modal-title')
         if (titleEl) titleEl.textContent = 'Edit item'
 
-        setModalVisible(itemListModal, false)
-        setModalVisible(addItemModal, true)
+        window.PortalUi.setModalVisible(itemListModal, false)
+        window.PortalUi.setModalVisible(addItemModal, true)
     }
 
     function openAddTaskForEdit(btn) {
@@ -364,8 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleEl = document.getElementById('eventitem-add-task-modal-title')
         if (titleEl) titleEl.textContent = 'Edit task'
 
-        setModalVisible(taskListModal, false)
-        setModalVisible(addTaskModal, true)
+        window.PortalUi.setModalVisible(taskListModal, false)
+        window.PortalUi.setModalVisible(addTaskModal, true)
     }
 
     modalsRoot.addEventListener('click', (e) => {
@@ -380,53 +334,5 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault()
             openAddTaskForEdit(editTask)
         }
-    })
-
-    // === FORM SUBMISSION (add / edit item & task) ===
-    const forms = modalsRoot.querySelectorAll('form:not(.no-ajax)')
-
-    forms.forEach(form => {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault()
-
-            const formData = new FormData(form)
-
-            try {
-                const method = form.dataset.method || form.getAttribute('method') || 'post'
-
-                const res = await fetch(form.action, {
-                    method: method.toLowerCase(),
-                    body: formData,
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                })
-
-                if (res.ok) {
-                    const modalElement = form.closest('.modal')
-                    if (modalElement) {
-                        modalElement.classList.remove('modal-show')
-                        const bodyClass = scrollLockByModalId[modalElement.id]
-                        if (bodyClass) document.body.classList.remove(bodyClass)
-                    }
-                    window.location.reload()
-                } else if (res.status === 400) {
-                    const data = await res.json()
-                    if (data.errors) {
-                        Object.keys(data.errors).forEach(key => {
-                            const input = form.querySelector(`[name="${key}"]`)
-                            if (input) {
-                                input.classList.add('input-validation-error')
-                            }
-                        })
-                    }
-                } else {
-                    const errorText = await res.text()
-                    console.error('Form submission failed:', res.status, errorText)
-                }
-            } catch (err) {
-                console.error('Error submitting form:', err)
-            }
-        })
     })
 })

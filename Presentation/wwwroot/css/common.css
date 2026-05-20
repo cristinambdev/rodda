@@ -845,9 +845,6 @@ html,body
 /* BADGES - Shared Styling                                                     */
 /* ============================================================================ */
 
-
-
-
 .badge-green
 {
   background: var(--badge-green-background-color);
@@ -935,12 +932,6 @@ html,body
 /* CONTEXT MENU                                                                */
 /* ============================================================================ */
 
-
-
-
-
-
-
 /* Event card “…” popover (owner vs member) */
 .event-card-context-menu
 {
@@ -1024,15 +1015,9 @@ a.event-card-context-menu-item
   background: color-mix(in srgb, #c62828 10%, var(--white-100));
 }
 
-
-
 /* ============================================================================ */
 /* DELETE CONFIRMATION DIALOGUE (shared between owner and member)               */
 /* ============================================================================ */
-
-
-
-
 
 .event-card-delete-dialogue-panel.card
 {
@@ -1172,10 +1157,6 @@ a
 /* ========================================================================== */
 /* Profile navigation popover                                                  */
 /* -------------------------------------------------------------------------- */
-/* Built in `initProfileNavMenu` (`index.js`). The header profile button       */
-/* (`[data-header-profile]`) toggles this floating menu; positioning is        */
-/* applied inline by JS, so the rules below only own visuals + item layout.    */
-/* ========================================================================== */
 
 .profile-nav-popover
 {
@@ -1362,9 +1343,9 @@ select.form-input-field.form-input-field-error:focus-visible
 .validation-summary-errors li
 {
   color: var(--form-error-message-text-color);
+
 }
 
-.auth-error[role="alert"],
 div.auth-error.validation-summary-errors
 {
   display: block;
@@ -1375,6 +1356,24 @@ div.auth-error.validation-summary-errors
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: var(--font-weight-medium);
+  list-style: none;
+}
+
+div.auth-error.validation-summary-errors ul
+{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+div.auth-error.validation-summary-errors li
+{
+  list-style: none;
+}
+
+div.auth-error.validation-summary-valid
+{
+  display: none;
 }
 
 span.auth-error
@@ -1784,10 +1783,16 @@ tbody td
 }
 
 /* ========================================================================== */
-/* Modal overlay                                                              */
-/* ========================================================================== */
+/* Dropdown panels (`site.js` + `[data-type="dropdown"]`)                       */
+.dropdown
+{
+  display: none;
+}
 
-
+.dropdown.dropdown-show
+{
+  display: block;
+}
 
 /* ========================================================================== */
 /* Modals                                 */

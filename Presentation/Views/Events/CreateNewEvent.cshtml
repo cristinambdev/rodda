@@ -14,7 +14,7 @@
 </div>
 
 <!-- New event form -->
-<form class="newevent-form" id="edit-event-form" asp-controller="Events" asp-action="Add" method="post" novalidate data-is-new="true">
+<form class="newevent-form no-ajax" id="edit-event-form" asp-controller="Events" asp-action="Add" method="post" novalidate data-is-new="true">
     @Html.AntiForgeryToken()
     <!-- Event image input and preview -->
     <div class="newevent-cover-container">

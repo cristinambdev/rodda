@@ -1,3 +1,6 @@
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+}
 <header class="header" role="banner">
   <a class="header-brand" asp-controller="Home" asp-action="Index" aria-label="Rodda home">
     <img class="header-logo" src="~/images/logo.svg" alt="Rodda logo" decoding="async" />
@@ -13,7 +16,7 @@
         asp-controller="Auth"
         asp-action="SignIn"
         data-header-login
-        hidden
+        hidden="@isAuthenticated"
       >
         Log in
       </a>
@@ -22,12 +25,18 @@
         asp-controller="Auth"
         asp-action="SignUp"
         data-header-signup
-        hidden
+        hidden="@isAuthenticated"
       >
         Sign up
       </a>
     </div>
-    <button type="button" class="header-notification header-profile" aria-label="Profile menu" data-header-profile>
+    <button
+      type="button"
+      class="header-notification header-profile"
+      aria-label="Profile menu"
+      data-header-profile
+      hidden="@(!isAuthenticated)"
+    >
       <i class="fa-regular fa-user" aria-hidden="true"></i>
     </button>
   </div>

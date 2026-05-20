@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using Domain.Enums;
-using Domain.Models;
 
 namespace Presentation.Models;
 
@@ -70,32 +69,4 @@ public class AddEventViewModel
     [StringLength(200)]
     public string? PaymentComment { get; set; }
 
-    // **************************************************************************************************************************
-
-    public AddEventFormData ToFormData() => new()
-    {
-        Title = Title,
-        Slug = Slug,
-        CoverImageUrl = CoverImageUrl,
-        Description = Description,
-        StartAt = StartAt,
-        EndAt = EndAt,
-        Timezone = Timezone,
-        LocationName = LocationName,
-        LocationStreet = LocationStreet,
-        LocationPostcode = LocationPostcode,
-        LocationCity = LocationCity,
-        LocationCountry = LocationCountry,
-        JoinMode = JoinMode,
-        Status = Status,
-        ChatEnabled = ChatEnabled,
-        ItemsTasksEnabled = ItemsTasksEnabled,
-        AllowGuestBringItems = AllowGuestBringItems,
-        AllowGuestTasks = AllowGuestTasks,
-        PaymentMethod = PaymentMethod,
-        PaymentNumber = PaymentNumber,
-        PaymentName = PaymentName,
-        PaymentAmount = PaymentAmount,
-        PaymentComment = PaymentComment
-    };
 }

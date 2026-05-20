@@ -14,11 +14,6 @@
     <div class="card-body">
       <h1 class="card-title">Create Account</h1>
 
-      @if (ViewBag.ErrorMessage is string errorMessage)
-      {
-        <p class="auth-error" role="alert">@errorMessage</p>
-      }
-
       <div>
         <button type="button" class="btn btn-external">
           <img src="~/images/google_logo.svg" alt="Google logo" decoding="async" />

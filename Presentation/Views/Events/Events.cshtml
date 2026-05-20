@@ -1,6 +1,14 @@
 ﻿@model EventsViewModel
+@using Domain.Enums
+@using Domain.Models
+@using System.Globalization
 @{
     ViewData["Title"] = "Events";
+    ViewData["UserId"] = Model.UserId;
+
+    var now = DateTimeOffset.UtcNow;
+    var upcomingEvents = Model.Events.Where(e => e.StartAt >= now).OrderBy(e => e.StartAt).ToList();
+    var pastEvents = Model.Events.Where(e => e.StartAt < now).OrderByDescending(e => e.StartAt).ToList();
 }
 
 <!-- All Events page header -->
@@ -12,7 +20,6 @@
         </h1>
         <p class="page-lead">Events you are actively part of.</p>
     </div>
-    <!-- All Events page toolbar -->
     <div class="page-toolbar" role="toolbar" aria-label="Event list actions">
         <a class="events-list-toolbar-btn add-event-btn" href="/events/create" aria-label="Add event">
             <i class="fa-solid fa-plus" aria-hidden="true"></i>
@@ -20,7 +27,6 @@
     </div>
 </div>
 
-<!-- All events list (Upcoming / Past segmented control) -->
 <section class="page-section events-list-section-uncategorized" aria-labelledby="allevents-heading">
     <div data-allevents-list>
         <section class="events-list-panels" aria-labelledby="allevents-list-filter-label">
@@ -39,23 +45,50 @@
                     Past events
                 </button>
             </div>
-            <!-- Events panel -->
+
             <div class="events-list-panel" data-allevents-panel="upcoming">
-                <ul class="page-items-list" data-allevents-list-items="upcoming"></ul>
-                <p class="empty-state-card events-list-empty" data-allevents-empty="upcoming" hidden>
-                    No upcoming events.
-                </p>
+                @if (upcomingEvents.Count > 0)
+                {
+                    <ul class="page-items-list" data-allevents-list-items="upcoming">
+                        @foreach (var ev in upcomingEvents)
+                        {
+                            <li class="events-list-item">
+                                <partial name="~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml" model="ev" />
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="empty-state-card events-list-empty" data-allevents-empty="upcoming">
+                        No upcoming events.
+                    </p>
+                }
             </div>
+
             <div class="events-list-panel" data-allevents-panel="past" hidden>
-                <ul class="page-items-list" data-allevents-list-items="past"></ul>
-                <p class="empty-state-card events-list-empty" data-allevents-empty="past" hidden>
-                    No past events.
-                </p>
+                @if (pastEvents.Count > 0)
+                {
+                    <ul class="page-items-list" data-allevents-list-items="past">
+                        @foreach (var ev in pastEvents)
+                        {
+                            <li class="events-list-item">
+                                <partial name="~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml" model="ev" />
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="empty-state-card events-list-empty" data-allevents-empty="past">
+                        No past events.
+                    </p>
+                }
             </div>
         </section>
     </div>
 </section>
 
-<div hidden aria-hidden="true">
-    <partial name="~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml" />
-</div>
+@section Scripts {
+    <script src="~/js/events-list-segment.js" asp-append-version="true"></script>
+}

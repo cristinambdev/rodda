@@ -214,8 +214,6 @@ function initNewEventPage() {
   initNewEventDraftModals();
 }
 
-/********************************************************************************/
-
 /**
  * Client-side items/tasks modals on `/events/create` (no event id yet).
  * @returns {void}
@@ -244,6 +242,11 @@ function initNewEventDraftModals() {
 
   /** @type {{ bringItems: Array<{ title: string, amount: string, people: number }>, guestTasks: Array<{ title: string, location: string, time: string, people: number }> }} */
   const draft = { bringItems: [], guestTasks: [] };
+  let editingItemIndex = -1;
+  let editingTaskIndex = -1;
+
+  const addItemModalTitle = document.getElementById("eventitem-add-item-modal-title");
+  const addTaskModalTitle = document.getElementById("eventitem-add-task-modal-title");
 
   /**
    * @returns {string}
@@ -265,6 +268,66 @@ function initNewEventDraftModals() {
   }
 
   /**
+   * @returns {void}
+   */
+  function resetDraftItemForm() {
+    editingItemIndex = -1;
+    addItemForm.reset();
+    const peopleEl = document.getElementById("eventitem-add-item-people");
+    if (peopleEl) peopleEl.value = "1";
+    if (addItemModalTitle) addItemModalTitle.textContent = "Add item";
+  }
+
+  /**
+   * @returns {void}
+   */
+  function resetDraftTaskForm() {
+    editingTaskIndex = -1;
+    if (!addTaskForm) return;
+    addTaskForm.reset();
+    const peopleEl = document.getElementById("eventitem-add-task-people");
+    if (peopleEl) peopleEl.value = "1";
+    if (addTaskModalTitle) addTaskModalTitle.textContent = "Add task";
+  }
+
+  /**
+   * @param {number} index
+   * @returns {void}
+   */
+  function openDraftItemForEdit(index) {
+    const row = draft.bringItems[index];
+    if (!row) return;
+
+    editingItemIndex = index;
+    document.getElementById("eventitem-add-item-name").value = row.title;
+    document.getElementById("eventitem-add-item-amount").value = row.amount || "";
+    document.getElementById("eventitem-add-item-people").value = String(row.people || 1);
+    if (addItemModalTitle) addItemModalTitle.textContent = "Edit item";
+    syncDraftModalTitles();
+    window.PortalUi.setModalVisible(itemListModal, false);
+    window.PortalUi.setModalVisible(addItemModal, true);
+  }
+
+  /**
+   * @param {number} index
+   * @returns {void}
+   */
+  function openDraftTaskForEdit(index) {
+    const row = draft.guestTasks[index];
+    if (!row) return;
+
+    editingTaskIndex = index;
+    document.getElementById("eventitem-add-task-name").value = row.title;
+    document.getElementById("eventitem-add-task-location").value = row.location || "";
+    document.getElementById("eventitem-add-task-time").value = row.time || "";
+    document.getElementById("eventitem-add-task-people").value = String(row.people || 1);
+    if (addTaskModalTitle) addTaskModalTitle.textContent = "Edit task";
+    syncDraftModalTitles();
+    window.PortalUi.setModalVisible(taskListModal, false);
+    window.PortalUi.setModalVisible(addTaskModal, true);
+  }
+
+  /**
    * @param {HTMLElement | null} rowsEl
    * @param {Array<{ title: string, amount?: string, location?: string, time?: string, people?: number }>} rows
    * @param {"item" | "task"} kind
@@ -277,21 +340,61 @@ function initNewEventDraftModals() {
       rowsEl.innerHTML = `<p class="modal-empty">No ${kind === "item" ? "items" : "tasks"} listed yet.</p>`;
       return;
     }
-    rows.forEach((row) => {
+
+    rows.forEach((row, index) => {
       const article = document.createElement("article");
       article.className = "eventitem-bring-row";
+
+      const head = document.createElement("div");
+      head.className = "eventitem-bring-row-head eventitem-bring-row-head--with-edit";
+
       const title = document.createElement("h3");
       title.className = "eventitem-bring-row-title";
       title.textContent = row.title;
-      article.appendChild(title);
-      const meta = [row.amount, row.location, row.time].filter(Boolean).join(" · ");
-      if (meta) {
-        const p = document.createElement("p");
-        p.className = "modal-empty";
-        p.style.marginTop = "0.25rem";
-        p.textContent = meta;
-        article.appendChild(p);
+      head.appendChild(title);
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "eventitem-bring-row-edit";
+      editBtn.setAttribute("aria-label", kind === "item" ? "Edit item" : "Edit task");
+      editBtn.dataset.draftIndex = String(index);
+      if (kind === "item") {
+        editBtn.dataset.draftEditItem = "1";
+      } else {
+        editBtn.dataset.draftEditTask = "1";
       }
+      editBtn.innerHTML = '<i class="fa-solid fa-pen" aria-hidden="true"></i>';
+      head.appendChild(editBtn);
+      article.appendChild(head);
+
+      if (kind === "item" && row.amount) {
+        const meta = document.createElement("div");
+        meta.className = "eventitem-bring-row-meta";
+        meta.innerHTML = '<i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>';
+        const span = document.createElement("span");
+        span.textContent = row.amount;
+        meta.appendChild(span);
+        article.appendChild(meta);
+      }
+
+      if (kind === "task" && (row.time || row.location)) {
+        const meta = document.createElement("div");
+        meta.className = "eventitem-bring-row-meta eventitem-bring-row-meta-task";
+        if (row.time) {
+          const timeWrap = document.createElement("span");
+          timeWrap.innerHTML = '<i class="fa-regular fa-clock" aria-hidden="true"></i> ';
+          timeWrap.append(document.createTextNode(row.time));
+          meta.appendChild(timeWrap);
+        }
+        if (row.location) {
+          const locWrap = document.createElement("span");
+          locWrap.innerHTML = '<i class="fa-solid fa-location-dot" aria-hidden="true"></i> ';
+          locWrap.append(document.createTextNode(row.location));
+          meta.appendChild(locWrap);
+        }
+        article.appendChild(meta);
+      }
+
       rowsEl.appendChild(article);
     });
   }
@@ -306,37 +409,44 @@ function initNewEventDraftModals() {
     if (tasksCountEl) tasksCountEl.textContent = `${nTasks} task${nTasks === 1 ? "" : "s"}`;
   }
 
-  /**
-   * @param {HTMLElement | null} modal
-   * @param {boolean} visible
-   * @returns {void}
-   */
-  function setDraftModalVisible(modal, visible) {
-    if (!modal) return;
-    modal.classList.toggle("modal-show", visible);
-    if (modal.id === "eventitems-modal") {
-      document.body.classList.toggle("eventitem-items-modal-open", visible);
+  document.addEventListener("portal-ui:before-modal-open", (e) => {
+    const target = e.detail?.target;
+    const trigger = e.detail?.trigger;
+    if (trigger?.hasAttribute("data-reset-add-item")) {
+      resetDraftItemForm();
     }
-    if (modal.id === "eventtasks-modal") {
-      document.body.classList.toggle("eventtasks-modal-open", visible);
+    if (trigger?.hasAttribute("data-reset-add-task")) {
+      resetDraftTaskForm();
     }
-  }
-
-  document.querySelectorAll('[data-target="#eventitems-modal"], [data-open-bring-items-modal"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
+    if (target?.id === "eventitems-modal") {
       syncDraftModalTitles();
       renderDraftRows(itemRowsEl, draft.bringItems, "item");
-    });
-  });
-
-  document.querySelectorAll('[data-target="#eventtasks-modal"], [data-open-eventtasks-modal"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
+    }
+    if (target?.id === "eventtasks-modal") {
       syncDraftModalTitles();
       renderDraftRows(taskRowsEl, draft.guestTasks, "task");
-    });
+    }
   });
 
   document.getElementById("newevent-title")?.addEventListener("input", syncDraftModalTitles);
+
+  itemRowsEl?.addEventListener("click", (e) => {
+    const editBtn = e.target.closest("[data-draft-edit-item]");
+    if (!editBtn) return;
+    e.preventDefault();
+    const index = parseInt(editBtn.dataset.draftIndex || "", 10);
+    if (!Number.isFinite(index)) return;
+    openDraftItemForEdit(index);
+  });
+
+  taskRowsEl?.addEventListener("click", (e) => {
+    const editBtn = e.target.closest("[data-draft-edit-task]");
+    if (!editBtn) return;
+    e.preventDefault();
+    const index = parseInt(editBtn.dataset.draftIndex || "", 10);
+    if (!Number.isFinite(index)) return;
+    openDraftTaskForEdit(index);
+  });
 
   if (allowItemsToggle && allowItemsHidden) {
     allowItemsToggle.addEventListener("change", () => {
@@ -357,14 +467,17 @@ function initNewEventDraftModals() {
     const amount = document.getElementById("eventitem-add-item-amount")?.value?.trim() || "";
     let people = parseInt(String(document.getElementById("eventitem-add-item-people")?.value || ""), 10);
     if (!Number.isFinite(people) || people < 1) people = 1;
-    draft.bringItems.push({ title: name.toUpperCase(), amount, people });
-    addItemForm.reset();
-    const peopleEl = document.getElementById("eventitem-add-item-people");
-    if (peopleEl) peopleEl.value = "1";
+    const entry = { title: name.toUpperCase(), amount, people };
+    if (editingItemIndex >= 0) {
+      draft.bringItems[editingItemIndex] = entry;
+    } else {
+      draft.bringItems.push(entry);
+    }
+    resetDraftItemForm();
     renderDraftRows(itemRowsEl, draft.bringItems, "item");
     refreshDraftCounts();
-    setDraftModalVisible(addItemModal, false);
-    setDraftModalVisible(itemListModal, true);
+    window.PortalUi.setModalVisible(addItemModal, false);
+    window.PortalUi.setModalVisible(itemListModal, true);
   });
 
   if (addTaskForm && addTaskForm.dataset.draftOnly === "true") {
@@ -376,14 +489,17 @@ function initNewEventDraftModals() {
       const time = document.getElementById("eventitem-add-task-time")?.value?.trim() || "";
       let people = parseInt(String(document.getElementById("eventitem-add-task-people")?.value || ""), 10);
       if (!Number.isFinite(people) || people < 1) people = 1;
-      draft.guestTasks.push({ title: name.toUpperCase(), location, time, people });
-      addTaskForm.reset();
-      const peopleEl = document.getElementById("eventitem-add-task-people");
-      if (peopleEl) peopleEl.value = "1";
+      const entry = { title: name.toUpperCase(), location, time, people };
+      if (editingTaskIndex >= 0) {
+        draft.guestTasks[editingTaskIndex] = entry;
+      } else {
+        draft.guestTasks.push(entry);
+      }
+      resetDraftTaskForm();
       renderDraftRows(taskRowsEl, draft.guestTasks, "task");
       refreshDraftCounts();
-      setDraftModalVisible(addTaskModal, false);
-      setDraftModalVisible(taskListModal, true);
+      window.PortalUi.setModalVisible(addTaskModal, false);
+      window.PortalUi.setModalVisible(taskListModal, true);
     });
   }
 

@@ -7,6 +7,9 @@ public class Event
     public string Id { get; set; } = null!;
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
+    public string? CoverImageUrl { get; set; }
+    public string? CreatedByUserId { get; set; }
+    public string? CreatorDisplayName { get; set; }
 
     public DateTimeOffset StartAt { get; set; }
     public DateTimeOffset? EndAt { get; set; }

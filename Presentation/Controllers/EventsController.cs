@@ -29,10 +29,14 @@ public class EventsController( IEventService eventService, IEventItemService eve
         if (userId == null)
             return Unauthorized();
 
+        var response = await _eventService.GetEventsForUserAsync(userId);
         var model = new EventsViewModel
         {
-            Events = await _eventService.GetEventsForUserAsync(userId)
+            Events = response.Result?.ToList() ?? [],
+            UserId = userId
         };
+
+        ViewData["ActiveNav"] = "events-all";
         return View(model);
     }
 

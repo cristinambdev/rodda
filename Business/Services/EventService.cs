@@ -34,9 +34,16 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     // CREATE
     public async Task<EventResult> CreateEventAsync(string userId, AddEventFormData formData)
     {
-        if (formData == null) return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Not all required fields are supplied" };
+        if (formData == null)
+            return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Not all required fields are supplied" };
 
         var eventEntity = formData.MapTo<EventEntity>();
+
+        if (string.IsNullOrEmpty(eventEntity.Id))
+            eventEntity.Id = Guid.NewGuid().ToString();
+
+        if (eventEntity.StartAt.Year < 2000)
+            eventEntity.StartAt = DateTimeOffset.UtcNow; // Fixes the "hidden" event bug when no date is added
 
         // Set the Creator ID
         eventEntity.CreatedByUserId = userId;
@@ -59,7 +66,7 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
 
         var result = await _eventRepository.AddAsync(eventEntity);
         return result.Succeeded
-            ? new EventResult { Succeeded = true, StatusCode = 201 }
+            ? new EventResult { Succeeded = true, StatusCode = 201, EventId = eventEntity.Id }
             : new EventResult { Succeeded = false, StatusCode = 500, ErrorMessage = result.ErrorMessage };
     }
 
@@ -336,6 +343,17 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     private static Event MapEvent(EventEntity entity)
     {
         var result = entity.MapTo<Event>();
+        result.CoverImageUrl = entity.CoverImageUrl;
+        result.CreatedByUserId = entity.CreatedByUserId;
+        result.CreatorDisplayName = entity.CreatedByUser?.DisplayName;
+        result.Location = new Address
+        {
+            Name = entity.LocationName,
+            Street = entity.LocationStreet,
+            Postcode = entity.LocationPostcode,
+            City = entity.LocationCity,
+            Country = entity.LocationCountry,
+        };
         result.Roles = entity.Roles.Select(r => r.MapTo<EventRole>()).ToList();
         result.Attendances = entity.Attendances.Select(a => a.MapTo<EventAttendance>()).ToList();
         result.AllowGuestBringItems = entity.AllowGuestBringItems == true;
