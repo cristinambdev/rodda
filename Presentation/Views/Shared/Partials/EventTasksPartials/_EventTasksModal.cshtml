@@ -9,6 +9,10 @@
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
     var canManage = Model?.CanManageItemsTasks == true || isDraft;
     var canAddTasks = Model?.CanAddTasks == true || isDraft;
+    var canClaimTasks = Model?.CanClaimTasks == true || isDraft;
+    var modalFlash = ViewData["SuccessMessage"] as string;
+    var showModalFlash = string.Equals(ViewData["OpenModal"] as string, "tasks", StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(modalFlash);
 }
 
 <div id="eventtasks-modal"
@@ -40,6 +44,11 @@
       </div>
     </header>
 
+    @if (showModalFlash)
+    {
+      <p class="modal-success-message" id="eventtasks-modal-flash" role="status">@modalFlash</p>
+    }
+
     <div class="modal-content modal-content-eventtasks">
       <div id="eventtasks-modal-list" class="modal-list">
         <div class="modal-list-scroll">
@@ -51,7 +60,7 @@
             @foreach (var task in tasks)
             {
               <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskRow.cshtml"
-                       model="(task, eventId, currentUserId, canManage)" />
+                       model="(task, eventId, currentUserId, canManage, canClaimTasks)" />
             }
           </div>
         </div>

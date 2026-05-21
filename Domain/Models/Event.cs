@@ -21,7 +21,9 @@ public class Event
 
     public bool ChatEnabled { get; set; }
     public bool ItemsTasksEnabled { get; set; }
+    /// <summary>Host toggle: guests may add new items to the list (not claim existing slots).</summary>
     public bool AllowGuestBringItems { get; set; }
+    /// <summary>Host toggle: guests may add new tasks (not claim existing slots).</summary>
     public bool AllowGuestTasks { get; set; }
 
     public Address? Location { get; set; }

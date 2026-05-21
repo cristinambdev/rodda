@@ -3,6 +3,7 @@
     Layout = "_PortalLayout";
     ViewData["Title"] = Model.Title;
     ViewData["SuccessMessage"] = TempData["SuccessMessage"];
+    ViewData["OpenModal"] = TempData["OpenModal"];
     var itemCount = Model.Items?.Count ?? 0;
     var taskCount = Model.Tasks?.Count ?? 0;
 }
@@ -16,6 +17,7 @@
      data-event-id="@Model.Id"
      data-event-title="@Model.Title"
      data-can-manage="@(((ViewData["CanManageEvent"] as bool?) ?? false) ? "true" : "false")"
+     data-open-modal="@(ViewData["OpenModal"] as string ?? "")"
      hidden></div>
 
 <section class="eventitem-hero" aria-label="Event cover">
@@ -152,8 +154,6 @@
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsJoinDialog.cshtml" model="Model" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsDeleteDialog.cshtml" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsShareDialog.cshtml" />
-<partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsSuccessModal.cshtml" />
-
 <div id="eventitem-modals-root">
     @Html.AntiForgeryToken()
     <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" model="Model" />

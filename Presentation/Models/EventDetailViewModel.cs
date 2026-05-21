@@ -29,7 +29,9 @@ public class EventDetailsViewModel
 
     public bool CanManageItemsTasks { get; set; }
     public bool CanAddItems { get; set; }
+    public bool CanClaimItems { get; set; }
     public bool CanAddTasks { get; set; }
+    public bool CanClaimTasks { get; set; }
 
     public Address? Location { get; set; }
     public PaymentDetails? Payment { get; set; }

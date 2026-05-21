@@ -1,11 +1,12 @@
 @using Domain.Enums
-@model (Presentation.Models.EventTaskViewModel Task, string EventId, string? CurrentUserId, bool CanManage)
+@model (Presentation.Models.EventTaskViewModel Task, string EventId, string? CurrentUserId, bool CanManage, bool CanClaimTasks)
 
 @{
     var task = Model.Task;
     var eventId = Model.EventId;
     var currentUserId = Model.CurrentUserId;
     var canManage = Model.CanManage;
+    var canClaimTasks = Model.CanClaimTasks;
 
     var assignments = task.Assignments.Where(a => a.Status != AssignmentStatus.Removed).ToList();
     var openSlots = assignments
@@ -21,7 +22,7 @@
     var hasMyClaim = myClaim != null;
 
     var showSignup = false;
-    if (!isEveryone && !hasMyClaim)
+    if (!isEveryone && !hasMyClaim && (canManage || canClaimTasks))
     {
         if (task.SignupMode == SignupMode.Available || task.SignupMode == SignupMode.Disabled)
             showSignup = true;
@@ -30,6 +31,15 @@
     }
 
     var signupDisabled = task.SignupMode == SignupMode.Disabled;
+
+    string ClaimantBadgeLabel(EventAssignmentSlotViewModel slot)
+    {
+        if (!string.IsNullOrWhiteSpace(slot.DisplayName))
+            return slot.DisplayName;
+        if (!string.IsNullOrWhiteSpace(slot.PlaceholderLabel) && string.IsNullOrEmpty(slot.UserId))
+            return slot.PlaceholderLabel;
+        return "Guest";
+    }
 }
 
 <article class="eventitem-bring-row@(hasMyClaim ? " eventitem-bring-row--has-you" : "")"
@@ -94,9 +104,9 @@
                     {
                         <span class="eventitem-bring-tag eventitem-bring-tag--you">Myself</span>
                     }
-                    else
+                    else if (!string.IsNullOrEmpty(slot.UserId))
                     {
-                        <span class="eventitem-bring-tag eventitem-bring-tag--dark">@(string.IsNullOrWhiteSpace(slot.DisplayName) ? "Guest" : slot.DisplayName)</span>
+                        <span class="eventitem-bring-tag eventitem-bring-tag--dark">@ClaimantBadgeLabel(slot)</span>
                     }
                 }
             </div>

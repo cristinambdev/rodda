@@ -129,7 +129,12 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
         var tasks = response.Result.Select(entity =>
         {
             var task = entity.MapTo<EventTask>();
-            task.Assignments = entity.Assignments.Select(a => a.MapTo<EventTaskAssignment>()).ToList();
+            task.Assignments = entity.Assignments.Select(a =>
+            {
+                var assignment = a.MapTo<EventTaskAssignment>();
+                assignment.User = a.User?.MapTo<User>();
+                return assignment;
+            }).ToList();
             task.CreatedByUser = entity.CreatedByUser?.MapTo<User>();
             return task;
         });
@@ -265,7 +270,7 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
     // INTERACTION: Claim and Unclaim a task methods and helpers.
     // Generated with help from AI
     // **************************************************************************************************************************
-    // Guest claims an open PERSON # slot
+    // Guest claims an open PERSON # slot for a task
     public async Task<EventTaskResult> ClaimTaskAsync(string userId, string eventId, string eventTaskId, string? assignmentId = null)
     {
         var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
@@ -279,7 +284,8 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
             [
                 q => q.Include(t => t.Assignments),
                 q => q.Include(t => t.Event).ThenInclude(e => e.Roles),
-                q => q.Include(t => t.Event).ThenInclude(e => e.Attendances)
+                q => q.Include(t => t.Event).ThenInclude(e => e.Attendances),
+                q => q.Include(t => t.Event).ThenInclude(e => e.Tasks)
             ]);
 
         var task = fetchResponse.Result;
@@ -392,7 +398,7 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
     }
 
     // **************************************************************************************************************************
-    // Keeps open PERSON # placeholders in sync when an organizer changes people needed on edit.
+    // Keeps open slot placeholders in sync when an organizer changes people needed on edit.
     private static EventTaskResult? SyncAssignmentSlotsForPeopleNeeded(EventTaskEntity task, int newPeopleNeeded)
     {
         if (task.Assignments.Any(a =>
@@ -614,16 +620,17 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
 
         if (!isOwnerOrCoOwner)
         {
-            // Global Event Rules: Does the host even allow guests to add or claim tasks?
-            if (task.Event.AllowGuestTasks != true)
-                return new EventTaskResult { Succeeded = false, StatusCode = 403, ErrorMessage = "Guests cannot claim tasks for this event." };
-
-            // Prevent users from claiming tasks if they haven't RSVP'd
+            // Guest claim (AllowGuestClaimTasks): allowed when joined and the event has tasks.
+            // Separate from AllowGuestTasks, which only controls adding new tasks.
             var hasAcceptedAttendance = task.Event.Attendances.Any(a =>
                 a.UserId == userId && a.Status == AttendanceStatus.Accepted);
 
             if (!hasAcceptedAttendance)
                 return new EventTaskResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You must join the event before claiming a task." };
+
+            var eventHasClaimableTasks = task.Event.Tasks.Any(t => t.IsActive);
+            if (!eventHasClaimableTasks)
+                return new EventTaskResult { Succeeded = false, StatusCode = 403, ErrorMessage = "There are no tasks to claim for this event." };
         }
 
         //  Check if the host manually disabled signups for this specific task

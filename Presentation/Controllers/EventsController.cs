@@ -315,7 +315,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
                     Id = a.Id,
                     AssigneeType = a.AssigneeType,
                     UserId = a.UserId,
-                    DisplayName = a.User?.DisplayName,
+                    DisplayName = ResolveAssignmentDisplayName(a.User),
                     PlaceholderLabel = a.PlaceholderLabel,
                     Status = a.Status
                 }).ToList();
@@ -323,6 +323,9 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
             }).ToList();
         }
+
+        model.CanClaimItems = model.CanManageItemsTasks ||
+            (hasAcceptedAttendance && model.Items.Count > 0);
 
         var tasksResponse = await _eventTaskService.GetTasksForEventAsync(userId, id);
         if (tasksResponse.Succeeded && tasksResponse.Result != null)
@@ -339,13 +342,16 @@ public class EventsController( IEventService eventService, IEventItemService eve
                     Id = a.Id,
                     AssigneeType = a.AssigneeType,
                     UserId = a.UserId,
-                    DisplayName = a.User?.DisplayName,
+                    DisplayName = ResolveAssignmentDisplayName(a.User),
                     PlaceholderLabel = a.PlaceholderLabel,
                     Status = a.Status
                 }).ToList();
                 return row;
             }).ToList();
         }
+
+        model.CanClaimTasks = model.CanManageItemsTasks ||
+            (hasAcceptedAttendance && model.Tasks.Count > 0);
 
         if (!string.IsNullOrWhiteSpace(invite))
             return RedirectToAction(nameof(EventDetails), new { id });
@@ -524,6 +530,21 @@ public class EventsController( IEventService eventService, IEventItemService eve
         model.PaymentName = TrimOrNull(model.PaymentName);
         model.PaymentComment = TrimOrNull(model.PaymentComment);
         model.PaymentAmount = TrimOrNull(model.PaymentAmount);
+    }
+
+    // **************************************************************************************************************************
+    private static string? ResolveAssignmentDisplayName(User? user)
+    {
+        if (user == null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+            return user.DisplayName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+            return user.Email.Trim();
+
+        return null;
     }
 
     // **************************************************************************************************************************

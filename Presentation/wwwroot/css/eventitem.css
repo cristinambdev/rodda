@@ -773,29 +773,19 @@ a.btn.delete-action-own-list
   border-radius: var(--radius-lg);
 }
 
-/* Success flash modal (items / tasks actions on event details) */
-.event-details-success-modal-icon
+/* Flash message inside items / tasks list modals after POST redirect */
+.modal-event-items .modal-success-message,
+.modal-event-tasks .modal-success-message
 {
-  color: var(--green-dark);
-}
-
-.modal-content-success
-{
-  padding: 0 1.1rem 1rem;
-}
-
-.modal-success-message
-{
-  margin: 0;
+  margin: 0 auto;
+  padding: .5rem 1.1rem .25rem;
   font-size: .9rem;
+  font-weight: var(--font-weight-bold);
   line-height: 1.45;
-  color: var(--gray-800);
-  text-align: center;
-}
-
-.modal-footer-success
-{
-  padding: 0 1.1rem 1.1rem;
+  color: var(--white-100);
+  background: var(--green-light);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--green-lighter);
 }
 
 
@@ -1065,8 +1055,7 @@ a.btn.delete-action-own-list
 /* ========================================================================== */
 /* Prevent background scrolling when modals are active */
 body.eventitem-items-modal-open,
-body.eventtasks-modal-open,
-body.event-details-success-modal-open
+body.eventtasks-modal-open
 {
   overflow: hidden;
 }
@@ -1160,6 +1149,24 @@ body.event-details-success-modal-open
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.modal-event-tasks .modal-list,
+.modal-event-items .modal-list
+{
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-event-tasks .add-event-tasks-container,
+.modal-event-items .add-event-items-container,
+.modal-event-tasks .modal-footer,
+.modal-event-items .modal-footer
+{
+  flex-shrink: 0;
 }
 
 .modal-event-tasks .modal-list-scroll,

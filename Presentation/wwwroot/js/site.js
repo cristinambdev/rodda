@@ -8,7 +8,6 @@ let profileNavMenuInitialized = false;
 const MODAL_BODY_SCROLL_LOCK = {
   "eventitems-modal": "eventitem-items-modal-open",
   "eventtasks-modal": "eventtasks-modal-open",
-  "event-details-success-modal": "event-details-success-modal-open",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -179,14 +178,13 @@ function initModals() {
     if (e.key === "Escape") closeAllModals();
   });
 
-  document.querySelectorAll(".modal[data-flash-open]").forEach((modal) => {
-    const message =
-      modal.getAttribute("data-flash-message")?.trim() ||
-      modal.querySelector("[data-flash-message]")?.textContent?.trim() ||
-      "";
-    if (!message || !(modal instanceof HTMLElement)) return;
-    openModalBySelector(`#${modal.id}`, null);
-  });
+  const detailsPage = document.getElementById("event-details-page");
+  const openModalKind = detailsPage?.dataset.openModal?.trim().toLowerCase();
+  if (openModalKind === "items") {
+    openModalBySelector("#eventitems-modal", null);
+  } else if (openModalKind === "tasks") {
+    openModalBySelector("#eventtasks-modal", null);
+  }
 }
 
 // ================================================================================================

@@ -22,7 +22,8 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] = "Invalid form data submitted.";
-            return RedirectToEventDetails(eventId);
+            TempData["OpenModal"] = "items";
+            return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -39,7 +40,8 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         else
             TempData["SuccessMessage"] = "Item added successfully!";
 
-        return RedirectToEventDetails(eventId);
+        TempData["OpenModal"] = "items";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -50,7 +52,8 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] = "Invalid form data submitted.";
-            return RedirectToEventDetails(eventId);
+            TempData["OpenModal"] = "items";
+            return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -68,7 +71,8 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         else
             TempData["SuccessMessage"] = "Item updated successfully!";
 
-        return RedirectToEventDetails(eventId);
+        TempData["OpenModal"] = "items";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -87,7 +91,8 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         else
             TempData["SuccessMessage"] = "Item removed.";
 
-        return RedirectToEventDetails(eventId);
+        TempData["OpenModal"] = "items";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -104,9 +109,17 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         if (!result.Succeeded)
             TempData["ErrorMessage"] = result.ErrorMessage;
         else
-            TempData["SuccessMessage"] = "Thanks for volunteering!";
+        {
+            var response = await _eventItemService.GetEventItemAsync(eventId, itemId);
+            var itemName = string.IsNullOrWhiteSpace(response.Result?.Title)
+                ? "this item"
+                : response.Result!.Title;
 
-        return RedirectToEventDetails(eventId);
+            TempData["SuccessMessage"] = $"Thanks for claiming {itemName}";
+        }
+
+        TempData["OpenModal"] = "items";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -123,14 +136,16 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         if (!result.Succeeded)
             TempData["ErrorMessage"] = result.ErrorMessage;
         else
-            TempData["SuccessMessage"] = "You have backed out of this item.";
+        {
+            var response = await _eventItemService.GetEventItemAsync(eventId, itemId);
+            var itemName = string.IsNullOrWhiteSpace(response.Result?.Title)
+                ? "this item"
+                : response.Result!.Title;
 
-        return RedirectToEventDetails(eventId);
-    }
+            TempData["SuccessMessage"] = $"You have unclaimed {itemName}";
+        }
 
-    // **************************************************************************************************************************
-    private IActionResult RedirectToEventDetails(string eventId)
-    {
+        TempData["OpenModal"] = "items";
         return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 }

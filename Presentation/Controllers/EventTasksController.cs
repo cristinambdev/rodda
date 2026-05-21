@@ -22,7 +22,8 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] = "Invalid form data submitted.";
-            return RedirectToEventDetails(eventId);
+            TempData["OpenModal"] = "tasks";
+            return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -39,7 +40,8 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         else
             TempData["SuccessMessage"] = "Task added successfully!";
 
-        return RedirectToEventDetails(eventId);
+        TempData["OpenModal"] = "tasks";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -50,7 +52,8 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         if (!ModelState.IsValid)
         {
             TempData["ErrorMessage"] = "Invalid form data submitted.";
-            return RedirectToEventDetails(eventId);
+            TempData["OpenModal"] = "tasks";
+            return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -68,7 +71,8 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         else
             TempData["SuccessMessage"] = "Task updated successfully!";
 
-        return RedirectToEventDetails(eventId);
+        TempData["OpenModal"] = "tasks";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -87,7 +91,8 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         else
             TempData["SuccessMessage"] = "Task removed.";
 
-        return RedirectToEventDetails(eventId);
+        TempData["OpenModal"] = "tasks";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -104,9 +109,16 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         if (!result.Succeeded)
             TempData["ErrorMessage"] = result.ErrorMessage;
         else
-            TempData["SuccessMessage"] = "Thanks for volunteering!";
+        {
+            var response = await _eventTaskService.GetEventTaskAsync(eventId, taskId);
+            var taskName = string.IsNullOrWhiteSpace(response.Result?.Title)
+                ? "this task"
+                : response.Result!.Title;
+            TempData["SuccessMessage"] = $"Thanks for claiming {taskName}";
+        }
 
-        return RedirectToEventDetails(eventId);
+        TempData["OpenModal"] = "tasks";
+        return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 
     // **************************************************************************************************************************
@@ -123,14 +135,15 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         if (!result.Succeeded)
             TempData["ErrorMessage"] = result.ErrorMessage;
         else
-            TempData["SuccessMessage"] = "You have backed out of this task.";
+        {
+            var response = await _eventTaskService.GetEventTaskAsync(eventId, taskId);
+            var taskName = string.IsNullOrWhiteSpace(response.Result?.Title)
+                ? "this task"
+                : response.Result!.Title;
+            TempData["SuccessMessage"] = $"You have unclaimed {taskName}";
+        }
 
-        return RedirectToEventDetails(eventId);
-    }
-
-    // **************************************************************************************************************************
-    private IActionResult RedirectToEventDetails(string eventId)
-    {
+        TempData["OpenModal"] = "tasks";
         return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
 }

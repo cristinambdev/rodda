@@ -126,7 +126,12 @@ public class EventItemService( IEventItemRepository eventItemRepository, IEventI
         var items = response.Result.Select(entity =>
         {
             var item = entity.MapTo<EventItem>();
-            item.Assignments = entity.Assignments.Select(a => a.MapTo<EventItemAssignment>()).ToList();
+            item.Assignments = entity.Assignments.Select(a =>
+            {
+                var assignment = a.MapTo<EventItemAssignment>();
+                assignment.User = a.User?.MapTo<User>();
+                return assignment;
+            }).ToList();
             item.CreatedByUser = entity.CreatedByUser?.MapTo<User>();
             return item;
         });
@@ -278,7 +283,8 @@ public class EventItemService( IEventItemRepository eventItemRepository, IEventI
             [
                 q => q.Include(i => i.Assignments),
                 q => q.Include(i => i.Event).ThenInclude(e => e.Roles),
-                q => q.Include(i => i.Event).ThenInclude(e => e.Attendances)
+                q => q.Include(i => i.Event).ThenInclude(e => e.Attendances),
+                q => q.Include(i => i.Event).ThenInclude(e => e.Items)
             ]
         );
 
@@ -603,16 +609,17 @@ public class EventItemService( IEventItemRepository eventItemRepository, IEventI
 
         if (!isOwnerOrCoOwner)
         {
-            // Global Event Rules: Does the host even allow guests to bring things?
-            if (item.Event.AllowGuestBringItems != true)
-                return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "Guests cannot claim items for this event." };
-
-            // Prevent users from claiming items if they haven't RSVP'd
+            // Guest claim (AllowGuestClaimItems): allowed when the guest has joined and the event has items.
+            // Separate from AllowGuestBringItems, which only controls adding new items.
             var hasAcceptedAttendance = item.Event.Attendances.Any(a =>
                 a.UserId == userId && a.Status == AttendanceStatus.Accepted);
 
             if (!hasAcceptedAttendance)
                 return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You must join the event before claiming an item." };
+
+            var eventHasClaimableItems = item.Event.Items.Any(i => i.IsActive);
+            if (!eventHasClaimableItems)
+                return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "There are no items to claim for this event." };
         }
 
         //  Check if the host manually disabled signups for this specific item
