@@ -29,4 +29,5 @@ public class Event
 
     public ICollection<EventRole> Roles { get; set; } = new List<EventRole>();
     public ICollection<EventAttendance> Attendances { get; set; } = new List<EventAttendance>();
+    public ICollection<EventChat> ChatMessages { get; set; } = new List<EventChat>();
 }

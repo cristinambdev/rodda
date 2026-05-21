@@ -7,6 +7,7 @@ namespace Presentation.Controllers
         // **************************************************************************************************************************
         public IActionResult Community()
         {
+            ViewData["ActiveNav"] = "community";
             return View();
         }
     }

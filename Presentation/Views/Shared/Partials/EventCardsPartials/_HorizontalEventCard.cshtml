@@ -1,7 +1,48 @@
-@model Event
+@model Event?
 @using Domain.Enums
 @using System.Globalization
-@{
+
+@if (Model is null)
+{
+    @* Clone source for createHorizontalEventCardElement() — no model on Home/Index. *@
+    <template id="rodda-horizontal-event-card-template">
+        <article class="card event-card horizontal" data-event-card>
+            <a class="event-card-link-overlay" data-event-card-link href="#" aria-label=""></a>
+            <div class="event-thumb" data-event-card-thumb>
+                <img class="event-card-image" data-event-card-image alt="" width="400" height="400" decoding="async" hidden />
+                <a class="event-thumb-link" data-event-card-thumb-link href="#" aria-label="" hidden>
+                    <div class="event-card-hero-placeholder" aria-hidden="true">
+                        <i class="fa-solid fa-camera" aria-hidden="true"></i>
+                    </div>
+                </a>
+                <span class="badge badge-green event-card-role-badge" data-event-card-role-badge hidden></span>
+            </div>
+
+            <div class="event-stack" data-event-card-stack>
+                <div class="card-header">
+                    <div class="event-card-datetime-row" data-event-card-dt-row>
+                        <p class="event-card-datetime" data-event-card-datetime></p>
+                        <div class="event-card-status-stack" data-event-card-status-stack>
+                            <span class="badge badge-blue" data-event-card-status-pill hidden></span>
+                            <span class="badge badge-orange status-you" data-event-card-you-pill hidden></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <h3 class="event-card-title" data-event-card-title></h3>
+                </div>
+
+                <div class="card-footer">
+                    <p class="event-card-location" data-event-card-location></p>
+                    <p class="event-card-attendance" data-event-card-attendance hidden></p>
+                </div>
+            </div>
+        </article>
+    </template>
+}
+else
+{
     var userId = ViewData["UserId"] as string ?? "";
     var start = Model.StartAt;
     var isPast = start < DateTimeOffset.UtcNow;
@@ -32,60 +73,60 @@
 
     var cardClass = "card event-card horizontal" + (isPast ? " event-card--past" : "") + (hasCover ? "" : " event-card--no-cover");
     var attendanceClass = "event-card-attendance" + (attendanceMuted ? " event-card-attendance--muted" : "");
-}
 
-<article class="@cardClass" data-event-card data-event-id="@Model.Id">
-    <a class="event-card-link-overlay @(hasCover ? "" : "event-card-link-overlay--stack-only")"
-       href="@detailUrl"
-       aria-label="View @title"></a>
+    <article class="@cardClass" data-event-card data-event-id="@Model.Id">
+        <a class="event-card-link-overlay @(hasCover ? "" : "event-card-link-overlay--stack-only")"
+           href="@detailUrl"
+           aria-label="View @title"></a>
 
-    <div class="event-thumb @(hasCover ? "" : "event-thumb--placeholder")">
-        @if (hasCover)
-        {
-            <img class="event-card-image"
-                 src="@Model.CoverImageUrl"
-                 alt=""
-                 width="400"
-                 height="400"
-                 decoding="async" />
-        }
-        else
-        {
-            <a class="event-thumb-link" href="@detailUrl" aria-label="View @title">
-                <div class="event-card-hero-placeholder" aria-hidden="true">
-                    <i class="fa-solid fa-camera" aria-hidden="true"></i>
+        <div class="event-thumb @(hasCover ? "" : "event-thumb--placeholder")">
+            @if (hasCover)
+            {
+                <img class="event-card-image"
+                     src="@Model.CoverImageUrl"
+                     alt=""
+                     width="400"
+                     height="400"
+                     decoding="async" />
+            }
+            else
+            {
+                <a class="event-thumb-link" href="@detailUrl" aria-label="View @title">
+                    <div class="event-card-hero-placeholder" aria-hidden="true">
+                        <i class="fa-solid fa-camera" aria-hidden="true"></i>
+                    </div>
+                </a>
+            }
+            @if (!string.IsNullOrEmpty(roleBadge))
+            {
+                <span class="badge badge-green event-card-role-badge">@roleBadge</span>
+            }
+        </div>
+
+        <div class="event-stack">
+            <div class="card-header">
+                <div class="event-card-datetime-row">
+                    <p class="event-card-datetime">@listDateTime</p>
                 </div>
-            </a>
-        }
-        @if (!string.IsNullOrEmpty(roleBadge))
-        {
-            <span class="badge badge-green event-card-role-badge">@roleBadge</span>
-        }
-    </div>
+            </div>
 
-    <div class="event-stack">
-        <div class="card-header">
-            <div class="event-card-datetime-row">
-                <p class="event-card-datetime">@listDateTime</p>
+            <div class="card-body">
+                <h3 class="event-card-title">@title</h3>
+            </div>
+
+            <div class="card-footer">
+                @if (!string.IsNullOrWhiteSpace(listLocation))
+                {
+                    <p class="event-card-location">
+                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                        @listLocation
+                    </p>
+                }
+                <p class="@attendanceClass">
+                    <i class="@attendanceIcon" aria-hidden="true"></i>
+                    @attendanceLabel
+                </p>
             </div>
         </div>
-
-        <div class="card-body">
-            <h3 class="event-card-title">@title</h3>
-        </div>
-
-        <div class="card-footer">
-            @if (!string.IsNullOrWhiteSpace(listLocation))
-            {
-                <p class="event-card-location">
-                    <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
-                    @listLocation
-                </p>
-            }
-            <p class="@attendanceClass">
-                <i class="@attendanceIcon" aria-hidden="true"></i>
-                @attendanceLabel
-            </p>
-        </div>
-    </div>
-</article>
+    </article>
+}

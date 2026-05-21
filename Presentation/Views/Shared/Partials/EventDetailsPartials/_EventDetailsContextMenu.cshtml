@@ -1,17 +1,28 @@
+@{
+    var canManageEvent = ViewData["CanManageEvent"] as bool? ?? false;
+}
 <!-- Context menu for event details -->
-<div id="event-details-context-menu" class="event-card-context-menu" role="menu" hidden>
-  <!-- Menu item: Share -->
+<div id="event-details-context-menu"
+     class="event-card-context-menu event-details-context-menu--hero"
+     role="menu"
+     hidden>
   <button type="button" class="event-card-context-menu-item" role="menuitem" data-event-details-menu-action="share">
     <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
     <span>Share</span>
   </button>
-  <!-- Menu item: Edit -->
-  <button type="button" class="event-card-context-menu-item" role="menuitem" data-event-details-menu-action="edit">
+  <button type="button"
+          class="event-card-context-menu-item"
+          role="menuitem"
+          data-event-details-menu-action="edit"
+          @(canManageEvent ? null : "hidden")>
     <i class="fa-solid fa-pen" aria-hidden="true"></i>
     <span>Edit</span>
   </button>
-  <!-- Menu item: Delete -->
-  <button type="button" class="event-card-context-menu-item danger" role="menuitem" data-event-details-menu-action="delete">
+  <button type="button"
+          class="event-card-context-menu-item danger"
+          role="menuitem"
+          data-event-details-menu-action="delete"
+          @(canManageEvent ? null : "hidden")>
     <i class="fa-solid fa-trash" aria-hidden="true"></i>
     <span>Delete</span>
   </button>

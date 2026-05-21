@@ -3,13 +3,12 @@
 // *************************************************************************************************
 // Dropdowns, modals, forms, previews, header profile menu (Settings / Log out), bottom-nav active state.
 
-/** @type {boolean} */
 let profileNavMenuInitialized = false;
 
-/** @type {Record<string, string>} */
 const MODAL_BODY_SCROLL_LOCK = {
   "eventitems-modal": "eventitem-items-modal-open",
   "eventtasks-modal": "eventtasks-modal-open",
+  "event-details-success-modal": "event-details-success-modal-open",
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -38,6 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // === PORTAL SHELL (profile menu, bottom nav) ===
   mountPortalShell();
+
+  // === ANCHORED MENUS (hero ⋮, etc.) ===
+  initAnchoredMenus();
 });
 
 // ================================================================================================
@@ -175,6 +177,15 @@ function initModals() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeAllModals();
+  });
+
+  document.querySelectorAll(".modal[data-flash-open]").forEach((modal) => {
+    const message =
+      modal.getAttribute("data-flash-message")?.trim() ||
+      modal.querySelector("[data-flash-message]")?.textContent?.trim() ||
+      "";
+    if (!message || !(modal instanceof HTMLElement)) return;
+    openModalBySelector(`#${modal.id}`, null);
   });
 }
 
@@ -430,6 +441,107 @@ function resetModalFormsOnLoad() {
   });
 }
 
+// ================================================================================================
+// Anchored menus (`[data-menu-toggle]` + `[aria-controls]` / `[data-menu-target]`)
+// ================================================================================================
+
+/**
+ * @returns {string}
+ */
+function getAntiForgeryToken() {
+  return document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+}
+
+/********************************************************************************/
+
+/**
+ * @param {string} action
+ * @param {Record<string, string>} [fields]
+ * @returns {void}
+ */
+function submitPostForm(action, fields = {}) {
+  const token = getAntiForgeryToken();
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = action;
+
+  if (token) {
+    const tokenInput = document.createElement("input");
+    tokenInput.type = "hidden";
+    tokenInput.name = "__RequestVerificationToken";
+    tokenInput.value = token;
+    form.appendChild(tokenInput);
+  }
+
+  Object.entries(fields).forEach(([name, value]) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
+}
+
+/********************************************************************************/
+
+/**
+ * @returns {void}
+ */
+function initAnchoredMenus() {
+  document.querySelectorAll("[data-menu-toggle]").forEach((trigger) => {
+    if (trigger.dataset.menuToggleBound === "1") return;
+
+    const menuId =
+      trigger.getAttribute("aria-controls") || trigger.getAttribute("data-menu-target");
+    const menu = menuId ? document.getElementById(menuId) : null;
+    if (!menu) return;
+
+    trigger.dataset.menuToggleBound = "1";
+    const wrap =
+      trigger.closest("[data-menu-wrap]") ||
+      trigger.parentElement;
+
+    /**
+     * @returns {void}
+     */
+    function closeMenu() {
+      menu.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+
+    /**
+     * @returns {void}
+     */
+    function openMenu() {
+      menu.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+    }
+
+    trigger.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!menu.hidden) {
+        closeMenu();
+        return;
+      }
+      openMenu();
+    });
+
+    document.addEventListener("click", (event) => {
+      const target = /** @type {Node} */ (event.target);
+      if (wrap?.contains(target)) return;
+      closeMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMenu();
+    });
+  });
+}
+
 // ********************************************************************************/
 
 window.PortalUi = {
@@ -437,6 +549,8 @@ window.PortalUi = {
   closeModal: closeModalBySelector,
   setModalVisible,
   closeAllModals,
+  getAntiForgeryToken,
+  submitPostForm,
 };
 
 // ================================================================================================

@@ -78,6 +78,23 @@
     border-radius: var(--radius-sm);
   }
 
+  .eventitem-hero-options-wrap
+  {
+    position: relative;
+    pointer-events: auto;
+  }
+
+  .event-details-context-menu--hero
+  {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: auto;
+    z-index: 10050;
+    min-width: 12.5rem;
+    max-width: min(18rem, calc(100vw - 1rem));
+  }
+
   .eventitem-hero-fab
   {
     pointer-events: auto;
@@ -137,6 +154,15 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* BackOffice event details (`#event-details-page`) — full-bleed hero, no side gutter on main */
+.main-layout:has(#event-details-page) .app-main,
+.main-layout:has(#event-details-page) > main,
+#main-content:has(#event-details-page)
+{
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .eventitem-body
@@ -623,32 +649,11 @@ button.eventitem-join-count:focus-visible,
   padding-top: .75rem;
 }
 
-/* delete dialogue */
-.event-details-delete-dialogue
+/* delete modal */
+.modal.event-details-delete-dialogue .modal-panel.event-details-delete-dialogue-panel
 {
-  padding: 0;
-  border: none;
   width: min(22rem, calc(100vw - 2rem));
-  margin: 0;
-  background: transparent;
-  position: fixed;
-  top: 28%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-
-  &::backdrop
-  {
-    background: color-mix(in srgb, var(--dark-900) 42%, transparent);
-  }
-}
-
-.event-details-delete-dialogue-panel.card
-{
-  position: relative;
-  padding: 1rem .9rem 1.05rem;
-  border-color: var(--gray-300);
-  box-shadow: var(--shadows-popup);
-  border-radius: var(--radius-lg);
+  max-width: 100%;
 }
 
 .event-details-delete-dialogue-header
@@ -667,6 +672,7 @@ button.eventitem-join-count:focus-visible,
 .event-details-delete-dialogue-body
 {
   padding: 0;
+  margin-bottom: 1rem;
   text-align: center;
 }
 
@@ -691,6 +697,7 @@ button.eventitem-join-count:focus-visible,
   display: flex;
   flex-direction: column;
   gap: .55rem;
+  margin-top: 1rem;
 }
 
 .delete-action
@@ -710,36 +717,85 @@ button.eventitem-join-count:focus-visible,
   }
 }
 
-
-
-
-
-/* Share event: link vs add to Community (`event-details-share-dialog.html`) */
-.event-details-share-dialogue
+a.delete-action
 {
-  padding: 0;
-  border: none;
-  width: min(22rem, calc(100vw - 2rem));
-  margin: 0;
-  background: transparent;
-  position: fixed;
-  top: 28%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  display: block;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+}
 
-  &::backdrop
+/* “Delete from my list” — secondary; “Delete for everyone” — destructive (`common.css` tokens) */
+.btn.delete-action-own-list,
+a.btn.delete-action-own-list
+{
+  color: var(--btn-secondary-text-color);
+  background-color: var(--btn-secondary-background-color);
+  border-color: var(--btn-secondary-border-color);
+
+  &:hover
   {
-    background: color-mix(in srgb, var(--dark-900) 42%, transparent);
+    color: var(--btn-secondary-hover-text-color);
+    background-color: var(--btn-secondary-hover-background-color);
+    border-color: var(--btn-secondary-hover-border-color);
   }
 }
 
-.event-details-share-dialogue-panel.card
+.btn.delete-action-everyone
+{
+  color: var(--red-dark);
+  background-color: var(--red-pale);
+  border-color: color-mix(in srgb, var(--red) 22%, var(--red-pale));
+
+  &:hover:not(:disabled)
+  {
+    color: var(--red-dark);
+    background-color: color-mix(in srgb, var(--red) 10%, var(--red-pale));
+    border-color: color-mix(in srgb, var(--red) 32%, var(--red-pale));
+  }
+}
+
+/* Share event modal */
+.modal.event-details-share-dialogue .modal-panel.event-details-share-dialogue-panel
+{
+  width: min(22rem, calc(100vw - 2rem));
+  max-width: 100%;
+}
+
+.event-details-share-dialogue-panel.card,
+.event-details-delete-dialogue-panel.card
 {
   position: relative;
+  z-index: 1;
   padding: 1rem .9rem 1.05rem;
   border-color: var(--gray-300);
   box-shadow: var(--shadows-popup);
   border-radius: var(--radius-lg);
+}
+
+/* Success flash modal (items / tasks actions on event details) */
+.event-details-success-modal-icon
+{
+  color: var(--green-dark);
+}
+
+.modal-content-success
+{
+  padding: 0 1.1rem 1rem;
+}
+
+.modal-success-message
+{
+  margin: 0;
+  font-size: .9rem;
+  line-height: 1.45;
+  color: var(--gray-800);
+  text-align: center;
+}
+
+.modal-footer-success
+{
+  padding: 0 1.1rem 1.1rem;
 }
 
 
@@ -1009,7 +1065,8 @@ button.eventitem-join-count:focus-visible,
 /* ========================================================================== */
 /* Prevent background scrolling when modals are active */
 body.eventitem-items-modal-open,
-body.eventtasks-modal-open
+body.eventtasks-modal-open,
+body.event-details-success-modal-open
 {
   overflow: hidden;
 }
@@ -1263,10 +1320,26 @@ body.eventtasks-modal-open
   display: none;
 }
 
-/* Event detail: join control shares `.btn-save-item`; when joined, label is cleared and copy lives in the pill. */
-.eventitem-join .btn-save-item.btn-save-item--joined
+/* Event detail: join control — primary button grows; guest count stays compact on the right */
+.eventitem-join .eventitem-join-leave-form,
+.eventitem-join > .btn-save-item
 {
-  grid-template-columns: 1fr;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+}
+
+.eventitem-join .eventitem-join-leave-form
+{
+  display: block;
+}
+
+.eventitem-join .eventitem-join-leave-form .btn-save-item,
+.eventitem-join > .btn-save-item
+{
+  width: 100%;
+  max-width: none;
 }
 
 .eventitem-join .btn-save-item.btn-save-item--joined .eventitem-join-label
@@ -1276,9 +1349,19 @@ body.eventtasks-modal-open
 
 .eventitem-join .btn-save-item.btn-save-item--joined .eventitem-join-pill
 {
-  grid-column: 1;
+  grid-column: 2;
   justify-self: center;
   display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.eventitem-join .btn-save-item.btn-save-item--joined .eventitem-join-pill-text
+{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* ========================================================================== */
@@ -1834,11 +1917,70 @@ body.eventtasks-modal-open
 
 .event-details-chat-item
 {
+  position: relative;
   max-width: 86%;
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-md);
   background: var(--white-100);
   padding: .55rem .7rem;
+}
+
+.event-details-chat-item[data-can-delete]
+{
+  cursor: pointer;
+  padding-right: 1.85rem;
+}
+
+.event-details-chat-item--selected
+{
+  border-color: var(--green-primary);
+}
+
+.event-details-chat-item-body
+{
+  display: block;
+}
+
+.event-details-chat-delete
+{
+  display: none;
+  position: absolute;
+  top: -0.7rem;
+  right: 0;
+  left: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  z-index: 1;
+}
+
+.event-details-chat-item--selected .event-details-chat-delete
+{
+  display: block;
+}
+
+.event-details-chat-delete-btn
+{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--white-100);
+  color: var(--red-dark);
+  font-size: .72rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.event-details-chat-delete-btn:hover
+{
+  background: color-mix(in srgb, var(--red) 12%, var(--white-100));
+  color: var(--red-dark);
 }
 
 .event-details-chat-item--me
@@ -2413,6 +2555,13 @@ body.eventtasks-modal-open
 .eventitem-bring-row-footer
 {
   display: block;
+}
+
+.eventitem-bring-signup-form
+{
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .eventitem-bring-tags

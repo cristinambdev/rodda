@@ -14,7 +14,7 @@
 </div>
 
 <!-- New event form -->
-<form class="newevent-form no-ajax" id="edit-event-form" asp-controller="Events" asp-action="Add" method="post" novalidate data-is-new="true">
+<form class="newevent-form no-ajax" id="edit-event-form" asp-controller="Events" asp-action="Add" method="post" enctype="multipart/form-data" novalidate data-is-new="true">
     @Html.AntiForgeryToken()
     <!-- Event image input and preview -->
     <div class="newevent-cover-container">
@@ -36,31 +36,30 @@
 
     <!-- Event title -->
     <div class="form-group">
-        <label class="form-label" for="newevent-title">Title <span class="newevent-required" aria-hidden="true">*</span></label>
-        <input type="text"
+        <label class="form-label" asp-for="Title">Title <span class="newevent-required" aria-hidden="true">*</span></label>
+        <input asp-for="Title"
                id="newevent-title"
-               name="title"
                class="form-input-field"
                placeholder="Write a name"
-               required
                autocomplete="off" />
+        <span asp-validation-for="Title" class="auth-error"></span>
     </div>
 
     <!-- Event date and time -->
     <div class="form-group newevent-datetime-group">
         <div class="newevent-datetime-row">
             <div class="form-group">
-                <label class="form-label" for="newevent-date">Date</label>
+                <label class="form-label" asp-for="Date">Date</label>
                 <div class="form-input-field">
                     <i class="fa-regular fa-calendar form-input-field-icon" aria-hidden="true"></i>
-                    <input id="newevent-date" name="date" type="date" />
+                    <input asp-for="Date" id="newevent-date" type="date" />
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label" for="newevent-time">Time</label>
+                <label class="form-label" asp-for="Time">Time</label>
                 <div class="form-input-field">
                     <i class="fa-regular fa-clock form-input-field-icon" aria-hidden="true"></i>
-                    <input id="newevent-time" name="time" type="time" />
+                    <input asp-for="Time" id="newevent-time" type="time" />
                 </div>
             </div>
         </div>
@@ -122,16 +121,16 @@
         </div>
     </div>
 
-    <!-- Event expenses -->
-    <div class="form-group newevent-expenses-group">
-        <div class="newevent-expenses-card newevent-disclosure" id="newevent-shared-expenses">
+    <!-- Event payment -->
+    <div class="form-group newevent-payment-group">
+        <div class="newevent-payment-card newevent-disclosure" id="newevent-shared-payment">
             <button type="button"
                     class="newevent-disclosure-trigger"
-                    id="newevent-expenses-trigger"
+                    id="newevent-payment-trigger"
                     aria-expanded="false"
-                    aria-controls="newevent-expenses-panel">
+                    aria-controls="newevent-payment-panel">
                 <span class="newevent-disclosure-trigger-text">
-                    <span class="form-label newevent-join-heading">Shared expenses</span>
+                    <span class="form-label newevent-join-heading">Payment</span>
                     <span class="newevent-join-sub">Add payment details if you want to collect money for the event.</span>
                 </span>
                 <span class="newevent-disclosure-chevron" aria-hidden="true">
@@ -139,41 +138,41 @@
                 </span>
             </button>
 
-            <div class="newevent-expenses-content" id="newevent-expenses-panel" data-newevent-expenses-panel hidden>
-                <div class="newevent-expenses-grid">
-                    <label class="newevent-expenses-field">
-                        <span class="newevent-expenses-label">Payment method</span>
+            <div class="newevent-payment-content" id="newevent-payment-panel" data-newevent-payment-panel hidden>
+                <div class="newevent-payment-grid">
+                    <label class="newevent-payment-field">
+                        <span class="newevent-payment-label">Payment method</span>
                         <input type="text"
-                               name="expensesMethod"
-                               class="newevent-expenses-input"
+                               name="PaymentMethod"
+                               class="newevent-payment-input"
                                placeholder="e.g. swish, bank transfer, etc."
                                autocomplete="off" />
                     </label>
-                    <label class="newevent-expenses-field">
-                        <span class="newevent-expenses-label">Amount</span>
+                    <label class="newevent-payment-field">
+                        <span class="newevent-payment-label">Amount</span>
                         <input type="text"
-                               name="expensesAmount"
+                               name="PaymentAmount"
                                placeholder="e.g. 50kr"
-                               class="newevent-expenses-input"
+                               class="newevent-payment-input"
                                inputmode="text"
                                autocomplete="off" />
                     </label>
-                    <label class="newevent-expenses-field newevent-expenses-field-full">
-                        <span class="newevent-expenses-label">Number</span>
+                    <label class="newevent-payment-field newevent-payment-field-full">
+                        <span class="newevent-payment-label">Number</span>
                         <input type="tel"
-                               name="expensesPhone"
-                               class="newevent-expenses-input"
+                               name="PaymentNumber"
+                               class="newevent-payment-input"
                                placeholder="e.g. phone, bank number, etc."
                                inputmode="tel"
                                autocomplete="tel" />
                     </label>
                 </div>
-                <label class="newevent-expenses-field newevent-expenses-field-full newevent-expenses-name-row">
-                    <span class="newevent-expenses-label">Name (and comments)</span>
+                <label class="newevent-payment-field newevent-payment-field-full newevent-payment-name-row">
+                    <span class="newevent-payment-label">Name (and comments)</span>
                     <input type="text"
-                           name="expensesName"
+                           name="PaymentName"
                            placeholder="e.g. Sarah"
-                           class="newevent-expenses-input"
+                           class="newevent-payment-input"
                            autocomplete="name" />
                 </label>
             </div>
@@ -186,6 +185,8 @@
             <input type="hidden" name="ItemsTasksEnabled" id="newevent-items-tasks-enabled" value="false" />
             <input type="hidden" name="AllowGuestBringItems" id="newevent-allow-guest-items" value="false" />
             <input type="hidden" name="AllowGuestTasks" id="newevent-allow-guest-tasks" value="false" />
+            <input type="hidden" name="DraftBringItemsJson" id="newevent-draft-bring-items" value="[]" />
+            <input type="hidden" name="DraftGuestTasksJson" id="newevent-draft-guest-tasks" value="[]" />
             <button type="button"
                     class="newevent-disclosure-trigger"
                     id="newevent-items-tasks-trigger"
@@ -199,9 +200,7 @@
                     <i class="fa-solid fa-chevron-down"></i>
                 </span>
             </button>
-            <section class="newevent-items-section" id="newevent-items-panel" aria-labelledby="newevent-items-heading">
-                <label class="form-label newevent-items-heading" id="newevent-items-heading">Items and tasks</label>
-                <p class="newevent-items-lead">Add your ideas and let people add their own.</p>
+            <section class="newevent-items-section" id="newevent-items-panel" aria-label="Items and tasks">
                 <div class="eventitem-mini-grid" data-eventitem-mini-grid="guest">
                     <!--Items to bring-->
                     <button type="button"
@@ -234,31 +233,35 @@
         </div>
     </div>
 
+    <input type="hidden" asp-for="Timezone" />
+
     <!-- Event join button -->
     <div class="form-group newevent-join-group">
         <div class="newevent-join-block">
             <div class="newevent-join-copy">
-                <label class="form-label newevent-join-heading" for="newevent-join-toggle">Add Join button</label>
+                <div class="form-label newevent-join-heading" id="newevent-join-heading">Add Join button</div>
                 <p class="newevent-join-sub">Track how many people will attend and let others see who has joined.</p>
             </div>
             <label class="newevent-switch">
-                <input type="checkbox" id="newevent-join-toggle" name="joinButton" value="1" />
+                <input asp-for="JoinButton"
+                       id="newevent-join-toggle"
+                       aria-labelledby="newevent-join-heading" />
                 <span class="newevent-switch-track" aria-hidden="true"></span>
             </label>
         </div>
     </div>
 
-
-
     <!-- Event chat -->
     <div class="form-group newevent-chat-group">
         <div class="newevent-join-block">
             <div class="newevent-join-copy">
-                <label class="form-label newevent-join-heading" for="newevent-chat-toggle">Include a chat section</label>
+                <div class="form-label newevent-join-heading" id="newevent-chat-heading">Include a chat section</div>
                 <p class="newevent-join-sub">Let guests leave comments on the event page.</p>
             </div>
             <label class="newevent-switch">
-                <input type="checkbox" id="newevent-chat-toggle" name="chatEnabled" value="1" />
+                <input asp-for="ChatEnabled"
+                       id="newevent-chat-toggle"
+                       aria-labelledby="newevent-chat-heading" />
                 <span class="newevent-switch-track" aria-hidden="true"></span>
             </label>
         </div>

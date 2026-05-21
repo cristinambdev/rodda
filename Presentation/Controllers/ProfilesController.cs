@@ -7,12 +7,13 @@ namespace Presentation.Controllers
         // **************************************************************************************************************************
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Community", "Community");
         }
 
         // **************************************************************************************************************************
         public IActionResult MyEvents()
         {
+            ViewData["ActiveNav"] = "events-mine";
             return View();
         }
     }

@@ -9,4 +9,5 @@ public class ChatMessageViewModel
     public string Body { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
     public bool IsFromCurrentUser { get; set; }
+    public bool CanDelete { get; set; }
 }

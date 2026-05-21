@@ -5,14 +5,6 @@
 // Wires toolbar back navigation, cover preview, disclosure panels, and filled-state styling.
 // Form submit is handled by the server (`EventsController.Add`); this module does not intercept POST.
 
-// *************************************************************************************************
-// Page bootstrap
-// *************************************************************************************************
-
-/**
- * Initializes the new-event page when `#edit-event-form` is present.
- * @returns {void}
- */
 function initNewEventPage() {
   const form = document.getElementById("edit-event-form");
   if (!form) return;
@@ -23,16 +15,17 @@ function initNewEventPage() {
   const coverPreview = document.getElementById("cover-preview");
   const coverImg = document.getElementById("cover-img");
   const coverDelete = document.getElementById("cover-delete");
+  const coverEdit = document.getElementById("cover-edit");
   const description = document.getElementById("newevent-description");
-  const expensesPanel = document.querySelector("[data-newevent-expenses-panel]");
-  const expensesDisclosureRoot = document.getElementById("newevent-shared-expenses");
-  const expensesDisclosureTrigger = document.getElementById("newevent-expenses-trigger");
+  const paymentPanel = document.querySelector("[data-newevent-payment-panel]");
+  const paymentDisclosureRoot = document.getElementById("newevent-shared-payment");
+  const paymentDisclosureTrigger = document.getElementById("newevent-payment-trigger");
   const itemsTasksEnabledInput = document.getElementById("newevent-items-tasks-enabled");
   const itemsTasksDisclosureRoot = document.getElementById("newevent-items-tasks-card");
   const itemsTasksDisclosureTrigger = document.getElementById("newevent-items-tasks-trigger");
   const itemsTasksSection = document.querySelector(".newevent-items-section");
 
-  let expensesOpen = false;
+  let paymentOpen = false;
   let itemsTasksOpen = false;
 
   const fillStateControls = Array.from(form.querySelectorAll("input, textarea, select")).filter((el) => {
@@ -92,6 +85,12 @@ function initNewEventPage() {
     }
   });
 
+  coverEdit?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    coverInput?.click();
+  });
+
   coverDelete?.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -142,9 +141,9 @@ function initNewEventPage() {
   /**
    * @returns {void}
    */
-  function syncNewEventExpensesDisclosureUi() {
-    expensesDisclosureTrigger?.setAttribute("aria-expanded", expensesOpen ? "true" : "false");
-    expensesDisclosureRoot?.classList.toggle("newevent-disclosure-open", expensesOpen);
+  function syncNewEventPaymentDisclosureUi() {
+    paymentDisclosureTrigger?.setAttribute("aria-expanded", paymentOpen ? "true" : "false");
+    paymentDisclosureRoot?.classList.toggle("newevent-disclosure-open", paymentOpen);
   }
 
   /********************************************************************************/
@@ -160,28 +159,19 @@ function initNewEventPage() {
   /********************************************************************************/
 
   /**
-   * @param {boolean} enabled
+   * Toggles payment panel visibility only; values stay in the form so POST still includes them when collapsed.
+   * @param {boolean} open
    * @returns {void}
    */
-  function setExpensesEnabled(enabled) {
-    expensesOpen = enabled;
-    if (expensesPanel) expensesPanel.hidden = !enabled;
-    if (!enabled) {
-      const methodEl = form.querySelector('[name="expensesMethod"]');
-      const phoneEl = form.querySelector('[name="expensesPhone"]');
-      const amountEl = form.querySelector('[name="expensesAmount"]');
-      const nameEl = form.querySelector('[name="expensesName"]');
-      if (methodEl) methodEl.value = "";
-      if (phoneEl) phoneEl.value = "";
-      if (amountEl) amountEl.value = "";
-      if (nameEl) nameEl.value = "";
-    }
-    syncNewEventExpensesDisclosureUi();
+  function setPaymentPanelOpen(open) {
+    paymentOpen = open;
+    if (paymentPanel) paymentPanel.hidden = !open;
+    syncNewEventPaymentDisclosureUi();
   }
 
-  setExpensesEnabled(false);
-  expensesDisclosureTrigger?.addEventListener("click", () => {
-    setExpensesEnabled(!expensesOpen);
+  setPaymentPanelOpen(false);
+  paymentDisclosureTrigger?.addEventListener("click", () => {
+    setPaymentPanelOpen(!paymentOpen);
   });
 
   /**
@@ -234,6 +224,10 @@ function initNewEventDraftModals() {
   const allowTasksToggle = document.getElementById("toggle-allow-tasks");
   const allowItemsHidden = document.getElementById("newevent-allow-guest-items");
   const allowTasksHidden = document.getElementById("newevent-allow-guest-tasks");
+  const itemsTasksEnabledInput = document.getElementById("newevent-items-tasks-enabled");
+  const draftBringItemsInput = document.getElementById("newevent-draft-bring-items");
+  const draftGuestTasksInput = document.getElementById("newevent-draft-guest-tasks");
+  const createEventForm = document.getElementById("edit-event-form");
   const itemListModal = document.getElementById("eventitems-modal");
   const taskListModal = document.getElementById("eventtasks-modal");
   const addItemModal = document.getElementById("eventitem-add-item-modal");
@@ -400,6 +394,20 @@ function initNewEventDraftModals() {
   }
 
   /**
+   * Copies in-memory draft rows into hidden fields so the create POST persists them server-side.
+   * @returns {void}
+   */
+  function syncDraftPayloadToForm() {
+    const enabled = itemsTasksEnabledInput instanceof HTMLInputElement && itemsTasksEnabledInput.value === "true";
+    if (draftBringItemsInput instanceof HTMLInputElement) {
+      draftBringItemsInput.value = enabled ? JSON.stringify(draft.bringItems) : "[]";
+    }
+    if (draftGuestTasksInput instanceof HTMLInputElement) {
+      draftGuestTasksInput.value = enabled ? JSON.stringify(draft.guestTasks) : "[]";
+    }
+  }
+
+  /**
    * @returns {void}
    */
   function refreshDraftCounts() {
@@ -407,6 +415,7 @@ function initNewEventDraftModals() {
     const nTasks = draft.guestTasks.length;
     if (itemsCountEl) itemsCountEl.textContent = `${nItems} item${nItems === 1 ? "" : "s"}`;
     if (tasksCountEl) tasksCountEl.textContent = `${nTasks} task${nTasks === 1 ? "" : "s"}`;
+    syncDraftPayloadToForm();
   }
 
   document.addEventListener("portal-ui:before-modal-open", (e) => {
@@ -502,6 +511,10 @@ function initNewEventDraftModals() {
       window.PortalUi.setModalVisible(taskListModal, true);
     });
   }
+
+  createEventForm?.addEventListener("submit", () => {
+    syncDraftPayloadToForm();
+  });
 
   renderDraftRows(itemRowsEl, draft.bringItems, "item");
   renderDraftRows(taskRowsEl, draft.guestTasks, "task");

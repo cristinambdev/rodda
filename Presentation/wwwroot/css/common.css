@@ -952,7 +952,6 @@ html,body
   display: none;
 }
 
-/* Scoped to a page container (e.g. `#main-content`) so the menu can't escape the main area. */
 .event-card-context-menu.event-card-context-menu--scoped
 {
   position: absolute;

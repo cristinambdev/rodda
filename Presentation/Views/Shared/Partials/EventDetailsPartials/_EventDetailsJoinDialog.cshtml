@@ -1,3 +1,4 @@
+@model Presentation.Models.EventDetailsViewModel?
 <!-- Join event for user's group dialog -->
 <dialog class="dialogue event-details-join-dialogue" id="event-details-join-dialog" aria-labelledby="event-details-join-dialog-heading">
   <div class="card event-details-join-dialogue-panel">
@@ -7,7 +8,13 @@
         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
     </div>
-    <form id="event-details-join-dialogue-form" class="event-details-join-dialogue-form">
+    <form id="event-details-join-dialogue-form"
+          class="event-details-join-dialogue-form no-ajax"
+          method="post"
+          asp-controller="Events"
+          asp-action="Join"
+          asp-route-id="@(Model?.Id ?? "")">
+      @Html.AntiForgeryToken()
       <div class="card-body">
         <!-- Group size input -->
         <div class="form-group">

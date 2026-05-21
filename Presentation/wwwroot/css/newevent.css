@@ -308,14 +308,14 @@
 .newevent-form
 {
   :is(input.form-input-field, textarea.form-input-field, select.form-input-field).newevent-field-filled,
-  .newevent-expenses-input.newevent-field-filled,
+  .newevent-payment-input.newevent-field-filled,
   div.form-input-field.newevent-field-shell-filled
   {
     background: color-mix(in srgb, var(--green-primary) 12%, var(--white-100));
   }
 }
 
-/* Expenses card (toggle + fields inside one bordered panel) */
+/* Payment card (toggle + fields inside one bordered panel) */
 .newevent-disclosure-trigger
 {
   display: flex;
@@ -353,7 +353,7 @@
   transform: rotate(180deg);
 }
 
-.newevent-expenses-card,
+.newevent-payment-card,
 .newevent-items-disclosure-card
 {
   border: 1px solid var(--gray-300);
@@ -362,23 +362,23 @@
   overflow: hidden;
 }
 
-.newevent-expenses-toggle-row .newevent-join-heading
+.newevent-payment-toggle-row .newevent-join-heading
 {
   margin: 0;
 }
 
-.newevent-expenses-toggle-row .newevent-join-sub
+.newevent-payment-toggle-row .newevent-join-sub
 {
   margin: .25rem 0 0;
 }
 
-.newevent-expenses-content
+.newevent-payment-content
 {
   border-top: 1px solid var(--gray-300);
   padding: .6rem;
 }
 
-.newevent-expenses-grid
+.newevent-payment-grid
 {
   display: grid;
   /* Payment method should have more room than amount. */
@@ -386,14 +386,14 @@
   gap: .5rem;
 }
 
-.newevent-expenses-field
+.newevent-payment-field
 {
   display: flex;
   flex-direction: column;
   gap: .35rem;
 }
 
-.newevent-expenses-label
+.newevent-payment-label
 {
   display: block;
   font-size: 1rem;
@@ -402,7 +402,7 @@
   line-height: var(--line-height-base);
 }
 
-.newevent-expenses-input
+.newevent-payment-input
 {
   width: 100%;
   max-width: 100%;
@@ -419,37 +419,37 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.newevent-expenses-input::placeholder
+.newevent-payment-input::placeholder
 {
   color: var(--form-input-placeholder-color);
 }
 
-.newevent-expenses-input:hover:not(:disabled)
+.newevent-payment-input:hover:not(:disabled)
 {
   border-color: var(--gray-500);
 }
 
-.newevent-expenses-input:focus-visible
+.newevent-payment-input:focus-visible
 {
   outline: none;
   border-color: var(--form-input-border-focus-color);
   box-shadow: var(--form-focus-ring);
 }
 
-.newevent-expenses-field-full
+.newevent-payment-field-full
 {
   grid-column: 1 / -1;
   margin-top: .45rem;
 }
 
 /* Inside the grid, the gap already provides vertical rhythm. */
-.newevent-expenses-grid .newevent-expenses-field-full
+.newevent-payment-grid .newevent-payment-field-full
 {
   margin-top: 0;
 }
 
 /* Outside the grid (Name row), add consistent separation from the grid. */
-.newevent-expenses-name-row
+.newevent-payment-name-row
 {
   margin-top: .75rem;
 }
@@ -594,18 +594,6 @@
   margin-top: 1rem;
   padding-inline: .6rem;
 
-}
-
-.newevent-items-heading
-{
-  margin: 0;
-}
-
-.newevent-items-lead
-{
-  margin: .35rem 0 .75rem;
-  font-size: .9rem;
-  color: var(--gray-800);
 }
 
 .newevent-submit

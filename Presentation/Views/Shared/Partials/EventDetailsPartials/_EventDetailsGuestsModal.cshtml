@@ -1,51 +1,60 @@
+@using Domain.Enums
+@model Presentation.Models.EventDetailsViewModel?
+@{
+    var acceptedGuests = Model?.Attendees
+        .Where(a => a.Status == AttendanceStatus.Accepted)
+        .ToList() ?? [];
+    var totalGuests = acceptedGuests.Sum(a => Math.Max(1, a.GuestCount));
+    var eventTitle = Model?.Title?.ToUpperInvariant() ?? "";
+}
+
 <!-- Guests list modal -->
 <div id="event-details-guests-modal" class="modal modal-guests" hidden role="presentation">
-  <button type="button" class="modal-backdrop" data-close-guests-modal tabindex="-1" aria-label="Close"></button>
+  <button type="button" class="modal-backdrop" data-type="close" data-target="#event-details-guests-modal" tabindex="-1" aria-label="Close"></button>
   <div
     class="modal-panel modal-panel-members"
     role="dialog"
     aria-modal="true"
     aria-labelledby="event-details-guests-dialog-heading"
   >
-    <!-- Modal header -->
     <header class="modal-header modal-header-split">
       <div class="event-details-guests-header-text">
         <h2 class="modal-title" id="event-details-guests-dialog-heading">Guests</h2>
-        <p class="event-details-guests-subtitle" id="event-details-guests-dialog-subtitle"></p>
+        <p class="event-details-guests-subtitle" id="event-details-guests-dialog-subtitle">@eventTitle</p>
       </div>
       <button
         type="button"
         class="modal-dismiss event-details-guests-dialog-close"
         id="event-details-guests-dialog-dismiss"
-        data-close-guests-modal
+        data-type="close"
+        data-target="#event-details-guests-modal"
         aria-label="Close"
       >
         ×
       </button>
     </header>
-    <!-- Modal content -->
     <div class="modal-content modal-content-guests">
-      <!-- Guests list -->
-      <ul class="event-details-members-list" id="event-details-guests-list" role="list"></ul>
-      <!-- Help-text -->
+      <ul class="event-details-members-list" id="event-details-guests-list" role="list">
+        @foreach (var guest in acceptedGuests)
+        {
+            var name = string.IsNullOrWhiteSpace(guest.DisplayName) ? "Guest" : guest.DisplayName;
+            var count = Math.Max(1, guest.GuestCount);
+            <li class="event-details-members-row">
+              <span class="event-details-members-name">@name@(count > 1 ? $" (+{count - 1})" : "")</span>
+              <span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span>
+            </li>
+        }
+      </ul>
       <p class="event-details-guests-list-hint">
         Guests with <span class="visually-hidden">a green check</span>
         <span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span>
         have confirmed attendance.
       </p>
-      <!-- Help-text -->
-      <p class="event-details-guests-hint-community">
-        <span class="event-details-guests-hint-community-icon" aria-hidden="true">
-          <i class="fa-solid fa-user-check"></i>
-        </span>
-        <span class="visually-hidden">A green user icon with a check means </span>
-        This guest is already saved in your Community.
-      </p>
     </div>
-    <!-- Modal footer -->
     <footer class="event-details-guests-modal-footer" aria-label="Attendance summary">
-      <p id="event-details-guests-total" aria-live="polite"></p>
+      <p id="event-details-guests-total" aria-live="polite">
+        @totalGuests @(totalGuests == 1 ? "person" : "people") attending
+      </p>
     </footer>
   </div>
 </div>
-

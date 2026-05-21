@@ -1,0 +1,61 @@
+@using Domain.Enums
+@model Presentation.Models.EventDetailsViewModel
+
+@if (Model.JoinEnabled)
+{
+    var joined = Model.UserHasJoined;
+    var guestCount = Math.Max(1, Model.UserGuestCount);
+    var pillText = joined
+        ? (guestCount > 1 ? $"You (+{guestCount - 1}) have joined" : "You have joined")
+        : "You joined";
+
+    <div class="eventitem-join" data-eventitem-guest-join>
+        @if (joined)
+        {
+            <form method="post"
+                  asp-controller="Events"
+                  asp-action="Leave"
+                  asp-route-id="@Model.Id"
+                  class="eventitem-join-leave-form no-ajax">
+                @Html.AntiForgeryToken()
+                <button type="submit"
+                        class="btn btn-primary btn-save-item btn-save-item--joined"
+                        aria-pressed="true"
+                        aria-label="Leave this event">
+                    <span class="eventitem-join-label" aria-hidden="true"></span>
+                    <span class="eventitem-join-pill">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span class="eventitem-join-pill-text">@pillText</span>
+                    </span>
+                </button>
+            </form>
+        }
+        else
+        {
+            <button type="button"
+                    class="btn btn-primary btn-save-item"
+                    id="eventitem-join-open-btn"
+                    aria-pressed="false"
+                    aria-label="Join this event"
+                    data-join-dialog-target="#event-details-join-dialog">
+                <span class="eventitem-join-label">JOIN</span>
+                <span class="eventitem-join-pill" hidden>
+                    <i class="fa-solid fa-check" aria-hidden="true"></i>
+                    <span class="eventitem-join-pill-text">You joined</span>
+                </span>
+            </button>
+        }
+
+        <button type="button"
+                class="eventitem-join-count"
+                id="eventitem-join-count-btn"
+                aria-label="View who is attending"
+                aria-haspopup="dialog"
+                aria-controls="event-details-guests-modal"
+                data-type="modal"
+                data-target="#event-details-guests-modal">
+            <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+            <span id="eventitem-join-badge" role="status">@Model.TotalJoinedGuests JOINED</span>
+        </button>
+    </div>
+}

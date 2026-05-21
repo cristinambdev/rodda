@@ -1,338 +1,217 @@
-// === GUEST POLICY SETTINGS (EventsController.Update / update-settings) ===
+// *************************************************************************************************
+// eventdetails-modals.js — Event details page actions (share, delete, hero menu)
+// *************************************************************************************************
 
-function isEventModalDraft() {
-    return document.getElementById('eventitem-modals-root')?.dataset.eventModalDraft === 'true'
-}
-
-function isPersistableEventId(eventId) {
-    return Boolean(eventId) && eventId !== 'create'
-}
-
-// Syncs guest policy toggles with the backend (EditEventViewModel + update-settings).
-async function updateEventSettings() {
-    if (isEventModalDraft()) {
-        return
-    }
-
-    const eventId = getEventIdFromPath()
-    if (!isPersistableEventId(eventId)) {
-        console.error('Could not resolve Event ID from the URL pathway configuration.')
-        return
-    }
-
-    const allowItemsCheckbox = document.getElementById('toggle-allow-items')
-    const allowTasksCheckbox = document.getElementById('toggle-allow-tasks')
-
-    if (!allowItemsCheckbox || !allowTasksCheckbox) return
-
-    const previousItems = allowItemsCheckbox.checked
-    const previousTasks = allowTasksCheckbox.checked
-
-    const payload = {
-        Id: eventId,
-        AllowGuestBringItems: allowItemsCheckbox.checked,
-        AllowGuestTasks: allowTasksCheckbox.checked
-    }
-
-    const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]')
-    if (!tokenElement) {
-        console.error('Anti-forgery token missing from the active document workspace.')
-        return
-    }
-
-    try {
-        const response = await fetch(`/events/${encodeURIComponent(eventId)}/update-settings`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'RequestVerificationToken': tokenElement.value,
-                'X-XSRF-TOKEN': tokenElement.value
-            },
-            body: JSON.stringify(payload)
-        })
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}))
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
-        }
-
-        const data = await response.json()
-        if (data.succeeded) {
-            window.location.reload()
-        }
-    } catch (error) {
-        console.error('Failed to persist event toggles state:', error)
-        alert(`Failed to save settings: ${error.message}`)
-        allowItemsCheckbox.checked = previousItems
-        allowTasksCheckbox.checked = previousTasks
-    }
-}
-
-function bindGuestPolicyToggles() {
-    if (isEventModalDraft()) {
-        return
-    }
-
-    const allowItemsCheckbox = document.getElementById('toggle-allow-items')
-    const allowTasksCheckbox = document.getElementById('toggle-allow-tasks')
-
-    if (allowItemsCheckbox && !allowItemsCheckbox.dataset.guestPolicyBound) {
-        allowItemsCheckbox.dataset.guestPolicyBound = '1'
-        allowItemsCheckbox.addEventListener('change', updateEventSettings)
-    }
-    if (allowTasksCheckbox && !allowTasksCheckbox.dataset.guestPolicyBound) {
-        allowTasksCheckbox.dataset.guestPolicyBound = '1'
-        allowTasksCheckbox.addEventListener('change', updateEventSettings)
-    }
-}
-
-// === SHARE LINK (private event access via reusable revocable token) ===
-
+/**
+ * @returns {string}
+ */
 function getEventIdFromPath() {
-    const pathSegments = window.location.pathname.split('/')
-    return pathSegments[pathSegments.indexOf('events') + 1] || ''
+  const pathSegments = window.location.pathname.split("/");
+  return pathSegments[pathSegments.indexOf("events") + 1] || "";
 }
 
-function getAntiForgeryToken() {
-    return document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+/**
+ * @returns {{ eventId: string, eventTitle: string, canManage: boolean }}
+ */
+function getEventDetailsPageConfig() {
+  const page = document.getElementById("event-details-page");
+  return {
+    eventId: page?.dataset.eventId || getEventIdFromPath(),
+    eventTitle:
+      page?.dataset.eventTitle ||
+      document.getElementById("eventitem-title")?.textContent?.trim() ||
+      "this event",
+    canManage: page?.dataset.canManage === "true",
+  };
 }
 
+/**
+ * @param {string} message
+ * @returns {void}
+ */
+function setShareStatus(message) {
+  const statusEl = document.getElementById("event-details-share-status");
+  if (!statusEl) return;
+  statusEl.hidden = false;
+  statusEl.textContent = message;
+}
+
+/**
+ * @returns {Promise<void>}
+ */
 async function copyShareLink() {
-    const eventId = getEventIdFromPath()
-    if (!eventId) return
+  const { eventId } = getEventDetailsPageConfig();
+  if (!eventId) return;
 
-    const statusEl = document.getElementById('event-details-share-status')
-    try {
-        const response = await fetch(`/events/${encodeURIComponent(eventId)}/share-link`, {
-            headers: { Accept: 'application/json' }
-        })
+  try {
+    const response = await fetch(`/events/${encodeURIComponent(eventId)}/share-link`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error("Could not load share link.");
 
-        if (!response.ok) {
-            throw new Error('Could not load share link.')
-        }
+    const data = await response.json();
+    if (!data.url) throw new Error("Share link was empty.");
 
-        const data = await response.json()
-        if (!data.url) {
-            throw new Error('Share link was empty.')
-        }
-
-        await navigator.clipboard.writeText(data.url)
-        if (statusEl) {
-            statusEl.hidden = false
-            statusEl.textContent = 'Link copied. Anyone with this link can join while it stays active.'
-        }
-    } catch (error) {
-        console.error('Share link copy failed:', error)
-        if (statusEl) {
-            statusEl.hidden = false
-            statusEl.textContent = 'Could not copy the share link.'
-        }
-    }
+    await navigator.clipboard.writeText(data.url);
+    setShareStatus("Link copied. Anyone with this link can join while it stays active.");
+  } catch (error) {
+    console.error("Share link copy failed:", error);
+    setShareStatus("Could not copy the share link.");
+  }
 }
 
+/**
+ * @returns {Promise<void>}
+ */
 async function revokeShareLink() {
-    const eventId = getEventIdFromPath()
-    if (!eventId) return
+  const { eventId } = getEventDetailsPageConfig();
+  if (!eventId) return;
 
-    const token = getAntiForgeryToken()
-    const statusEl = document.getElementById('event-details-share-status')
-
-    try {
-        const response = await fetch(`/events/${encodeURIComponent(eventId)}/share-link/revoke`, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                RequestVerificationToken: token,
-                'X-XSRF-TOKEN': token
-            }
-        })
-
-        if (!response.ok) {
-            throw new Error('Could not revoke share link.')
-        }
-
-        if (statusEl) {
-            statusEl.hidden = false
-            statusEl.textContent = 'Share link revoked. Generate a new one with Copy share link.'
-        }
-    } catch (error) {
-        console.error('Share link revoke failed:', error)
-        if (statusEl) {
-            statusEl.hidden = false
-            statusEl.textContent = 'Could not revoke the share link.'
-        }
-    }
+  const token = window.PortalUi.getAntiForgeryToken();
+  try {
+    const response = await fetch(`/events/${encodeURIComponent(eventId)}/share-link/revoke`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        RequestVerificationToken: token,
+        "X-XSRF-TOKEN": token,
+      },
+    });
+    if (!response.ok) throw new Error("Could not revoke share link.");
+    setShareStatus("Share link revoked. Generate a new one with Copy share link.");
+  } catch (error) {
+    console.error("Share link revoke failed:", error);
+    setShareStatus("Could not revoke the share link.");
+  }
 }
 
-function bindShareDialog() {
-    const shareDialog = document.getElementById('event-details-share-dialog')
-    if (!shareDialog || shareDialog.dataset.shareBound === '1') return
+/********************************************************************************/
 
-    shareDialog.dataset.shareBound = '1'
-    const canManage = shareDialog.dataset.canManage === 'true'
-    const revokeBtn = shareDialog.querySelector('[data-event-details-share-action="revoke"]')
-    if (revokeBtn) revokeBtn.hidden = !canManage
+/**
+ * Share modal: copy / revoke (open/close handled by `site.js` + portal modals).
+ * @returns {void}
+ */
+function bindEventDetailsShareModal() {
+  const shareModal = document.getElementById("event-details-share-dialog");
+  if (!shareModal || shareModal.dataset.shareBound === "1") return;
 
-    shareDialog.addEventListener('click', (event) => {
-        const actionBtn = event.target.closest('[data-event-details-share-action]')
-        if (!actionBtn) return
+  shareModal.dataset.shareBound = "1";
+  shareModal.addEventListener("click", (event) => {
+    const actionBtn = event.target.closest("[data-event-details-share-action]");
+    if (!actionBtn) return;
 
-        const action = actionBtn.getAttribute('data-event-details-share-action')
-        if (action === 'link') {
-            copyShareLink()
-            return
-        }
-        if (action === 'revoke') {
-            revokeShareLink()
-            return
-        }
-        if (action === 'cancel') {
-            shareDialog.close()
-        }
-    })
-
-    document.querySelectorAll('[data-event-details-menu-action="share"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            if (typeof shareDialog.showModal === 'function') {
-                shareDialog.showModal()
-            }
-        })
-    })
+    const action = actionBtn.getAttribute("data-event-details-share-action");
+    if (action === "link") {
+      copyShareLink();
+      return;
+    }
+    if (action === "revoke") {
+      revokeShareLink();
+    }
+  });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    bindShareDialog()
-})
+/********************************************************************************/
 
-document.addEventListener('DOMContentLoaded', () => {
-    const modalsRoot = document.getElementById('eventitem-modals-root')
-    if (!modalsRoot) return
+/**
+ * Hero context menu actions (toggle handled by `site.js` `initAnchoredMenus`).
+ * @returns {void}
+ */
+function bindEventDetailsContextMenuActions() {
+  const menu = document.getElementById("event-details-context-menu");
+  if (!menu || menu.dataset.menuActionsBound === "1") return;
 
-    const itemListModal = document.getElementById('eventitems-modal')
-    const taskListModal = document.getElementById('eventtasks-modal')
-    const addItemModal = document.getElementById('eventitem-add-item-modal')
-    const addTaskModal = document.getElementById('eventitem-add-task-modal')
-    const addItemForm = document.getElementById('eventitem-add-item-form')
-    const addTaskForm = document.getElementById('eventitem-add-task-form')
+  menu.dataset.menuActionsBound = "1";
 
-    applyManageGates()
-    bindGuestPolicyToggles()
+  /**
+   * @returns {void}
+   */
+  function closeHeroContextMenu() {
+    menu.hidden = true;
+    document
+      .getElementById("eventitem-hero-options")
+      ?.setAttribute("aria-expanded", "false");
+  }
 
-    document.addEventListener('portal-ui:before-modal-open', (e) => {
-        const trigger = e.detail?.trigger
-        if (!trigger) return
-        if (trigger.hasAttribute('data-reset-add-item')) {
-            resetAddItemForm()
-        }
-        if (trigger.hasAttribute('data-reset-add-task')) {
-            resetAddTaskForm()
-        }
-    })
+  menu.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-event-details-menu-action]");
+    if (!btn) return;
 
-    function applyManageGates() {
-        if (modalsRoot.dataset.eventModalDraft === 'true') {
-            return
-        }
+    event.preventDefault();
+    closeHeroContextMenu();
+    const action = btn.getAttribute("data-event-details-menu-action");
+    const { eventId, eventTitle, canManage } = getEventDetailsPageConfig();
 
-        const itemModal = document.getElementById('eventitems-modal')
-        const taskModal = document.getElementById('eventtasks-modal')
-        const canManageItems = itemModal?.dataset.canManage === 'true'
-        const canManageTasks = taskModal?.dataset.canManage === 'true'
-        const canAddItems = itemModal?.dataset.canAdd === 'true'
-        const canAddTasks = taskModal?.dataset.canAdd === 'true'
-
-        if (!canManageItems) {
-            document.getElementById('eventitem-items-guest-policy-row')?.remove()
-        }
-        if (!canManageTasks) {
-            document.getElementById('eventtasks-guest-policy-row')?.remove()
-        }
-        if (!canManageItems && !canAddItems) {
-            document.getElementById('eventitems-modal-add')?.remove()
-        }
-        if (!canManageTasks && !canAddTasks) {
-            document.getElementById('eventtasks-modal-add')?.remove()
-        }
+    if (action === "share") {
+      window.PortalUi.openModal("#event-details-share-dialog");
+      return;
     }
 
-    // === ADD / EDIT ITEM & TASK FORMS ===
-    function resetAddItemForm() {
-        if (!addItemForm || addItemForm.dataset.draftOnly === 'true') return
-        const createAction = addItemForm.getAttribute('action')
-        if (createAction) addItemForm.action = createAction
-        const titleEl = document.getElementById('eventitem-add-item-modal-title')
-        if (titleEl) titleEl.textContent = 'Add item'
-        const idEl = document.getElementById('eventitem-add-item-id')
-        if (idEl) idEl.value = ''
-        addItemForm.reset()
-        const people = document.getElementById('eventitem-add-item-people')
-        if (people) people.value = '1'
+    if (action === "edit") {
+      if (!canManage) {
+        window.alert("You don't have permission to edit this event.");
+        return;
+      }
+      if (eventId) {
+        window.location.href = `/events/create?edit=${encodeURIComponent(eventId)}`;
+      }
+      return;
     }
 
-    function resetAddTaskForm() {
-        if (!addTaskForm || addTaskForm.dataset.draftOnly === 'true') return
-        const createAction = addTaskForm.getAttribute('action')
-        if (createAction) addTaskForm.action = createAction
-        const titleEl = document.getElementById('eventitem-add-task-modal-title')
-        if (titleEl) titleEl.textContent = 'Add task'
-        const idEl = document.getElementById('eventitem-add-task-id')
-        if (idEl) idEl.value = ''
-        addTaskForm.reset()
-        const people = document.getElementById('eventitem-add-task-people')
-        if (people) people.value = '1'
+    if (action === "delete") {
+      if (!canManage) {
+        window.alert("You don't have permission to delete this event.");
+        return;
+      }
+      const deleteNameEl = document.getElementById("event-details-delete-event-name");
+      if (deleteNameEl) deleteNameEl.textContent = eventTitle;
+      const everyoneBtn = document.querySelector(
+        '[data-event-details-delete-action="everyone"]'
+      );
+      if (everyoneBtn instanceof HTMLButtonElement) {
+        everyoneBtn.disabled = !canManage;
+      }
+      window.PortalUi.openModal("#event-details-delete-dialog");
     }
+  });
+}
 
-    function openAddItemForEdit(btn) {
-        if (!addItemForm || !addItemModal) return
-        const template = addItemForm.dataset.editUrlTemplate
-        const itemId = btn.dataset.itemId
-        if (!template || !itemId) return
+/********************************************************************************/
 
-        addItemForm.action = template.replace('__ITEMID__', encodeURIComponent(itemId))
-        document.getElementById('eventitem-add-item-name').value = btn.dataset.itemTitle || ''
-        document.getElementById('eventitem-add-item-amount').value = btn.dataset.itemAmount || ''
-        document.getElementById('eventitem-add-item-people').value = btn.dataset.itemPeople || '1'
-        const idEl = document.getElementById('eventitem-add-item-id')
-        if (idEl) idEl.value = itemId
-        const titleEl = document.getElementById('eventitem-add-item-modal-title')
-        if (titleEl) titleEl.textContent = 'Edit item'
+/**
+ * Delete-for-everyone POST (list link and close use markup + `site.js`).
+ * @returns {void}
+ */
+function bindEventDetailsDeleteModal() {
+  const deleteModal = document.getElementById("event-details-delete-dialog");
+  if (!deleteModal || deleteModal.dataset.deleteBound === "1") return;
 
-        window.PortalUi.setModalVisible(itemListModal, false)
-        window.PortalUi.setModalVisible(addItemModal, true)
-    }
+  deleteModal.dataset.deleteBound = "1";
 
-    function openAddTaskForEdit(btn) {
-        if (!addTaskForm || !addTaskModal) return
-        const template = addTaskForm.dataset.editUrlTemplate
-        const taskId = btn.dataset.taskId
-        if (!template || !taskId) return
+  deleteModal
+    .querySelector('[data-event-details-delete-action="everyone"]')
+    ?.addEventListener("click", () => {
+      const { eventId, canManage } = getEventDetailsPageConfig();
+      if (!canManage || !eventId) return;
 
-        addTaskForm.action = template.replace('__TASKID__', encodeURIComponent(taskId))
-        document.getElementById('eventitem-add-task-name').value = btn.dataset.taskTitle || ''
-        document.getElementById('eventitem-add-task-time').value = btn.dataset.taskTime || ''
-        document.getElementById('eventitem-add-task-location').value = btn.dataset.taskLocation || ''
-        document.getElementById('eventitem-add-task-people').value = btn.dataset.taskPeople || '1'
-        const idEl = document.getElementById('eventitem-add-task-id')
-        if (idEl) idEl.value = taskId
-        const titleEl = document.getElementById('eventitem-add-task-modal-title')
-        if (titleEl) titleEl.textContent = 'Edit task'
+      if (!window.PortalUi.getAntiForgeryToken()) {
+        window.alert("Could not submit delete request.");
+        return;
+      }
 
-        window.PortalUi.setModalVisible(taskListModal, false)
-        window.PortalUi.setModalVisible(addTaskModal, true)
-    }
+      window.PortalUi.submitPostForm(`/events/${encodeURIComponent(eventId)}/delete`);
+    });
+}
 
-    modalsRoot.addEventListener('click', (e) => {
-        const editItem = e.target.closest('[data-edit-item]')
-        if (editItem) {
-            e.preventDefault()
-            openAddItemForEdit(editItem)
-            return
-        }
-        const editTask = e.target.closest('[data-edit-task]')
-        if (editTask) {
-            e.preventDefault()
-            openAddTaskForEdit(editTask)
-        }
-    })
-})
+/**
+ * @returns {void}
+ */
+function initEventDetailsActions() {
+  if (!document.getElementById("event-details-page")) return;
+
+  bindEventDetailsShareModal();
+  bindEventDetailsContextMenuActions();
+  bindEventDetailsDeleteModal();
+}
+
+document.addEventListener("DOMContentLoaded", initEventDetailsActions);

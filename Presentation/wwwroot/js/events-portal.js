@@ -3,7 +3,7 @@
 // *************************************************************************************************
 // Reads `#portal-events-data` from the server, hydrates `EVENTS`, and renders horizontal cards
 // into `[data-allevents-list]` or `[data-myevents-list]`. Card chrome uses
-// `#rodda-horizontal-event-card-template` from `_HorizontalEventCard.cshtml`.
+// `#rodda-horizontal-event-card-template` from `_HorizontalEventCard.cshtml` (no model).
 
 let EVENTS = [];
 

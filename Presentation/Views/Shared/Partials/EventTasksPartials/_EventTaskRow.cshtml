@@ -41,6 +41,9 @@
         {
             <button type="button"
                     class="eventitem-bring-row-edit"
+                    data-type="modal"
+                    data-target="#eventitem-add-task-modal"
+                    data-close-parent="#eventtasks-modal"
                     data-edit-task
                     data-task-id="@task.Id"
                     data-task-title="@task.Title"
@@ -73,9 +76,9 @@
         </div>
     }
 
-    <div class="eventitem-bring-row-footer">
-        @if (assignments.Count > 0)
-        {
+    @if (assignments.Count > 0)
+    {
+        <div class="eventitem-bring-row-footer">
             <div class="eventitem-bring-tags">
                 @for (var i = 0; i < openSlots.Count; i++)
                 {
@@ -97,27 +100,27 @@
                     }
                 }
             </div>
-        }
+        </div>
+    }
 
-        @if (showSignup)
-        {
-            <div class="eventitem-bring-rail eventitem-bring-rail-signup">
-                <form method="post"
-                      asp-controller="EventTasks"
-                      asp-action="ClaimTask"
-                      asp-route-eventId="@eventId"
-                      asp-route-taskId="@task.Id"
-                      class="eventitem-bring-signup-form no-ajax">
-                    @Html.AntiForgeryToken()
-                    <button type="submit"
-                            class="eventitem-bring-signup@(signupDisabled ? " eventitem-bring-signup--disabled" : "")"
-                            @(signupDisabled ? "disabled" : null)>
-                        SIGN UP
-                    </button>
-                </form>
-            </div>
-        }
-    </div>
+    @if (showSignup)
+    {
+        <div class="eventitem-bring-rail eventitem-bring-rail-signup">
+            <form method="post"
+                  asp-controller="EventTasks"
+                  asp-action="ClaimTask"
+                  asp-route-eventId="@eventId"
+                  asp-route-taskId="@task.Id"
+                  class="eventitem-bring-signup-form no-ajax">
+                @Html.AntiForgeryToken()
+                <button type="submit"
+                        class="eventitem-bring-signup@(signupDisabled ? " eventitem-bring-signup--disabled" : "")"
+                        @(signupDisabled ? "disabled" : null)>
+                    SIGN UP
+                </button>
+            </form>
+        </div>
+    }
 
     @if (hasMyClaim || canManage)
     {

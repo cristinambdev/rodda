@@ -4,8 +4,11 @@ using Domain.Extensions;
 using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Helpers;
 using Presentation.Models;
+using System.Globalization;
 using System.Security.Claims;
+using System.Text.Json;
 
 
 namespace Presentation.Controllers;
@@ -13,12 +16,13 @@ namespace Presentation.Controllers;
 
 [Authorize]
 
-public class EventsController( IEventService eventService, IEventItemService eventItemService, IEventTaskService eventTaskService, IEventAccessService eventAccessService) : Controller
+public class EventsController( IEventService eventService, IEventItemService eventItemService, IEventTaskService eventTaskService, IEventAccessService eventAccessService, IWebHostEnvironment webHostEnvironment) : Controller
 {
     private readonly IEventService _eventService = eventService;
     private readonly IEventItemService _eventItemService = eventItemService;
     private readonly IEventTaskService _eventTaskService = eventTaskService;
     private readonly IEventAccessService _eventAccessService = eventAccessService;
+    private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
 
     // **************************************************************************************************************************
     [HttpGet]
@@ -44,8 +48,21 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [HttpPost]
     [Route("/events/create")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Add(AddEventViewModel model)
+    public async Task<IActionResult> Add(AddEventViewModel model, IFormFile? cover)
     {
+        ApplyCreateFormFields(model, Request.Form);
+        var paymentAmount = ParsePaymentAmount(model.PaymentAmount);
+
+        ModelState.Remove(nameof(model.JoinButton));
+        ModelState.Remove(nameof(model.ChatEnabled));
+
+        if (cover is { Length: > 0 })
+        {
+            var coverUrl = await FormHelper.UploadImageAsync(cover, "events", _webHostEnvironment);
+            if (coverUrl != null)
+                model.CoverImageUrl = coverUrl;
+        }
+
         if (!ModelState.IsValid)
             return View("CreateNewEvent", model);
 
@@ -54,11 +71,22 @@ public class EventsController( IEventService eventService, IEventItemService eve
             return Unauthorized();
 
         var addEventFormData = model.MapTo<AddEventFormData>();
+        addEventFormData.PaymentAmount = paymentAmount;
         var result = await _eventService.CreateEventAsync(userId, addEventFormData);
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);
             return View("CreateNewEvent", model);
+        }
+
+        if (!string.IsNullOrEmpty(result.EventId))
+        {
+            await PersistDraftItemsAndTasksOnCreateAsync(
+                userId,
+                result.EventId,
+                model.ItemsTasksEnabled == true,
+                model.DraftBringItemsJson,
+                model.DraftGuestTasksJson);
         }
 
         return RedirectToAction("Events");
@@ -93,6 +121,50 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
     // **************************************************************************************************************************
     [HttpPost]
+    [Route("/events/{id}/join")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Join(string id, int groupSize = 1)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return Unauthorized();
+
+        var eventResponse = await _eventService.GetEventForUserAsync(userId, id);
+        if (!eventResponse.Succeeded || eventResponse.Result == null)
+            return NotFound();
+
+        if (eventResponse.Result.JoinMode == JoinMode.Disabled)
+        {
+            TempData["ErrorMessage"] = "Joining is not enabled for this event.";
+            return RedirectToAction(nameof(EventDetails), new { id });
+        }
+
+        var result = await _eventService.JoinEventAsync(userId, id, groupSize);
+        if (!result.Succeeded)
+            TempData["ErrorMessage"] = result.ErrorMessage ?? "Could not join the event.";
+
+        return RedirectToAction(nameof(EventDetails), new { id });
+    }
+
+    // **************************************************************************************************************************
+    [HttpPost]
+    [Route("/events/{id}/leave")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Leave(string id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return Unauthorized();
+
+        var result = await _eventService.LeaveEventAsync(userId, id);
+        if (!result.Succeeded)
+            TempData["ErrorMessage"] = result.ErrorMessage ?? "Could not leave the event.";
+
+        return RedirectToAction(nameof(EventDetails), new { id });
+    }
+
+    // **************************************************************************************************************************
+    [HttpPost]
     [Route("/events/{id}/delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
@@ -114,6 +186,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     }
 
     // **************************************************************************************************************************
+    // Share link methods created by AI
     [HttpGet]
     [Route("/events/{id}/share-link")]
     public async Task<IActionResult> GetShareLink(string id)
@@ -160,7 +233,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     // **************************************************************************************************************************
     [HttpGet]
     [Route("/events/{id}")]
-    public async Task<IActionResult> EventDetails(string id, [FromQuery] string? invite)
+    public async Task<IActionResult> EventDetails(string id, [FromQuery] string? invite, [FromQuery] string? from)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
@@ -175,6 +248,9 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
         var eventData = response.Result;
         var model = eventData.MapTo<EventDetailsViewModel>();
+        model.CreatorDisplayLabel = string.Equals(eventData.CreatedByUserId, userId, StringComparison.Ordinal)
+            ? "Myself"
+            : (string.IsNullOrWhiteSpace(eventData.CreatorDisplayName) ? "Organizer" : eventData.CreatorDisplayName);
         model.EventRoles = eventData.Roles;
         model.CanManageItemsTasks = eventData.Roles.Any(r =>
 
@@ -188,6 +264,40 @@ public class EventsController( IEventService eventService, IEventItemService eve
             (model.AllowGuestBringItems && hasAcceptedAttendance);
         model.CanAddTasks = model.CanManageItemsTasks ||
             (model.AllowGuestTasks && hasAcceptedAttendance);
+
+        var myAttendance = eventData.Attendances.FirstOrDefault(a => a.UserId == userId);
+        model.UserHasJoined = myAttendance?.Status == AttendanceStatus.Accepted;
+        model.UserGuestCount = Math.Max(1, myAttendance?.GuestCount ?? 1);
+        model.TotalJoinedGuests = eventData.Attendances
+            .Where(a => a.Status == AttendanceStatus.Accepted)
+            .Sum(a => Math.Max(1, a.GuestCount));
+        model.Attendees = eventData.Attendances
+            .Select(a => new EventAttendeeViewModel
+            {
+                Id = a.Id,
+                EventId = a.EventId,
+                UserId = a.UserId,
+                DisplayName = a.User?.DisplayName,
+                GuestCount = Math.Max(1, a.GuestCount),
+                Status = a.Status,
+                RespondedAt = a.RespondedAt,
+            })
+            .ToList();
+
+        model.ChatMessages = eventData.ChatMessages
+            .Select(m =>
+            {
+                var row = m.MapTo<ChatMessageViewModel>();
+                row.IsFromCurrentUser = string.Equals(m.AuthorUserId, userId, StringComparison.Ordinal);
+                row.AuthorDisplay = row.IsFromCurrentUser
+                    ? "You"
+                    : (!string.IsNullOrWhiteSpace(m.AuthorDisplay)
+                        ? m.AuthorDisplay
+                        : (m.Author?.DisplayName ?? "Guest"));
+                row.CanDelete = row.IsFromCurrentUser || model.CanManageItemsTasks;
+                return row;
+            })
+            .ToList();
 
         ViewData["CanManageEvent"] = model.CanManageItemsTasks;
 
@@ -240,6 +350,10 @@ public class EventsController( IEventService eventService, IEventItemService eve
         if (!string.IsNullOrWhiteSpace(invite))
             return RedirectToAction(nameof(EventDetails), new { id });
 
+        ViewData["ActiveNav"] = string.Equals(from, "myevents", StringComparison.OrdinalIgnoreCase)
+            ? "events-mine"
+            : "events-all";
+
         return View(model);
     }
 
@@ -282,6 +396,165 @@ public class EventsController( IEventService eventService, IEventItemService eve
             return StatusCode(result.StatusCode, result.ErrorMessage);
         }
         return RedirectToAction(nameof(EventDetails), new { id });
+    }
+
+    // **************************************************************************************************************************
+    // Generated by AI
+    private static void ApplyCreateFormFields(AddEventViewModel model, IFormCollection form)
+    {
+        if (!string.IsNullOrWhiteSpace(model.Date))
+        {
+            var timePart = string.IsNullOrWhiteSpace(model.Time) ? "00:00" : model.Time.Trim();
+            if (DateTime.TryParse(
+                    $"{model.Date.Trim()} {timePart}",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeLocal,
+                    out var localStart))
+            {
+                model.StartAt = new DateTimeOffset(localStart);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Location))
+            model.LocationName = model.Location.Trim();
+
+        if (string.IsNullOrWhiteSpace(model.Timezone))
+            model.Timezone = "Europe/Stockholm";
+
+        model.JoinButton = IsFormCheckboxChecked(form, nameof(model.JoinButton), "joinButton");
+        model.ChatEnabled = IsFormCheckboxChecked(form, nameof(model.ChatEnabled), "chatEnabled");
+        model.JoinMode = model.JoinButton ? JoinMode.Open : JoinMode.Disabled;
+
+        NormalizePaymentFields(model);
+    }
+
+    // **************************************************************************************************************************
+    private static bool IsFormCheckboxChecked(IFormCollection form, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            if (!form.TryGetValue(key, out var values))
+                continue;
+
+            foreach (var value in values)
+            {
+                if (string.IsNullOrEmpty(value))
+                    continue;
+
+                if (value == "1"
+                    || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    // **************************************************************************************************************************
+    private async Task PersistDraftItemsAndTasksOnCreateAsync(
+        string userId,
+        string eventId,
+        bool itemsTasksEnabled,
+        string? bringItemsJson,
+        string? guestTasksJson)
+    {
+        if (!itemsTasksEnabled)
+            return;
+
+        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        if (!string.IsNullOrWhiteSpace(bringItemsJson))
+        {
+            var items = JsonSerializer.Deserialize<List<DraftBringItemPayload>>(bringItemsJson, jsonOptions);
+            if (items != null)
+            {
+                var sort = 0;
+                foreach (var item in items)
+                {
+                    var title = item.Title?.Trim();
+                    if (string.IsNullOrWhiteSpace(title))
+                        continue;
+
+                    var people = item.People < 1 ? 1 : Math.Min(item.People, 99);
+                    await _eventItemService.CreateEventItemAsync(userId, new AddItemFormData
+                    {
+                        EventId = eventId,
+                        Title = title,
+                        Amount = string.IsNullOrWhiteSpace(item.Amount) ? null : item.Amount.Trim(),
+                        PeopleNeeded = people,
+                        SortOrder = sort++,
+                    });
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(guestTasksJson))
+        {
+            var tasks = JsonSerializer.Deserialize<List<DraftGuestTaskPayload>>(guestTasksJson, jsonOptions);
+            if (tasks != null)
+            {
+                var sort = 0;
+                foreach (var task in tasks)
+                {
+                    var title = task.Title?.Trim();
+                    if (string.IsNullOrWhiteSpace(title))
+                        continue;
+
+                    var people = task.People < 1 ? 1 : Math.Min(task.People, 99);
+                    await _eventTaskService.CreateEventTaskAsync(userId, new AddTaskFormData
+                    {
+                        EventId = eventId,
+                        Title = title,
+                        TaskTime = string.IsNullOrWhiteSpace(task.Time) ? null : task.Time.Trim(),
+                        TaskLocation = string.IsNullOrWhiteSpace(task.Location) ? null : task.Location.Trim(),
+                        PeopleNeeded = people,
+                        SortOrder = sort++,
+                    });
+                }
+            }
+        }
+    }
+
+    // **************************************************************************************************************************
+    private static void NormalizePaymentFields(AddEventViewModel model)
+    {
+        model.PaymentMethod = TrimOrNull(model.PaymentMethod);
+        model.PaymentNumber = TrimOrNull(model.PaymentNumber);
+        model.PaymentName = TrimOrNull(model.PaymentName);
+        model.PaymentComment = TrimOrNull(model.PaymentComment);
+        model.PaymentAmount = TrimOrNull(model.PaymentAmount);
+    }
+
+    // **************************************************************************************************************************
+    private static string? TrimOrNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    // **************************************************************************************************************************
+    private static decimal? ParsePaymentAmount(string? amountRaw)
+    {
+        if (string.IsNullOrWhiteSpace(amountRaw))
+            return null;
+
+        var normalized = amountRaw.Trim();
+        foreach (var token in new[] { "kr", "sek", ":-" })
+            normalized = normalized.Replace(token, "", StringComparison.OrdinalIgnoreCase);
+
+        normalized = normalized.Replace(" ", "", StringComparison.Ordinal)
+            .Replace("\u00a0", "", StringComparison.Ordinal)
+            .Trim();
+
+        if (decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount))
+            return amount;
+
+        var swedish = CultureInfo.GetCultureInfo("sv-SE");
+        if (decimal.TryParse(normalized, NumberStyles.Number, swedish, out amount))
+            return amount;
+
+        if (decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.CurrentCulture, out amount))
+            return amount;
+
+        return null;
     }
 }
 

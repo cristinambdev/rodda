@@ -9,12 +9,17 @@ public class EventDetailsViewModel
     public string Title { get; set; } = null!;
     public string? Slug { get; set; }
     public string? CoverImageUrl { get; set; }
+    public string CreatorDisplayLabel { get; set; } = "";
     public string? Description { get; set; }
 
     public DateTimeOffset StartAt { get; set; }
     public DateTimeOffset? EndAt { get; set; }
     public string Timezone { get; set; } = null!;
     public JoinMode JoinMode { get; set; }
+    public bool JoinEnabled => JoinMode != JoinMode.Disabled;
+    public bool UserHasJoined { get; set; }
+    public int UserGuestCount { get; set; } = 1;
+    public int TotalJoinedGuests { get; set; }
     public EventStatus Status { get; set; }
 
     public bool ChatEnabled { get; set; }

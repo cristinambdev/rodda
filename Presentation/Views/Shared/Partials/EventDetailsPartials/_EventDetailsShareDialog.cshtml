@@ -1,39 +1,50 @@
-<!-- Share event dialogue -->
-<dialog
-  class="dialogue event-details-share-dialogue"
-  id="event-details-share-dialog"
-  aria-labelledby="event-details-share-dialog-heading"
-  data-can-manage="@((ViewData["CanManageEvent"] as bool? ?? false) ? "true" : "false")">
-  <div class="card card-share">
+@{
+    var canManageEvent = ViewData["CanManageEvent"] as bool? ?? false;
+}
+<!-- Share event modal -->
+<div id="event-details-share-dialog"
+     class="modal event-details-share-dialogue"
+     data-can-manage="@(canManageEvent ? "true" : "false")"
+     role="presentation">
+  <button type="button"
+          class="modal-backdrop"
+          data-type="close"
+          data-target="#event-details-share-dialog"
+          tabindex="-1"
+          aria-label="Close"></button>
+  <div class="modal-panel card card-share event-details-share-dialogue-panel"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="event-details-share-dialog-heading">
+    <button type="button"
+            class="modal-dismiss"
+            data-type="close"
+            data-target="#event-details-share-dialog"
+            aria-label="Close">×</button>
     <div class="card-body card-body-share">
       <i class="fa-solid fa-share-nodes icon" aria-hidden="true"></i>
       <h5 class="card-title card-title-share" id="event-details-share-dialog-heading">Share event</h5>
       <p class="card-text card-text-share">Share a private link so guests can join this event.</p>
       <p class="card-text card-text-share" id="event-details-share-status" hidden role="status"></p>
       <div class="card-actions card-actions-share">
-        <button
-          type="button"
-          class="btn btn-share btn-share-link"
-          data-event-details-share-action="link"
-        >
+        <button type="button"
+                class="btn btn-share btn-share-link"
+                data-event-details-share-action="link">
           Copy share link
         </button>
-        <button
-          type="button"
-          class="btn btn-share btn-share-revoke"
-          data-event-details-share-action="revoke"
-          hidden
-        >
+        <button type="button"
+                class="btn btn-share btn-share-revoke"
+                data-event-details-share-action="revoke"
+                @(canManageEvent ? null : "hidden")>
           Revoke link
         </button>
-        <button
-          type="button"
-          class="btn btn-share btn-share-cancel"
-          data-event-details-share-action="cancel"
-        >
+        <button type="button"
+                class="btn btn-share btn-share-cancel"
+                data-type="close"
+                data-target="#event-details-share-dialog">
           Cancel
         </button>
       </div>
     </div>
   </div>
-</dialog>
+</div>

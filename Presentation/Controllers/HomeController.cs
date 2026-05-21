@@ -4,10 +4,11 @@ namespace Presentation.Controllers
 {
     public class HomeController : Controller
     {
-        [Route("/index")] 
+        [Route("/index")]
     // **************************************************************************************************************************
         public IActionResult Index()
         {
+            ViewData["ActiveNav"] = "home";
             return View();
         }
     }

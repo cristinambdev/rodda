@@ -42,9 +42,6 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
         if (string.IsNullOrEmpty(eventEntity.Id))
             eventEntity.Id = Guid.NewGuid().ToString();
 
-        if (eventEntity.StartAt.Year < 2000)
-            eventEntity.StartAt = DateTimeOffset.UtcNow; // Fixes the "hidden" event bug when no date is added
-
         // Set the Creator ID
         eventEntity.CreatedByUserId = userId;
         eventEntity.Visibility = EventVisibility.Private;
@@ -122,7 +119,8 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
                 ],
                 includeChains:
                 [
-                    q => q.Include(x => x.ChatMessages).ThenInclude(c => c.AuthorUser)
+                    q => q.Include(x => x.ChatMessages).ThenInclude(c => c.AuthorUser),
+                    q => q.Include(x => x.Attendances).ThenInclude(a => a.User)
                 ]
             );
 
@@ -219,7 +217,9 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
             return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
         var attendance = attendanceResponse.Result;
-        if (attendance.Status != AttendanceStatus.Accepted)
+        if (attendance.Status == AttendanceStatus.Declined)
+            attendance.Status = AttendanceStatus.Accepted;
+        else if (attendance.Status != AttendanceStatus.Accepted)
             return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
         attendance.GuestCount = guestCount;
@@ -293,6 +293,9 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
             return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
         var newChatMessage = formData.MapTo<EventChatEntity>();
+        newChatMessage.EventId = eventId;
+        newChatMessage.AuthorUserId = userId;
+
         var result = await _eventChatRepository.AddAsync(newChatMessage);
 
         return result.Succeeded
@@ -356,10 +359,36 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
         };
         result.Roles = entity.Roles.Select(r => r.MapTo<EventRole>()).ToList();
         result.Attendances = entity.Attendances.Select(a => a.MapTo<EventAttendance>()).ToList();
+        result.ChatMessages = entity.ChatMessages
+            .OrderBy(c => c.CreatedAt)
+            .Select(c =>
+            {
+                var chat = c.MapTo<EventChat>();
+                chat.Author = c.AuthorUser?.MapTo<User>();
+                return chat;
+            })
+            .ToList();
         result.AllowGuestBringItems = entity.AllowGuestBringItems == true;
         result.AllowGuestTasks = entity.AllowGuestTasks == true;
         result.ItemsTasksEnabled = entity.ItemsTasksEnabled == true;
         result.Visibility = entity.Visibility;
+
+        if (!string.IsNullOrWhiteSpace(entity.PaymentMethod)
+            || !string.IsNullOrWhiteSpace(entity.PaymentNumber)
+            || !string.IsNullOrWhiteSpace(entity.PaymentName)
+            || entity.PaymentAmount.HasValue
+            || !string.IsNullOrWhiteSpace(entity.PaymentComment))
+        {
+            result.Payment = new PaymentDetails
+            {
+                Method = entity.PaymentMethod,
+                Number = entity.PaymentNumber,
+                Name = entity.PaymentName,
+                Amount = entity.PaymentAmount,
+                Comment = entity.PaymentComment
+            };
+        }
+
         return result;
     }
 

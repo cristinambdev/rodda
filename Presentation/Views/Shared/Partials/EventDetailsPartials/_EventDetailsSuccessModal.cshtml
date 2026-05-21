@@ -1,0 +1,52 @@
+@{
+    var successMessage = ViewData["SuccessMessage"] as string;
+    var hasFlashMessage = !string.IsNullOrWhiteSpace(successMessage);
+}
+<!-- Success feedback modal (auto-opens via `site.js` when `data-flash-open` is set) -->
+<div id="event-details-success-modal"
+     class="modal modal-event-details-success"
+     @(hasFlashMessage ? "data-flash-open" : null)
+     data-flash-message="@successMessage"
+     role="presentation">
+  <button type="button"
+          class="modal-backdrop"
+          data-type="close"
+          data-target="#event-details-success-modal"
+          tabindex="-1"
+          aria-label="Close"></button>
+  <div class="modal-panel edit-add-item-dialogue"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="event-details-success-modal-title">
+    <button type="button"
+            id="event-details-success-modal-dismiss"
+            class="modal-dismiss modal-dismiss-corner"
+            data-type="close"
+            data-target="#event-details-success-modal"
+            aria-label="Close">
+      ×
+    </button>
+
+    <header class="modal-header">
+      <span class="modal-header-icon event-details-success-modal-icon" aria-hidden="true">
+        <i class="fa-solid fa-circle-check"></i>
+      </span>
+      <div class="modal-header-text">
+        <h2 class="modal-title" id="event-details-success-modal-title">Success</h2>
+      </div>
+    </header>
+
+    <div class="modal-content modal-content-success">
+      <p class="modal-success-message" id="event-details-success-message" role="status">@successMessage</p>
+    </div>
+
+    <footer class="modal-footer modal-footer-success">
+      <button type="button"
+              class="btn btn-save-item"
+              data-type="close"
+              data-target="#event-details-success-modal">
+        <span class="eventitem-join-label">OK</span>
+      </button>
+    </footer>
+  </div>
+</div>

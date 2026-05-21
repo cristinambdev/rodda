@@ -2,35 +2,59 @@
 @{
     Layout = "_PortalLayout";
     ViewData["Title"] = Model.Title;
+    ViewData["SuccessMessage"] = TempData["SuccessMessage"];
     var itemCount = Model.Items?.Count ?? 0;
     var taskCount = Model.Tasks?.Count ?? 0;
 }
 
-@if (TempData["SuccessMessage"] is string successMessage)
-{
-    <div class="auth-banner auth-banner--success" role="status">@successMessage</div>
-}
 @if (TempData["ErrorMessage"] is string errorMessage)
 {
     <div class="auth-banner auth-banner--error" role="alert">@errorMessage</div>
 }
 
+<div id="event-details-page"
+     data-event-id="@Model.Id"
+     data-event-title="@Model.Title"
+     data-can-manage="@(((ViewData["CanManageEvent"] as bool?) ?? false) ? "true" : "false")"
+     hidden></div>
+
 <section class="eventitem-hero" aria-label="Event cover">
-    <img id="eventitem-hero-img"
-         class="eventitem-hero-image"
-         src="@Model.CoverImageUrl"
-         alt=""
-         width="1200"
-         height="675"
-         decoding="async"
-         @(string.IsNullOrEmpty(Model.CoverImageUrl) ? "hidden" : null) />
+    @if (!string.IsNullOrWhiteSpace(Model.CoverImageUrl))
+    {
+        <img id="eventitem-hero-img"
+             class="eventitem-hero-image"
+             src="@Model.CoverImageUrl"
+             alt=""
+             width="1200"
+             height="675"
+             decoding="async" />
+    }
+    else
+    {
+        <div id="eventitem-hero-placeholder"
+             class="eventitem-hero-placeholder"
+             role="img"
+             aria-label="No cover image">
+            <i class="fa-solid fa-camera" aria-hidden="true"></i>
+        </div>
+    }
     <div class="eventitem-hero-overlay">
         <a class="eventitem-hero-fab" id="eventitem-back" aria-label="Go back" asp-controller="Events" asp-action="Events">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
         </a>
-        <button type="button" class="eventitem-hero-fab" id="eventitem-hero-options" aria-label="Event options">
-            <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
-        </button>
+        <div class="eventitem-hero-options-wrap" data-menu-wrap>
+            <button type="button"
+                    class="eventitem-hero-fab"
+                    id="eventitem-hero-options"
+                    aria-label="Event options"
+                    aria-haspopup="menu"
+                    aria-expanded="false"
+                    aria-controls="event-details-context-menu"
+                    data-menu-toggle>
+                <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
+            </button>
+            <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsContextMenu.cshtml" />
+        </div>
     </div>
 </section>
 
@@ -38,7 +62,7 @@
     <div class="eventitem-title-block">
         <h3 class="eventitem-title" id="eventitem-title">@Model.Title</h3>
         <p class="eventitem-creator">
-            Created by <strong id="eventitem-creator-name">Organizer</strong>
+            Created by <strong id="eventitem-creator-name">@Model.CreatorDisplayLabel</strong>
         </p>
     </div>
 
@@ -61,6 +85,45 @@
                 </div>
             </div>
         }
+        @{
+            var payment = Model.Payment;
+            var hasPayment = payment != null && (
+                !string.IsNullOrWhiteSpace(payment.Method)
+                || !string.IsNullOrWhiteSpace(payment.Number)
+                || !string.IsNullOrWhiteSpace(payment.Name)
+                || payment.Amount.HasValue
+                || !string.IsNullOrWhiteSpace(payment.Comment));
+            string? paymentMethodLine = null;
+            if (hasPayment)
+            {
+                var methodPart = payment!.Method?.Trim();
+                var paymentTail = string.Join(" - ", new[]
+                {
+                    payment.Number?.Trim(),
+                    payment.Name?.Trim()
+                }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                paymentMethodLine = !string.IsNullOrWhiteSpace(methodPart)
+                    ? (string.IsNullOrWhiteSpace(paymentTail) ? methodPart : $"{methodPart}: {paymentTail}")
+                    : (string.IsNullOrWhiteSpace(paymentTail) ? null : paymentTail);
+            }
+        }
+        @if (hasPayment)
+        {
+            <hr class="eventitem-info-divider" />
+            <div class="eventitem-info-row expenses">
+                <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                <div>
+                    @if (!string.IsNullOrWhiteSpace(paymentMethodLine))
+                    {
+                        <p class="eventitem-payment-method-line" id="eventitem-payment-method-line">@paymentMethodLine</p>
+                    }
+                    @if (payment!.Amount.HasValue)
+                    {
+                        <p class="eventitem-amount-line" id="eventitem-amount-line">Amount: @payment.Amount.Value.ToString("0.##") kr</p>
+                    }
+                </div>
+            </div>
+        }
     </div>
 
     @if (!string.IsNullOrWhiteSpace(Model.Description))
@@ -71,6 +134,8 @@
         </div>
     }
 
+    <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsJoinSection.cshtml" model="Model" />
+
     @if (Model.ItemsTasksEnabled)
     {
         <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsOrganizerAndMini.cshtml" model="Model" />
@@ -78,16 +143,16 @@
 
     @if (Model.ChatEnabled)
     {
-        <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsChat.cshtml" />
+        <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsChat.cshtml" model="Model" />
     }
 </div>
 
-<partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsGuestsModal.cshtml" />
+<partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsGuestsModal.cshtml" model="Model" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsAddCommunityGuestDialog.cshtml" />
-<partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsJoinDialog.cshtml" />
+<partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsJoinDialog.cshtml" model="Model" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsDeleteDialog.cshtml" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsShareDialog.cshtml" />
-<partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsContextMenu.cshtml" />
+<partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsSuccessModal.cshtml" />
 
 <div id="eventitem-modals-root">
     @Html.AntiForgeryToken()
@@ -96,3 +161,11 @@
     <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" model="Model" />
     <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" model="Model" />
 </div>
+
+@section Scripts {
+    <script src="~/js/eventdetails-join.js" asp-append-version="true"></script>
+    @if (Model.ChatEnabled)
+    {
+        <script src="~/js/eventdetails-chat.js" asp-append-version="true"></script>
+    }
+}

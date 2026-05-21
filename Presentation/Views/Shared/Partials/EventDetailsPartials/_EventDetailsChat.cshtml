@@ -1,16 +1,52 @@
+@model Presentation.Models.EventDetailsViewModel
+@{
+    var chatEnded = Model.EndAt.HasValue
+        ? Model.EndAt.Value < DateTimeOffset.UtcNow
+        : Model.StartAt < DateTimeOffset.UtcNow;
+}
 <!-- Chat section in event details -->
 <section class="event-details-chat" data-event-details-guest-chat aria-labelledby="event-details-chat-heading">
   <h2 class="event-details-chat-heading" id="event-details-chat-heading">
     <i class="fa-solid fa-comments" aria-hidden="true"></i>
     Chat
   </h2>
-  <!-- Chat messages will be displayed here -->
-  <ul class="event-details-chat-list" id="event-details-chat-list" role="list"></ul>
-  <!-- Chat input form -->
+  <ul class="event-details-chat-list" id="event-details-chat-list" role="list">
+    @foreach (var message in Model.ChatMessages)
+    {
+      <li class="event-details-chat-item@(message.IsFromCurrentUser ? " event-details-chat-item--me" : "")"
+          @(message.CanDelete ? "data-can-delete" : null)
+          tabindex="@(message.CanDelete ? "0" : null)"
+          role="@(message.CanDelete ? "button" : null)"
+          aria-expanded="@(message.CanDelete ? "false" : null)">
+        <div class="event-details-chat-item-body">
+          <p class="event-details-chat-meta">
+            <span class="event-details-chat-author">@message.AuthorDisplay</span>
+            <span class="event-details-chat-time">@message.CreatedAt.ToLocalTime().ToString("HH:mm")</span>
+          </p>
+          <p class="event-details-chat-text">@message.Body</p>
+        </div>
+        @if (message.CanDelete)
+        {
+          <form method="post"
+                class="event-details-chat-delete"
+                asp-controller="Events"
+                asp-action="DeleteChatMessage"
+                asp-route-id="@Model.Id"
+                asp-route-messageId="@message.Id"
+                onsubmit="return confirm('Delete this comment?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="event-details-chat-delete-btn" aria-label="Delete comment">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            </button>
+          </form>
+        }
+      </li>
+    }
+  </ul>
   <form class="event-details-chat-form"
         asp-controller="Events"
         asp-action="AddChatMessage"
-        asp-route-id="@ViewContext.RouteData.Values["id"]"
+        asp-route-id="@Model.Id"
         method="post">
     @Html.AntiForgeryToken()
     <label class="visually-hidden" for="event-details-chat-input">Add a comment</label>
@@ -19,14 +55,13 @@
       id="event-details-chat-input"
       class="event-details-chat-input"
       name="Body"
-      placeholder="Add a comment..."
+      placeholder="@(chatEnded ? "This event has ended" : "Add a comment...")"
       autocomplete="off"
       required
+      @(chatEnded ? "disabled" : null)
     />
-    <!-- Send message button -->
-    <button type="submit" class="event-details-chat-send" aria-label="Send comment">
+    <button type="submit" class="event-details-chat-send" aria-label="Send comment" @(chatEnded ? "disabled" : null)>
       <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
     </button>
   </form>
 </section>
-
