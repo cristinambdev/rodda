@@ -1,0 +1,99 @@
+@model Event
+@using Domain.Enums
+@using Presentation.Helpers
+@using System.Globalization
+
+@{
+    var userId = ViewData["UserId"] as string ?? "";
+    var start = Model.StartAt;
+    var isPast = start < DateTimeOffset.UtcNow;
+    var hasCover = !string.IsNullOrWhiteSpace(Model.CoverImageUrl);
+    var title = Model.Title;
+    var detailUrl = EventUrls.DetailsPath(Model.Slug, Model.Id);
+    var listDateTime = start.ToString("ddd, MMM d · h:mm tt", CultureInfo.InvariantCulture);
+    var listLocation = !string.IsNullOrWhiteSpace(Model.Location?.Name)
+        ? Model.Location!.Name!
+        : Model.Location?.Street ?? "";
+
+    var role = Model.Roles.FirstOrDefault(r => r.UserId == userId);
+    var isCreator = !string.IsNullOrEmpty(Model.CreatedByUserId)
+        && string.Equals(Model.CreatedByUserId, userId, StringComparison.Ordinal);
+    string? roleBadge = isCreator ? "Creator"
+        : role?.Role == EventRoleType.Owner ? "Owner"
+        : role?.Role == EventRoleType.CoOwner ? "Co-owner"
+        : null;
+
+    var accepted = Model.Attendances.Where(a => a.Status == AttendanceStatus.Accepted).ToList();
+    var attendanceMuted = accepted.Count == 0;
+    var attendanceIcon = "fa-solid fa-users";
+    var attendanceLabel = accepted.Count == 0
+        ? "No one has joined yet"
+        : (accepted.Sum(a => Math.Max(1, a.GuestCount)) == 1
+            ? "1 person attending"
+            : $"{accepted.Sum(a => Math.Max(1, a.GuestCount))} people attending");
+
+    var workloadBadges = ViewData["EventCardBadges"] is IReadOnlyDictionary<string, EventCardBadgeHelper.CardBadges> cardBadges
+        ? cardBadges.GetValueOrDefault(Model.Id)
+        : null;
+
+    var cardClass = "card event-card vertical" + (isPast ? " event-card--past" : "");
+    var attendanceClass = "event-card-attendance" + (attendanceMuted ? " event-card-attendance--muted" : "");
+    var headerClass = "card-header event-card-header" + (hasCover ? "" : " event-card-header--no-photo");
+    var footerSolo = string.IsNullOrWhiteSpace(listLocation);
+    var footerClass = "card-footer" + (footerSolo ? " solo" : "");
+}
+
+<article class="@cardClass" data-event-card data-event-id="@Model.Id">
+    <a class="event-card-link-overlay"
+       href="@detailUrl"
+       aria-label="View @title"></a>
+
+    <div class="@headerClass">
+        @if (!string.IsNullOrEmpty(roleBadge))
+        {
+            <span class="badge badge-green">@roleBadge</span>
+        }
+        @if (workloadBadges != null && !string.IsNullOrEmpty(workloadBadges.WorkloadLabel))
+        {
+            <span class="badge badge-blue">@workloadBadges.WorkloadLabel</span>
+        }
+        @if (workloadBadges?.UserHasItemsOrTasks == true)
+        {
+            <span class="badge badge-orange status-you">You have tasks/items</span>
+        }
+        @if (hasCover)
+        {
+            <img class="event-card-image"
+                 src="@Model.CoverImageUrl"
+                 alt=""
+                 width="800"
+                 height="450"
+                 decoding="async" />
+        }
+        else
+        {
+            <div class="event-card-hero-placeholder event-card-hero-placeholder--home" aria-hidden="true">
+                <i class="fa-solid fa-camera" aria-hidden="true"></i>
+            </div>
+        }
+    </div>
+
+    <div class="card-body">
+        <h3 class="event-card-title">@title</h3>
+        <p class="event-card-datetime">@listDateTime</p>
+        @if (!string.IsNullOrWhiteSpace(listLocation))
+        {
+            <p class="event-card-location">
+                <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                @listLocation
+            </p>
+        }
+    </div>
+
+    <div class="@footerClass">
+        <p class="@attendanceClass">
+            <i class="@attendanceIcon" aria-hidden="true"></i>
+            @attendanceLabel
+        </p>
+    </div>
+</article>

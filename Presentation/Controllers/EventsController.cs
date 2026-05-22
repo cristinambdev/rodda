@@ -71,7 +71,10 @@ public class EventsController( IEventService eventService, IEventItemService eve
     // **************************************************************************************************************************
     [HttpGet]
     [Route("/events/card/{eventId}")]
-    public async Task<IActionResult> GetSingleEventCard(string eventId, [FromQuery] bool fromMyEvents = false)
+    public async Task<IActionResult> GetSingleEventCard(
+        string eventId,
+        [FromQuery] bool fromMyEvents = false,
+        [FromQuery] string? layout = null)
     {
         var userId = User.GetUserId();
         if (userId == null)
@@ -89,7 +92,12 @@ public class EventsController( IEventService eventService, IEventItemService eve
         var badges = await BuildCardBadgesAsync(userId, [ev]);
         ViewData["EventCardBadges"] = badges;
 
-        return PartialView("~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml", ev);
+        var isVertical = string.Equals(layout, "vertical", StringComparison.OrdinalIgnoreCase);
+        var partial = isVertical
+            ? "~/Views/Shared/Partials/EventCardsPartials/_VerticalEventCard.cshtml"
+            : "~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml";
+
+        return PartialView(partial, ev);
     }
 
     // **************************************************************************************************************************

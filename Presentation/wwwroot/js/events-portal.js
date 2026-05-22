@@ -100,6 +100,51 @@ async function appendHorizontalEventCard(ul, eventId, options) {
   ul.appendChild(li);
 }
 
+/********************************************************************************/
+
+async function fetchVerticalEventCardHtml(eventId) {
+  const id = encodeURIComponent(String(eventId || "").trim());
+  if (!id) return "";
+
+  const res = await fetch(`/events/card/${id}?layout=vertical`, {
+    credentials: "same-origin",
+    headers: { Accept: "text/html" },
+  });
+  if (!res.ok) return "";
+  return res.text();
+}
+
+/********************************************************************************/
+
+async function appendHomeVerticalEventCard(ul, eventId) {
+  const html = (await fetchVerticalEventCardHtml(eventId)).trim();
+  if (!html || !(ul instanceof HTMLElement)) return;
+
+  const li = document.createElement("li");
+  li.className = "home-event-item";
+  li.innerHTML = html;
+  ul.appendChild(li);
+}
+
+/********************************************************************************/
+
+function homeTimeRangeBoundsMs(range) {
+  const now = new Date();
+  const startOfDayMs = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const fromMs = startOfDayMs(now);
+  let toMs = Number.POSITIVE_INFINITY;
+
+  if (range === "week") {
+    toMs = startOfDayMs(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
+  } else if (range === "month") {
+    toMs = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+  } else if (range === "year") {
+    toMs = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999).getTime();
+  }
+
+  return { fromMs, toMs };
+}
+
 // ================================================================================================
 // All Events list (client-rendered only when lists are empty)
 // ================================================================================================
