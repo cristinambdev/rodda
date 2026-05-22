@@ -57,6 +57,9 @@
         </div>
     </section>
 
+<script type="application/json" id="portal-events-data">@Html.Raw(ViewData["PortalEventsJson"] ?? "[]")</script>
+
 @section Scripts {
     <script src="~/js/events-list-segment.js" asp-append-version="true"></script>
+    <script src="~/js/events-portal.js" asp-append-version="true"></script>
 }

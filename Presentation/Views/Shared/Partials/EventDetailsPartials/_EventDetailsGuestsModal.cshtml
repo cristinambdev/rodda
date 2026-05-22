@@ -1,11 +1,17 @@
 @using Domain.Enums
 @model Presentation.Models.EventDetailsViewModel?
 @{
+    var isHost = Model?.CanManageItemsTasks == true;
     var acceptedGuests = Model?.Attendees
         .Where(a => a.Status == AttendanceStatus.Accepted)
         .ToList() ?? [];
+    var hostRoster = Model?.HostGuestRoster ?? [];
     var totalGuests = acceptedGuests.Sum(a => Math.Max(1, a.GuestCount));
     var eventTitle = Model?.Title?.ToUpperInvariant() ?? "";
+    var acceptedCount = hostRoster.Count(r => r.Status == AttendanceStatus.Accepted);
+    var declinedCount = hostRoster.Count(r => r.Status == AttendanceStatus.Declined);
+    var pendingCount = hostRoster.Count(r =>
+        r.Status is AttendanceStatus.Pending or AttendanceStatus.Maybe);
 }
 
 <!-- Guests list modal -->
@@ -35,25 +41,59 @@
     </header>
     <div class="modal-content modal-content-guests">
       <ul class="event-details-members-list" id="event-details-guests-list" role="list">
-        @foreach (var guest in acceptedGuests)
+        @if (isHost)
         {
-            var name = string.IsNullOrWhiteSpace(guest.DisplayName) ? "Guest" : guest.DisplayName;
-            var count = Math.Max(1, guest.GuestCount);
-            <li class="event-details-members-row">
-              <span class="event-details-members-name">@name@(count > 1 ? $" (+{count - 1})" : "")</span>
-              <span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span>
-            </li>
+            @foreach (var guest in hostRoster)
+            {
+                var name = string.IsNullOrWhiteSpace(guest.DisplayName) ? "Guest" : guest.DisplayName;
+                var count = Math.Max(1, guest.GuestCount);
+                var accepted = guest.Status == AttendanceStatus.Accepted;
+                <li class="event-details-members-row event-details-members-row--attendee">
+                  <span class="event-details-members-name">
+                    @name@(count > 1 ? $" (+{count - 1})" : "")
+                    @if (!string.IsNullOrWhiteSpace(guest.RoleLabel))
+                    {
+                        <span class="event-details-members-role">@guest.RoleLabel</span>
+                    }
+                  </span>
+                  <span class="event-details-guests-status @(accepted ? "event-details-guests-status-on" : "event-details-guests-status--off")" aria-hidden="true">@(accepted ? "✓" : "○")</span>
+                </li>
+            }
+        }
+        else
+        {
+            @foreach (var guest in acceptedGuests)
+            {
+                var name = string.IsNullOrWhiteSpace(guest.DisplayName) ? "Guest" : guest.DisplayName;
+                var count = Math.Max(1, guest.GuestCount);
+                <li class="event-details-members-row">
+                  <span class="event-details-members-name">@name@(count > 1 ? $" (+{count - 1})" : "")</span>
+                  <span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span>
+                </li>
+            }
         }
       </ul>
       <p class="event-details-guests-list-hint">
-        Guests with <span class="visually-hidden">a green check</span>
-        <span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span>
-        have confirmed attendance.
+        @if (isHost)
+        {
+            <text>Guests with <span class="visually-hidden">a green check</span><span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span> have confirmed attendance.</text>
+        }
+        else
+        {
+            <text>Guests listed here have confirmed attendance.</text>
+        }
       </p>
     </div>
     <footer class="event-details-guests-modal-footer" aria-label="Attendance summary">
       <p id="event-details-guests-total" aria-live="polite">
-        @totalGuests @(totalGuests == 1 ? "person" : "people") attending
+        @if (isHost)
+        {
+            @($"{acceptedCount} accepted · {declinedCount} declined · {pendingCount} not answered")
+        }
+        else
+        {
+            @($"{totalGuests} {(totalGuests == 1 ? "person" : "people")} attending")
+        }
       </p>
     </footer>
   </div>

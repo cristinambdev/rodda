@@ -39,6 +39,7 @@ public class EventDetailsViewModel
     public List<EventItemViewModel> Items { get; set; } = new();
     public List<EventTaskViewModel> Tasks { get; set; } = new();
     public List<EventAttendeeViewModel> Attendees { get; set; } = new();
+    public List<EventGuestRosterViewModel> HostGuestRoster { get; set; } = new();
     public IEnumerable<EventRole> EventRoles { get; set; } = new List<EventRole>();
     public List<ChatMessageViewModel> ChatMessages { get; set; } = new();
 }

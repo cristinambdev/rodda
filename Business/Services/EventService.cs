@@ -120,6 +120,7 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
                 includeChains:
                 [
                     q => q.Include(x => x.ChatMessages).ThenInclude(c => c.AuthorUser),
+                    q => q.Include(x => x.Roles).ThenInclude(r => r.User),
                     q => q.Include(x => x.Attendances).ThenInclude(a => a.User)
                 ]
             );
@@ -357,8 +358,18 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
             City = entity.LocationCity,
             Country = entity.LocationCountry,
         };
-        result.Roles = entity.Roles.Select(r => r.MapTo<EventRole>()).ToList();
-        result.Attendances = entity.Attendances.Select(a => a.MapTo<EventAttendance>()).ToList();
+        result.Roles = entity.Roles.Select(r =>
+        {
+            var role = r.MapTo<EventRole>();
+            role.User = r.User?.MapTo<User>();
+            return role;
+        }).ToList();
+        result.Attendances = entity.Attendances.Select(a =>
+        {
+            var attendance = a.MapTo<EventAttendance>();
+            attendance.User = a.User?.MapTo<User>();
+            return attendance;
+        }).ToList();
         result.ChatMessages = entity.ChatMessages
             .OrderBy(c => c.CreatedAt)
             .Select(c =>

@@ -45,6 +45,26 @@ public class EventsController( IEventService eventService, IEventItemService eve
     }
 
     // **************************************************************************************************************************
+    [HttpGet]
+    [Route("/events/card/{eventId}")]
+    public async Task<IActionResult> GetSingleEventCard(string eventId, [FromQuery] bool fromMyEvents = false)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return Unauthorized();
+
+        var response = await _eventService.GetEventForUserAsync(userId, eventId);
+        if (!response.Succeeded || response.Result == null)
+            return NotFound();
+
+        ViewData["UserId"] = userId;
+        if (fromMyEvents)
+            ViewData["DetailFromMyEvents"] = true;
+
+        return PartialView("~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml", response.Result);
+    }
+
+    // **************************************************************************************************************************
     [HttpPost]
     [Route("/events/create")]
     [ValidateAntiForgeryToken]
@@ -277,12 +297,15 @@ public class EventsController( IEventService eventService, IEventItemService eve
                 Id = a.Id,
                 EventId = a.EventId,
                 UserId = a.UserId,
-                DisplayName = a.User?.DisplayName,
+                DisplayName = ResolveAssignmentDisplayName(a.User),
                 GuestCount = Math.Max(1, a.GuestCount),
                 Status = a.Status,
                 RespondedAt = a.RespondedAt,
             })
             .ToList();
+
+        if (model.CanManageItemsTasks)
+            model.HostGuestRoster = BuildHostGuestRoster(eventData);
 
         model.ChatMessages = eventData.ChatMessages
             .Select(m =>
@@ -530,6 +553,53 @@ public class EventsController( IEventService eventService, IEventItemService eve
         model.PaymentName = TrimOrNull(model.PaymentName);
         model.PaymentComment = TrimOrNull(model.PaymentComment);
         model.PaymentAmount = TrimOrNull(model.PaymentAmount);
+    }
+
+    // **************************************************************************************************************************
+    private static List<EventGuestRosterViewModel> BuildHostGuestRoster(Event eventData)
+    {
+        var byUser = new Dictionary<string, EventGuestRosterViewModel>(StringComparer.Ordinal);
+
+        foreach (var role in eventData.Roles)
+        {
+            var roleLabel = role.Role == EventRoleType.Owner ? "Owner" : "Co-owner";
+            byUser[role.UserId] = new EventGuestRosterViewModel
+            {
+                UserId = role.UserId,
+                DisplayName = ResolveAssignmentDisplayName(role.User),
+                RoleLabel = roleLabel,
+                Status = AttendanceStatus.Pending,
+                GuestCount = 1,
+            };
+        }
+
+        foreach (var attendance in eventData.Attendances)
+        {
+            if (byUser.TryGetValue(attendance.UserId, out var row))
+            {
+                row.Status = attendance.Status;
+                row.GuestCount = Math.Max(1, attendance.GuestCount);
+                if (string.IsNullOrWhiteSpace(row.DisplayName))
+                    row.DisplayName = ResolveAssignmentDisplayName(attendance.User);
+            }
+            else
+            {
+                byUser[attendance.UserId] = new EventGuestRosterViewModel
+                {
+                    UserId = attendance.UserId,
+                    DisplayName = ResolveAssignmentDisplayName(attendance.User),
+                    GuestCount = Math.Max(1, attendance.GuestCount),
+                    Status = attendance.Status,
+                };
+            }
+        }
+
+        return byUser.Values
+            .OrderByDescending(r => string.Equals(r.UserId, eventData.CreatedByUserId, StringComparison.Ordinal))
+            .ThenByDescending(r => r.RoleLabel == "Owner")
+            .ThenByDescending(r => r.RoleLabel == "Co-owner")
+            .ThenBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     // **************************************************************************************************************************
