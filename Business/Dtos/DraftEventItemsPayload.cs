@@ -1,4 +1,4 @@
-namespace Presentation.Models;
+namespace Business.Dtos;
 
 /// <summary>JSON shape posted from <c>newevent.js</c> draft bring-items on event create.</summary>
 public class DraftBringItemPayload

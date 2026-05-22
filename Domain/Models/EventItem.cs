@@ -11,6 +11,9 @@ public class EventItem
     public DateTime? UpdatedAt { get; set; }
     public string EventId { get; set; } = null!;
     public string? EventTitle { get; set; }
+    public string? EventSlug { get; set; }
+    public DateTimeOffset? EventStartAt { get; set; }
+    public string? EventListLocation { get; set; }
 
     // CURRENT DISPLAY DATA (What the UI shows)
     // If an assignee edits the item, it changes THESE fields.

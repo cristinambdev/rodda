@@ -67,4 +67,68 @@ public static class EventFormModalHelper
             return row;
         }).ToList();
     }
+
+    // ************************************************************************************************
+    // Merges event roles and attendances into one host-guest roster for the guests modal.
+    public static List<EventGuestRosterViewModel> BuildHostGuestRoster(Event eventData)
+    {
+        var byUser = new Dictionary<string, EventGuestRosterViewModel>(StringComparer.Ordinal);
+
+        foreach (var role in eventData.Roles)
+        {
+            var roleLabel = role.Role == EventRoleType.Owner ? "Owner" : "Co-owner";
+            byUser[role.UserId] = new EventGuestRosterViewModel
+            {
+                UserId = role.UserId,
+                DisplayName = ResolveAssignmentDisplayName(role.User),
+                RoleLabel = roleLabel,
+                Status = AttendanceStatus.Pending,
+                GuestCount = 1,
+            };
+        }
+
+        foreach (var attendance in eventData.Attendances)
+        {
+            if (byUser.TryGetValue(attendance.UserId, out var row))
+            {
+                row.Status = attendance.Status;
+                row.GuestCount = Math.Max(1, attendance.GuestCount);
+                if (string.IsNullOrWhiteSpace(row.DisplayName))
+                    row.DisplayName = ResolveAssignmentDisplayName(attendance.User);
+            }
+            else
+            {
+                byUser[attendance.UserId] = new EventGuestRosterViewModel
+                {
+                    UserId = attendance.UserId,
+                    DisplayName = ResolveAssignmentDisplayName(attendance.User),
+                    GuestCount = Math.Max(1, attendance.GuestCount),
+                    Status = attendance.Status,
+                };
+            }
+        }
+
+        return byUser.Values
+            .OrderByDescending(r => string.Equals(r.UserId, eventData.CreatedByUserId, StringComparison.Ordinal))
+            .ThenByDescending(r => r.RoleLabel == "Owner")
+            .ThenByDescending(r => r.RoleLabel == "Co-owner")
+            .ThenBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    // ************************************************************************************************
+    // Resolves the display name for an assignment.
+    public static string? ResolveAssignmentDisplayName(User? user)
+    {
+        if (user == null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(user.DisplayName))
+            return user.DisplayName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+            return user.Email.Trim();
+
+        return null;
+    }
 }

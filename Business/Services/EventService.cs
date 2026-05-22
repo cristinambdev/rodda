@@ -1,4 +1,5 @@
-﻿using Business.Dtos;
+﻿using System.Text.Json;
+using Business.Dtos;
 using Data.Entities;
 using Data.Repositories;
 using Domain.Enums;
@@ -24,15 +25,31 @@ public interface IEventService
     Task<EventResult> LeaveEventAsync(string userId, string eventId);
     Task<EventResult> RemoveFromMyListAsync(string userId, string eventId);
     Task<string?> ResolveEventIdAsync(string slugOrId);
+    Task PersistDraftItemsAndTasksOnCreateAsync(string userId,
+        string eventId,
+        bool itemsTasksEnabled,
+        string? bringItemsJson,
+        string? guestTasksJson);
 }
 
-public class EventService(IEventRepository eventRepository, IEventChatRepository eventChatRepository, IEventAttendanceRepository eventAttendanceRepository, IEventRoleRepository eventRoleRepository, IEventAccessService eventAccessService) : IEventService
+public class EventService(
+    IEventRepository eventRepository,
+    IEventChatRepository eventChatRepository,
+    IEventAttendanceRepository eventAttendanceRepository,
+    IEventRoleRepository eventRoleRepository,
+    IEventAccessService eventAccessService,
+    IEventItemService eventItemService,
+    IEventTaskService eventTaskService) : IEventService
 {
     private readonly IEventRepository _eventRepository = eventRepository;
     private readonly IEventChatRepository _eventChatRepository = eventChatRepository;
     private readonly IEventAttendanceRepository _eventAttendanceRepository = eventAttendanceRepository;
     private readonly IEventRoleRepository _eventRoleRepository = eventRoleRepository;
     private readonly IEventAccessService _eventAccessService = eventAccessService;
+    private readonly IEventItemService _eventItemService = eventItemService;
+    private readonly IEventTaskService _eventTaskService = eventTaskService;
+
+    private static readonly JsonSerializerOptions DraftJsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     // **************************************************************************************************************************
     // CREATE
@@ -535,6 +552,70 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
         }
 
         return result;
+    }
+
+    // **************************************************************************************************************************
+    // Deserializes draft bring-items / guest-tasks JSON from create-event and persists them when items/tasks are enabled.
+    public async Task PersistDraftItemsAndTasksOnCreateAsync(
+        string userId,
+        string eventId,
+        bool itemsTasksEnabled,
+        string? bringItemsJson,
+        string? guestTasksJson)
+    {
+        if (!itemsTasksEnabled)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(bringItemsJson))
+        {
+            var items = JsonSerializer.Deserialize<List<DraftBringItemPayload>>(bringItemsJson, DraftJsonOptions);
+            if (items != null)
+            {
+                var sort = 0;
+                foreach (var item in items)
+                {
+                    var title = item.Title?.Trim();
+                    if (string.IsNullOrWhiteSpace(title))
+                        continue;
+
+                    var people = item.People < 1 ? 1 : Math.Min(item.People, 99);
+                    await _eventItemService.CreateEventItemAsync(userId, new AddItemFormData
+                    {
+                        EventId = eventId,
+                        Title = title,
+                        Amount = string.IsNullOrWhiteSpace(item.Amount) ? null : item.Amount.Trim(),
+                        PeopleNeeded = people,
+                        SortOrder = sort++,
+                    });
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(guestTasksJson))
+        {
+            var tasks = JsonSerializer.Deserialize<List<DraftGuestTaskPayload>>(guestTasksJson, DraftJsonOptions);
+            if (tasks != null)
+            {
+                var sort = 0;
+                foreach (var task in tasks)
+                {
+                    var title = task.Title?.Trim();
+                    if (string.IsNullOrWhiteSpace(title))
+                        continue;
+
+                    var people = task.People < 1 ? 1 : Math.Min(task.People, 99);
+                    await _eventTaskService.CreateEventTaskAsync(userId, new AddTaskFormData
+                    {
+                        EventId = eventId,
+                        Title = title,
+                        TaskTime = string.IsNullOrWhiteSpace(task.Time) ? null : task.Time.Trim(),
+                        TaskLocation = string.IsNullOrWhiteSpace(task.Location) ? null : task.Location.Trim(),
+                        PeopleNeeded = people,
+                        SortOrder = sort++,
+                    });
+                }
+            }
+        }
     }
 
 }

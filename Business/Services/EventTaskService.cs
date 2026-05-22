@@ -15,6 +15,7 @@ public interface IEventTaskService
     Task<EventTaskResult> DeleteEventTaskAsync(string userId, string eventId, string eventTaskId);
     Task<EventTaskResult<EventTask>> GetEventTaskAsync(string eventId, string eventTaskId);
     Task<EventTaskResult<IEnumerable<EventTask>>> GetTasksClaimedByUserAsync(string userId);
+    Task<EventTaskResult<IEnumerable<EventTask>>> GetTasksForHomeTodosAsync(string userId);
     Task<EventTaskResult<IEnumerable<EventTask>>> GetTasksForEventAsync(string userId, string eventId);
     Task<EventTaskResult> UpdateEventTaskAsync(string userId, string eventId, string eventTaskId, EditTaskFormData formData);
     Task<EventTaskResult> ClaimTaskAsync(string userId, string eventId, string eventTaskId, string? assignmentId = null);
@@ -171,6 +172,44 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
             return task;
         });
 
+        return new EventTaskResult<IEnumerable<EventTask>> { Succeeded = true, StatusCode = 200, Result = tasks };
+    }
+
+    // **************************************************************************************************************************
+    // READ: tasks for the home To-Do list (your claims + EVERYONE rows on events you can access).
+    public async Task<EventTaskResult<IEnumerable<EventTask>>> GetTasksForHomeTodosAsync(string userId)
+    {
+        var response = await _eventTaskRepository.GetAllAsync(
+            selector: t => t,
+            where: t =>
+                t.IsActive &&
+                (t.Assignments.Any(a =>
+                    a.Status != AssignmentStatus.Removed &&
+                    a.UserId == userId &&
+                    (a.Status == AssignmentStatus.Assigned ||
+                     a.Status == AssignmentStatus.SignedUp ||
+                     a.Status == AssignmentStatus.Completed)) ||
+                 (t.Event.ItemsTasksEnabled == true &&
+                  (t.Event.Roles.Any(r =>
+                      r.UserId == userId &&
+                      !r.HiddenFromList &&
+                      (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner)) ||
+                   t.Event.Attendances.Any(a => a.UserId == userId && !a.HiddenFromList)) &&
+                  t.Assignments.Any(a =>
+                      a.Status != AssignmentStatus.Removed &&
+                      a.AssigneeType == AssigneeType.Everyone))),
+            sortBy: t => t.Event!.StartAt,
+            includes: [x => x.Event, x => x.Assignments]);
+
+        if (!response.Succeeded || response.Result == null)
+            return new EventTaskResult<IEnumerable<EventTask>>
+            {
+                Succeeded = false,
+                StatusCode = response.StatusCode,
+                ErrorMessage = response.ErrorMessage ?? "Could not load home to-do tasks."
+            };
+
+        var tasks = response.Result.Select(MapTaskForHomeTodos);
         return new EventTaskResult<IEnumerable<EventTask>> { Succeeded = true, StatusCode = 200, Result = tasks };
     }
 
@@ -643,4 +682,27 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
 
         return null;
     }
+
+    // **************************************************************************************************************************
+    private static EventTask MapTaskForHomeTodos(EventTaskEntity entity)
+    {
+        var task = entity.MapTo<EventTask>();
+        task.Assignments = entity.Assignments
+            .Select(a => a.MapTo<EventTaskAssignment>())
+            .ToList();
+
+        if (entity.Event != null)
+        {
+            task.EventTitle = entity.Event.Title;
+            task.EventSlug = entity.Event.Slug;
+            task.EventStartAt = entity.Event.StartAt;
+            task.EventListLocation = FormatEventListLocation(entity.Event);
+        }
+
+        return task;
+    }
+
+    // **************************************************************************************************************************
+    private static string? FormatEventListLocation(EventEntity ev) =>
+        !string.IsNullOrWhiteSpace(ev.LocationName) ? ev.LocationName : ev.LocationStreet;
 }

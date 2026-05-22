@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.Extensions;
 using Presentation.Helpers;
 using Presentation.Models;
-using System.Globalization;
 using System.Text.Json;
 
 
@@ -99,7 +98,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(AddEventViewModel model, IFormFile? cover)
     {
-        ApplyCreateFormFields(model, Request.Form);
+        CreateEventFormHelper.ApplyFormFields(model, Request.Form);
 
         ModelState.Remove(nameof(model.JoinButton));
         ModelState.Remove(nameof(model.ChatEnabled));
@@ -127,7 +126,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
         if (!string.IsNullOrEmpty(result.EventId))
         {
-            await PersistDraftItemsAndTasksOnCreateAsync(
+            await _eventService.PersistDraftItemsAndTasksOnCreateAsync(
                 userId,
                 result.EventId,
                 model.ItemsTasksEnabled == true,
@@ -171,7 +170,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(string id, AddEventViewModel model, IFormFile? cover)
     {
-        ApplyCreateFormFields(model, Request.Form);
+        CreateEventFormHelper.ApplyFormFields(model, Request.Form);
 
         ModelState.Remove(nameof(model.JoinButton));
         ModelState.Remove(nameof(model.ChatEnabled));
@@ -420,7 +419,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
                 Id = a.Id,
                 EventId = a.EventId,
                 UserId = a.UserId,
-                DisplayName = ResolveAssignmentDisplayName(a.User),
+                DisplayName = EventFormModalHelper.ResolveAssignmentDisplayName(a.User),
                 GuestCount = Math.Max(1, a.GuestCount),
                 Status = a.Status,
                 RespondedAt = a.RespondedAt,
@@ -428,7 +427,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
             .ToList();
 
         if (model.CanManageItemsTasks)
-            model.HostGuestRoster = BuildHostGuestRoster(eventData);
+            model.HostGuestRoster = EventFormModalHelper.BuildHostGuestRoster(eventData);
 
         model.ChatMessages = eventData.ChatMessages
             .Select(m =>
@@ -461,7 +460,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
                     Id = a.Id,
                     AssigneeType = a.AssigneeType,
                     UserId = a.UserId,
-                    DisplayName = ResolveAssignmentDisplayName(a.User),
+                    DisplayName = EventFormModalHelper.ResolveAssignmentDisplayName(a.User),
                     PlaceholderLabel = a.PlaceholderLabel,
                     Status = a.Status
                 }).ToList();
@@ -488,7 +487,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
                     Id = a.Id,
                     AssigneeType = a.AssigneeType,
                     UserId = a.UserId,
-                    DisplayName = ResolveAssignmentDisplayName(a.User),
+                    DisplayName = EventFormModalHelper.ResolveAssignmentDisplayName(a.User),
                     PlaceholderLabel = a.PlaceholderLabel,
                     Status = a.Status
                 }).ToList();
@@ -554,6 +553,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     // **************************************************************************************************************************
     // ----------------- EVENT DETAILS MODALS ---------------------
     // **************************************************************************************************************************
+    // Attaches the event details modal for editing an event.
     private async Task AttachEventDetailsModalForEditAsync(string userId, string eventId)
     {
         var response = await _eventService.GetEventForUserAsync(userId, eventId);
@@ -562,197 +562,24 @@ public class EventsController( IEventService eventService, IEventItemService eve
     }
 
     // **************************************************************************************************************************
+    // Builds the event details modal for editing an event.
     private async Task<EventDetailsViewModel> BuildEventDetailsModalAsync(string userId, Event eventData)
     {
         var model = EventFormModalHelper.CreateShell(eventData, userId);
 
         var itemsResponse = await _eventItemService.GetItemsForEventAsync(userId, eventData.Id);
         if (itemsResponse.Succeeded && itemsResponse.Result != null)
-            EventFormModalHelper.ApplyItems(model, itemsResponse.Result, ResolveAssignmentDisplayName);
+            EventFormModalHelper.ApplyItems(model, itemsResponse.Result, EventFormModalHelper.ResolveAssignmentDisplayName);
 
         var tasksResponse = await _eventTaskService.GetTasksForEventAsync(userId, eventData.Id);
         if (tasksResponse.Succeeded && tasksResponse.Result != null)
-            EventFormModalHelper.ApplyTasks(model, tasksResponse.Result, ResolveAssignmentDisplayName);
+            EventFormModalHelper.ApplyTasks(model, tasksResponse.Result, EventFormModalHelper.ResolveAssignmentDisplayName);
 
         return model;
     }
 
     // **************************************************************************************************************************
-    // Generated by AI
-    private static void ApplyCreateFormFields(AddEventViewModel model, IFormCollection form)
-    {
-        if (!string.IsNullOrWhiteSpace(model.Date))
-        {
-            var timePart = string.IsNullOrWhiteSpace(model.Time) ? "00:00" : model.Time.Trim();
-            if (DateTime.TryParse(
-                    $"{model.Date.Trim()} {timePart}",
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.AssumeLocal,
-                    out var localStart))
-            {
-                model.StartAt = new DateTimeOffset(localStart);
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(model.Location))
-            model.LocationName = model.Location.Trim();
-
-        if (string.IsNullOrWhiteSpace(model.Timezone))
-            model.Timezone = "Europe/Stockholm";
-
-        model.JoinButton = IsFormCheckboxChecked(form, nameof(model.JoinButton), "joinButton");
-        model.ChatEnabled = IsFormCheckboxChecked(form, nameof(model.ChatEnabled), "chatEnabled");
-        model.JoinMode = model.JoinButton ? JoinMode.Open : JoinMode.Disabled;
-
-        NormalizePaymentFields(model);
-    }
-
-    // **************************************************************************************************************************
-    private static bool IsFormCheckboxChecked(IFormCollection form, params string[] keys)
-    {
-        foreach (var key in keys)
-        {
-            if (!form.TryGetValue(key, out var values))
-                continue;
-
-            foreach (var value in values)
-            {
-                if (string.IsNullOrEmpty(value))
-                    continue;
-
-                if (value == "1"
-                    || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    // **************************************************************************************************************************
-    private async Task PersistDraftItemsAndTasksOnCreateAsync(
-        string userId,
-        string eventId,
-        bool itemsTasksEnabled,
-        string? bringItemsJson,
-        string? guestTasksJson)
-    {
-        if (!itemsTasksEnabled)
-            return;
-
-        var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
-        if (!string.IsNullOrWhiteSpace(bringItemsJson))
-        {
-            var items = JsonSerializer.Deserialize<List<DraftBringItemPayload>>(bringItemsJson, jsonOptions);
-            if (items != null)
-            {
-                var sort = 0;
-                foreach (var item in items)
-                {
-                    var title = item.Title?.Trim();
-                    if (string.IsNullOrWhiteSpace(title))
-                        continue;
-
-                    var people = item.People < 1 ? 1 : Math.Min(item.People, 99);
-                    await _eventItemService.CreateEventItemAsync(userId, new AddItemFormData
-                    {
-                        EventId = eventId,
-                        Title = title,
-                        Amount = item.Amount.TrimOrNull(),
-                        PeopleNeeded = people,
-                        SortOrder = sort++,
-                    });
-                }
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(guestTasksJson))
-        {
-            var tasks = JsonSerializer.Deserialize<List<DraftGuestTaskPayload>>(guestTasksJson, jsonOptions);
-            if (tasks != null)
-            {
-                var sort = 0;
-                foreach (var task in tasks)
-                {
-                    var title = task.Title?.Trim();
-                    if (string.IsNullOrWhiteSpace(title))
-                        continue;
-
-                    var people = task.People < 1 ? 1 : Math.Min(task.People, 99);
-                    await _eventTaskService.CreateEventTaskAsync(userId, new AddTaskFormData
-                    {
-                        EventId = eventId,
-                        Title = title,
-                        TaskTime = task.Time.TrimOrNull(),
-                        TaskLocation = task.Location.TrimOrNull(),
-                        PeopleNeeded = people,
-                        SortOrder = sort++,
-                    });
-                }
-            }
-        }
-    }
-
-    // **************************************************************************************************************************
-    private static void NormalizePaymentFields(AddEventViewModel model)
-    {
-        model.PaymentMethod = model.PaymentMethod.TrimOrNull();
-        model.PaymentNumber = model.PaymentNumber.TrimOrNull();
-        model.PaymentName = model.PaymentName.TrimOrNull();
-        model.PaymentComment = model.PaymentComment.TrimOrNull();
-        model.PaymentAmount = model.PaymentAmount.TrimOrNull();
-    }
-
-    // **************************************************************************************************************************
-    private static List<EventGuestRosterViewModel> BuildHostGuestRoster(Event eventData)
-    {
-        var byUser = new Dictionary<string, EventGuestRosterViewModel>(StringComparer.Ordinal);
-
-        foreach (var role in eventData.Roles)
-        {
-            var roleLabel = role.Role == EventRoleType.Owner ? "Owner" : "Co-owner";
-            byUser[role.UserId] = new EventGuestRosterViewModel
-            {
-                UserId = role.UserId,
-                DisplayName = ResolveAssignmentDisplayName(role.User),
-                RoleLabel = roleLabel,
-                Status = AttendanceStatus.Pending,
-                GuestCount = 1,
-            };
-        }
-
-        foreach (var attendance in eventData.Attendances)
-        {
-            if (byUser.TryGetValue(attendance.UserId, out var row))
-            {
-                row.Status = attendance.Status;
-                row.GuestCount = Math.Max(1, attendance.GuestCount);
-                if (string.IsNullOrWhiteSpace(row.DisplayName))
-                    row.DisplayName = ResolveAssignmentDisplayName(attendance.User);
-            }
-            else
-            {
-                byUser[attendance.UserId] = new EventGuestRosterViewModel
-                {
-                    UserId = attendance.UserId,
-                    DisplayName = ResolveAssignmentDisplayName(attendance.User),
-                    GuestCount = Math.Max(1, attendance.GuestCount),
-                    Status = attendance.Status,
-                };
-            }
-        }
-
-        return byUser.Values
-            .OrderByDescending(r => string.Equals(r.UserId, eventData.CreatedByUserId, StringComparison.Ordinal))
-            .ThenByDescending(r => r.RoleLabel == "Owner")
-            .ThenByDescending(r => r.RoleLabel == "Co-owner")
-            .ThenBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    // **************************************************************************************************************************
+    // Builds the card badges for a list of events.
     private async Task<IReadOnlyDictionary<string, EventCardBadgeHelper.CardBadges>> BuildCardBadgesAsync(string userId, IEnumerable<Event> events)
     {
         var map = new Dictionary<string, EventCardBadgeHelper.CardBadges>(StringComparer.Ordinal);
@@ -772,21 +599,6 @@ public class EventsController( IEventService eventService, IEventItemService eve
         }
 
         return map;
-    }
-
-    // **************************************************************************************************************************
-    private static string? ResolveAssignmentDisplayName(User? user)
-    {
-        if (user == null)
-            return null;
-
-        if (!string.IsNullOrWhiteSpace(user.DisplayName))
-            return user.DisplayName.Trim();
-
-        if (!string.IsNullOrWhiteSpace(user.Email))
-            return user.Email.Trim();
-
-        return null;
     }
 
 }

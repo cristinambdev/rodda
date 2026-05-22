@@ -1,23 +1,37 @@
-﻿@{
+﻿@model Presentation.Models.HomeIndexViewModel
+@{
     ViewData["Title"] = "Home Page";
-
+    var hasTodos = Model.TodoEvents.Count > 0;
 }
 
-<!-- To-Dos -->
+<!-- To-Dos (server-rendered; range via ?range=week|month|year) -->
 <section class="home-section" aria-labelledby="todos-heading">
     <h2 class="section-header" id="todos-heading">My To-Dos</h2>
-    <div class="home-todos-block" data-home-todos>
-        <!-- To-do time-range selector buttons -->
+    <div class="home-todos-block">
         <div class="segmented-control" role="group" aria-label="To-do time range">
-            <button type="button" class="segmented-control-option" data-todo-range="week">This week</button>
-            <button type="button" class="segmented-control-option active" data-todo-range="month">This month</button>
-            <button type="button" class="segmented-control-option" data-todo-range="year">This year</button>
+            <a class="segmented-control-option@(Model.ActiveRange == "week" ? " active" : "")"
+               href="/index?range=week"
+               aria-pressed="@(Model.ActiveRange == "week" ? "true" : "false")">This week</a>
+            <a class="segmented-control-option@(Model.ActiveRange == "month" ? " active" : "")"
+               href="/index?range=month"
+               aria-pressed="@(Model.ActiveRange == "month" ? "true" : "false")">This month</a>
+            <a class="segmented-control-option@(Model.ActiveRange == "year" ? " active" : "")"
+               href="/index?range=year"
+               aria-pressed="@(Model.ActiveRange == "year" ? "true" : "false")">This year</a>
         </div>
-        <p class="empty-state-card below-segment" data-todo-empty aria-live="polite">
-            Nothing on your plate this month.
-        </p>
-        <!-- Filled by initHomeTodoSegment() from EVENTS (week / month / year) -->
-        <ul class="todos-list" data-todos-list hidden></ul>
+        @if (!hasTodos)
+        {
+            <p class="empty-state-card below-segment" aria-live="polite">@Model.EmptyMessage</p>
+        }
+        else
+        {
+            <ul class="todos-list">
+                @foreach (var todoEvent in Model.TodoEvents)
+                {
+                    <partial name="~/Views/Shared/Partials/HomePartials/_HomeTodoEventCard.cshtml" model="todoEvent" />
+                }
+            </ul>
+        }
     </div>
 </section>
 
@@ -60,4 +74,3 @@
         <ul class="home-events-list" data-events-list hidden data-home-events-list></ul>
     </div>
 </section>
-

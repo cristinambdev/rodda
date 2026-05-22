@@ -125,10 +125,19 @@
   line-height: 1;
 }
 
-/* To-dos — "This year" task list */
+/* To-dos — server-rendered list; range links use full page navigation (no JS) */
 .home-todos-block
 {
   margin-top: 0;
+}
+
+.home-todos-block .segmented-control a.segmented-control-option
+{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  text-align: center;
 }
 
 .home-todos-block [data-todo-empty][hidden],

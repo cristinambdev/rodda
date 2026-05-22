@@ -9,6 +9,9 @@ public class EventTask
     public DateTime? UpdatedAt { get; set; }
     public string EventId { get; set; } = null!;
     public string? EventTitle { get; set; }
+    public string? EventSlug { get; set; }
+    public DateTimeOffset? EventStartAt { get; set; }
+    public string? EventListLocation { get; set; }
 
     // --- Current State ---
     public string Title { get; set; } = null!;

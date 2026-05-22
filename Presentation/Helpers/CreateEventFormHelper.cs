@@ -1,5 +1,8 @@
 using System.Globalization;
+using Domain.Enums;
 using Domain.Models;
+using Microsoft.AspNetCore.Http;
+using Presentation.Extensions;
 using Presentation.Models;
 
 namespace Presentation.Helpers;
@@ -10,37 +13,37 @@ public static class CreateEventFormHelper
 {
     // **************************************************************************************************************************
     // Maps a domain event to the create/edit event form model.
-    public static AddEventViewModel FromEvent(Event ev)
+    public static AddEventViewModel FromEvent(Event eventData)
     {
-        var localStart = ev.StartAt.ToLocalTime();
-        var location = ev.Location;
-        var payment = ev.Payment;
+        var localStart = eventData.StartAt.ToLocalTime();
+        var location = eventData.Location;
+        var payment = eventData.Payment;
 
         var viewModel = new AddEventViewModel
         {
-            EventId = ev.Id,
-            Title = ev.Title,
-            Slug = ev.Slug,
-            CoverImageUrl = ev.CoverImageUrl,
-            Description = ev.Description,
+            EventId = eventData.Id,
+            Title = eventData.Title,
+            Slug = eventData.Slug,
+            CoverImageUrl = eventData.CoverImageUrl,
+            Description = eventData.Description,
             Date = localStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             Time = localStart.ToString("HH:mm", CultureInfo.InvariantCulture),
-            StartAt = ev.StartAt,
-            EndAt = ev.EndAt,
-            Timezone = string.IsNullOrWhiteSpace(ev.Timezone) ? "Europe/Stockholm" : ev.Timezone,
+            StartAt = eventData.StartAt,
+            EndAt = eventData.EndAt,
+            Timezone = string.IsNullOrWhiteSpace(eventData.Timezone) ? "Europe/Stockholm" : eventData.Timezone,
             Location = ResolveLocationDisplay(location),
             LocationName = location?.Name,
             LocationStreet = location?.Street,
             LocationPostcode = location?.Postcode,
             LocationCity = location?.City,
             LocationCountry = location?.Country,
-            JoinButton = ev.JoinMode != Domain.Enums.JoinMode.Disabled,
-            JoinMode = ev.JoinMode,
-            Status = ev.Status,
-            ChatEnabled = ev.ChatEnabled,
-            ItemsTasksEnabled = ev.ItemsTasksEnabled,
-            AllowGuestBringItems = ev.AllowGuestBringItems,
-            AllowGuestTasks = ev.AllowGuestTasks,
+            JoinButton = eventData.JoinMode != Domain.Enums.JoinMode.Disabled,
+            JoinMode = eventData.JoinMode,
+            Status = eventData.Status,
+            ChatEnabled = eventData.ChatEnabled,
+            ItemsTasksEnabled = eventData.ItemsTasksEnabled,
+            AllowGuestBringItems = eventData.AllowGuestBringItems,
+            AllowGuestTasks = eventData.AllowGuestTasks,
             PaymentMethod = payment?.Method,
             PaymentNumber = payment?.Number,
             PaymentName = payment?.Name,
@@ -109,5 +112,70 @@ public static class CreateEventFormHelper
             return $"{value:0}kr";
 
         return value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    // ************************************************************************************************
+    // Normalizes create/edit form fields from posted values (dates, location, join toggles, payment).
+    public static void ApplyFormFields(AddEventViewModel model, IFormCollection form)
+    {
+        if (!string.IsNullOrWhiteSpace(model.Date))
+        {
+            var timePart = string.IsNullOrWhiteSpace(model.Time) ? "00:00" : model.Time.Trim();
+            if (DateTime.TryParse(
+                    $"{model.Date.Trim()} {timePart}",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeLocal,
+                    out var localStart))
+            {
+                model.StartAt = new DateTimeOffset(localStart);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Location))
+            model.LocationName = model.Location.Trim();
+
+        if (string.IsNullOrWhiteSpace(model.Timezone))
+            model.Timezone = "Europe/Stockholm";
+
+        model.JoinButton = IsFormCheckboxChecked(form, nameof(model.JoinButton), "joinButton");
+        model.ChatEnabled = IsFormCheckboxChecked(form, nameof(model.ChatEnabled), "chatEnabled");
+        model.JoinMode = model.JoinButton ? JoinMode.Open : JoinMode.Disabled;
+
+        NormalizePaymentFields(model);
+    }
+
+    // ************************************************************************************************
+    // Normalizes the payment fields in the view model.
+    private static void NormalizePaymentFields(AddEventViewModel model)
+    {
+        model.PaymentMethod = model.PaymentMethod.TrimOrNull();
+        model.PaymentNumber = model.PaymentNumber.TrimOrNull();
+        model.PaymentName = model.PaymentName.TrimOrNull();
+        model.PaymentComment = model.PaymentComment.TrimOrNull();
+        model.PaymentAmount = model.PaymentAmount.TrimOrNull();
+    }
+
+    // ************************************************************************************************
+    // Checks if a checkbox is checked in the form.
+    private static bool IsFormCheckboxChecked(IFormCollection form, params string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            if (!form.TryGetValue(key, out var values))
+                continue;
+
+            foreach (var value in values)
+            {
+                if (string.IsNullOrEmpty(value))
+                    continue;
+
+                if (value == "1"
+                    || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

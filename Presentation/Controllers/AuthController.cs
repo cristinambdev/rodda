@@ -17,7 +17,7 @@ public class AuthController(IAuthService authService) : Controller
         if (User.Identity?.IsAuthenticated == true)
             return Redirect("/events");
 
-        ViewBag.ReturnUrl = returnUrl ?? "/events";
+        ViewBag.ReturnUrl = returnUrl ?? "/index";
         return View(new SignInViewModel());
     }
 
@@ -26,7 +26,7 @@ public class AuthController(IAuthService authService) : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SignIn(SignInViewModel model, string? returnUrl = null)
     {
-        ViewBag.ReturnUrl = returnUrl ?? "/events";
+        ViewBag.ReturnUrl = returnUrl ?? "/index";
 
         if (!ModelState.IsValid)
             return View(model);
@@ -67,7 +67,7 @@ public class AuthController(IAuthService authService) : Controller
             return View(model);
         }
 
-        return Redirect("/events");
+        return Redirect("/index");
     }
 
     // **************************************************************************************************************************
