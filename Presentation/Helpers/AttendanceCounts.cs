@@ -3,7 +3,8 @@ using Domain.Models;
 
 namespace Presentation.Helpers;
 
-/// <summary>Rolls up attendance rows for host-facing badges on cards and hero.</summary>
+// ************************************************************************************************
+// Rolls up attendance rows for host-facing badges on cards and hero.
 public static class AttendanceCounts
 {
     public static (int Accepted, int Declined, int Pending) From(IEnumerable<EventAttendance> attendances)

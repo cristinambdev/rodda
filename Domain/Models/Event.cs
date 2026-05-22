@@ -5,6 +5,7 @@ namespace Domain.Models;
 public class Event
 {
     public string Id { get; set; } = null!;
+    public string? Slug { get; set; }
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
     public string? CoverImageUrl { get; set; }

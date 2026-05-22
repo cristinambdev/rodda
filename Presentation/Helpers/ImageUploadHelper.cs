@@ -1,7 +1,9 @@
-﻿namespace Presentation.Helpers;
+namespace Presentation.Helpers;
 
-public static class FormHelper
+public static class ImageUploadHelper
 {
+    // ************************************************************************************************
+    // Uploads an image to the server.
     public static async Task<string?> UploadImageAsync(IFormFile imageFile, string pathFolderName, IWebHostEnvironment env)
     {
         if (imageFile == null || imageFile.Length == 0)
@@ -20,5 +22,4 @@ public static class FormHelper
 
         return $"/uploads/{pathFolderName}/{fileName}";
     }
-    
 }

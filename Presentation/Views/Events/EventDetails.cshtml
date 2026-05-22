@@ -1,5 +1,4 @@
-﻿@using System.Security.Claims
-@using Domain.Enums
+﻿@using Domain.Enums
 @using Presentation.Helpers
 @model Presentation.Models.EventDetailsViewModel
 @{
@@ -13,14 +12,18 @@
         Model.HostGuestRoster.Count(r => r.Status == Domain.Enums.AttendanceStatus.Accepted),
         Model.HostGuestRoster.Count(r => r.Status == Domain.Enums.AttendanceStatus.Declined),
         Model.HostGuestRoster.Count(r => r.Status is Domain.Enums.AttendanceStatus.Pending or Domain.Enums.AttendanceStatus.Maybe));
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+    var userId = User.GetUserId() ?? "";
     var myRole = Model.EventRoles.FirstOrDefault(r => r.UserId == userId);
     var isCreator = string.Equals(Model.CreatorDisplayLabel, "Myself", StringComparison.Ordinal);
     string? roleBadge = isCreator ? "Creator"
         : myRole?.Role == EventRoleType.Owner ? "Owner"
         : myRole?.Role == EventRoleType.CoOwner ? "Co-owner"
         : null;
-    var showHeroBadges = !string.IsNullOrEmpty(roleBadge) || Model.CanManageItemsTasks;
+    var myAttendance = Model.Attendees.FirstOrDefault(a => string.Equals(a.UserId, userId, StringComparison.Ordinal));
+    var showGuestAttendanceBadge = myAttendance != null
+        && string.IsNullOrEmpty(roleBadge)
+        && myAttendance.Status != AttendanceStatus.Accepted;
+    var showHeroBadges = !string.IsNullOrEmpty(roleBadge) || Model.CanManageItemsTasks || showGuestAttendanceBadge;
 }
 
 @if (TempData["ErrorMessage"] is string errorMessage)
@@ -61,13 +64,19 @@
             <div class="eventitem-hero-badge-stack">
                 @if (!string.IsNullOrEmpty(roleBadge))
                 {
-                    <span class="badge badge-green eventitem-hero-role-badge">@roleBadge</span>
+                    <span class="badge @AttendanceStatusLabels.RoleBadgeCssClass eventitem-hero-role-badge">@roleBadge</span>
                 }
                 @if (Model.CanManageItemsTasks)
                 {
-                    <div class="eventitem-hero-attendance-badges" aria-label="Guest attendance summary">
+                    <div class="badge eventitem-hero-attendance-badges" aria-label="Guest attendance summary">
                         <partial name="~/Views/Shared/Partials/EventDetailsPartials/_AttendanceSummaryBadges.cshtml" model="attendanceCounts" />
                     </div>
+                }
+                else if (showGuestAttendanceBadge && myAttendance != null)
+                {
+                    <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge">
+                        @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
+                    </span>
                 }
             </div>
         }

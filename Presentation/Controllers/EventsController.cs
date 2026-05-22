@@ -4,10 +4,10 @@ using Domain.Extensions;
 using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Extensions;
 using Presentation.Helpers;
 using Presentation.Models;
 using System.Globalization;
-using System.Security.Claims;
 using System.Text.Json;
 
 
@@ -29,19 +29,44 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [Route("/events")]
     public async Task<IActionResult> Events()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
         var response = await _eventService.GetEventsForUserAsync(userId);
+        var events = response.Result?.ToList() ?? [];
         var model = new EventsViewModel
         {
-            Events = response.Result?.ToList() ?? [],
-            UserId = userId
+            Events = events,
+            UserId = userId,
+            CardBadges = await BuildCardBadgesAsync(userId, events),
         };
 
         ViewData["ActiveNav"] = "events-all";
+        ViewData["EventCardBadges"] = model.CardBadges;
         return View(model);
+    }
+
+    // **************************************************************************************************************************
+    [HttpGet]
+    [Route("/events/my-events")]
+    public async Task<IActionResult> MyEvents()
+    {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        var response = await _eventService.GetManagedEventsForUserAsync(userId);
+        var events = response.Result?.ToList() ?? [];
+
+        ViewData["ActiveNav"] = "events-mine";
+        ViewData["PortalEventsJson"] = JsonSerializer.Serialize(PortalEventsHelper.ToPortalPayload(events, userId));
+
+        return View(new EventsViewModel
+        {
+            Events = events,
+            UserId = userId,
+        });
     }
 
     // **************************************************************************************************************************
@@ -49,7 +74,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [Route("/events/card/{eventId}")]
     public async Task<IActionResult> GetSingleEventCard(string eventId, [FromQuery] bool fromMyEvents = false)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -57,11 +82,15 @@ public class EventsController( IEventService eventService, IEventItemService eve
         if (!response.Succeeded || response.Result == null)
             return NotFound();
 
+        var ev = response.Result;
         ViewData["UserId"] = userId;
         if (fromMyEvents)
             ViewData["DetailFromMyEvents"] = true;
 
-        return PartialView("~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml", response.Result);
+        var badges = await BuildCardBadgesAsync(userId, [ev]);
+        ViewData["EventCardBadges"] = badges;
+
+        return PartialView("~/Views/Shared/Partials/EventCardsPartials/_HorizontalEventCard.cshtml", ev);
     }
 
     // **************************************************************************************************************************
@@ -71,14 +100,13 @@ public class EventsController( IEventService eventService, IEventItemService eve
     public async Task<IActionResult> Add(AddEventViewModel model, IFormFile? cover)
     {
         ApplyCreateFormFields(model, Request.Form);
-        var paymentAmount = ParsePaymentAmount(model.PaymentAmount);
 
         ModelState.Remove(nameof(model.JoinButton));
         ModelState.Remove(nameof(model.ChatEnabled));
 
         if (cover is { Length: > 0 })
         {
-            var coverUrl = await FormHelper.UploadImageAsync(cover, "events", _webHostEnvironment);
+            var coverUrl = await ImageUploadHelper.UploadImageAsync(cover, "events", _webHostEnvironment);
             if (coverUrl != null)
                 model.CoverImageUrl = coverUrl;
         }
@@ -86,13 +114,11 @@ public class EventsController( IEventService eventService, IEventItemService eve
         if (!ModelState.IsValid)
             return View("CreateNewEvent", model);
 
-        var userId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
-        var addEventFormData = model.MapTo<AddEventFormData>();
-        addEventFormData.PaymentAmount = paymentAmount;
-        var result = await _eventService.CreateEventAsync(userId, addEventFormData);
+        var result = await _eventService.CreateEventAsync(userId, model.ToAddFormData());
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage!);
@@ -115,9 +141,64 @@ public class EventsController( IEventService eventService, IEventItemService eve
     // **************************************************************************************************************************
     [HttpGet("/events/create")]
     [HttpGet("/Events/CreateNewEvent")]
-    public IActionResult CreateNewEvent()
+    public async Task<IActionResult> CreateNewEvent([FromQuery] string? edit)
     {
-        return View(new AddEventViewModel());
+        if (string.IsNullOrWhiteSpace(edit))
+            return View(new AddEventViewModel());
+
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        var response = await _eventService.GetEventForUserAsync(userId, edit.Trim());
+        if (!response.Succeeded || response.Result == null)
+            return NotFound();
+
+        var ev = response.Result;
+        var canManage = ev.Roles.Any(r =>
+            r.UserId == userId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+        if (!canManage)
+            return Forbid();
+
+        ViewData["EventDetailsModalModel"] = await BuildEventDetailsModalAsync(userId, ev);
+        return View(CreateEventFormHelper.FromEvent(ev));
+    }
+
+    // **************************************************************************************************************************
+    [HttpPost]
+    [Route("/events/{id}/edit")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(string id, AddEventViewModel model, IFormFile? cover)
+    {
+        ApplyCreateFormFields(model, Request.Form);
+
+        ModelState.Remove(nameof(model.JoinButton));
+        ModelState.Remove(nameof(model.ChatEnabled));
+
+        if (cover is { Length: > 0 })
+        {
+            var coverUrl = await ImageUploadHelper.UploadImageAsync(cover, "events", _webHostEnvironment);
+            if (coverUrl != null)
+                model.CoverImageUrl = coverUrl;
+        }
+
+        if (!ModelState.IsValid)
+            return View("CreateNewEvent", model);
+
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        model.EventId = id;
+        var result = await _eventService.UpdateEventAsync(userId, id, model.ToUpdateFormData());
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Could not save the event.");
+            return View("CreateNewEvent", model);
+        }
+
+        return RedirectToAction(nameof(EventDetails), new { id = EventUrls.DetailsSegment(result.EventSlug, result.EventId!) });
     }
 
     // **************************************************************************************************************************
@@ -126,7 +207,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Update(string id, [FromBody] EditEventViewModel model)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null) return Unauthorized();
 
         var result = await _eventService.UpdateEventSettingsAsync(userId, id, model.AllowGuestBringItems, model.AllowGuestTasks);
@@ -145,7 +226,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Join(string id, int groupSize = 1)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -172,7 +253,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Leave(string id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -185,11 +266,31 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
     // **************************************************************************************************************************
     [HttpPost]
+    [Route("/events/{id}/remove-from-list")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveFromMyList(string id, string? returnUrl = null)
+    {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        var result = await _eventService.RemoveFromMyListAsync(userId, id);
+        if (!result.Succeeded)
+            TempData["ErrorMessage"] = result.ErrorMessage ?? "Could not remove the event from your list.";
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+
+        return RedirectToAction(nameof(Events));
+    }
+
+    // **************************************************************************************************************************
+    [HttpPost]
     [Route("/events/{id}/delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(string id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -211,11 +312,15 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [Route("/events/{id}/share-link")]
     public async Task<IActionResult> GetShareLink(string id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
-        var result = await _eventAccessService.GetOrCreateShareLinkAsync(userId, id);
+        var eventId = await _eventService.ResolveEventIdAsync(id);
+        if (eventId == null)
+            return NotFound();
+
+        var result = await _eventAccessService.GetOrCreateShareLinkAsync(userId, eventId);
         if (!result.Succeeded || string.IsNullOrEmpty(result.Result))
         {
             if (result.StatusCode == 404)
@@ -223,7 +328,11 @@ public class EventsController( IEventService eventService, IEventItemService eve
             return StatusCode(result.StatusCode, new { error = result.ErrorMessage });
         }
 
-        var shareUrl = $"{Request.Scheme}://{Request.Host}/events/{id}?invite={result.Result}";
+        var eventResponse = await _eventService.GetEventForUserAsync(userId, eventId);
+        var pathSegment = eventResponse.Result != null
+            ? EventUrls.DetailsSegment(eventResponse.Result.Slug, eventId)
+            : eventId;
+        var shareUrl = $"{Request.Scheme}://{Request.Host}/events/{pathSegment}?invite={result.Result}";
         return Json(new { url = shareUrl, token = result.Result });
     }
 
@@ -233,11 +342,15 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RevokeShareLink(string id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
-        var result = await _eventAccessService.RevokeShareLinkAsync(userId, id);
+        var eventId = await _eventService.ResolveEventIdAsync(id);
+        if (eventId == null)
+            return NotFound();
+
+        var result = await _eventAccessService.RevokeShareLinkAsync(userId, eventId);
         if (!result.Succeeded)
         {
             if (result.StatusCode == 404)
@@ -255,18 +368,28 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [Route("/events/{id}")]
     public async Task<IActionResult> EventDetails(string id, [FromQuery] string? invite, [FromQuery] string? from)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
-        if (!string.IsNullOrWhiteSpace(invite))
-            await _eventAccessService.RedeemShareTokenAsync(userId, id, invite);
+        var eventId = await _eventService.ResolveEventIdAsync(id);
+        if (eventId == null)
+            return NotFound();
 
-        var response = await _eventService.GetEventForUserAsync(userId, id);
+        if (!string.IsNullOrWhiteSpace(invite))
+            await _eventAccessService.RedeemShareTokenAsync(userId, eventId, invite);
+
+        var response = await _eventService.GetEventForUserAsync(userId, eventId);
         if (!response.Succeeded || response.Result == null)
             return NotFound();
 
         var eventData = response.Result;
+        if (!string.IsNullOrWhiteSpace(eventData.Slug)
+            && !string.Equals(id, eventData.Slug, StringComparison.OrdinalIgnoreCase))
+        {
+            return RedirectToAction(nameof(EventDetails), new { id = eventData.Slug, invite, from });
+        }
+
         var model = eventData.MapTo<EventDetailsViewModel>();
         model.CreatorDisplayLabel = string.Equals(eventData.CreatedByUserId, userId, StringComparison.Ordinal)
             ? "Myself"
@@ -388,6 +511,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
     // **************************************************************************************************************************
     // ----------------- CHAT ---------------------
+    // **************************************************************************************************************************
     [HttpPost]
     [Route("/events/{id}/chat")]
     [ValidateAntiForgeryToken]
@@ -396,7 +520,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
         if (string.IsNullOrWhiteSpace(model.Body))
             return RedirectToAction(nameof(EventDetails), new { id });
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null) return Unauthorized();
 
         var formData = model.MapTo<AddChatMessageFormData>();
@@ -414,7 +538,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteChatMessage(string id, string messageId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null) return Unauthorized();
 
         var result = await _eventService.DeleteChatMessageAsync(messageId, userId);
@@ -425,6 +549,32 @@ public class EventsController( IEventService eventService, IEventItemService eve
             return StatusCode(result.StatusCode, result.ErrorMessage);
         }
         return RedirectToAction(nameof(EventDetails), new { id });
+    }
+
+    // **************************************************************************************************************************
+    // ----------------- EVENT DETAILS MODALS ---------------------
+    // **************************************************************************************************************************
+    private async Task AttachEventDetailsModalForEditAsync(string userId, string eventId)
+    {
+        var response = await _eventService.GetEventForUserAsync(userId, eventId);
+        if (response.Succeeded && response.Result != null)
+            ViewData["EventDetailsModalModel"] = await BuildEventDetailsModalAsync(userId, response.Result);
+    }
+
+    // **************************************************************************************************************************
+    private async Task<EventDetailsViewModel> BuildEventDetailsModalAsync(string userId, Event eventData)
+    {
+        var model = EventFormModalHelper.CreateShell(eventData, userId);
+
+        var itemsResponse = await _eventItemService.GetItemsForEventAsync(userId, eventData.Id);
+        if (itemsResponse.Succeeded && itemsResponse.Result != null)
+            EventFormModalHelper.ApplyItems(model, itemsResponse.Result, ResolveAssignmentDisplayName);
+
+        var tasksResponse = await _eventTaskService.GetTasksForEventAsync(userId, eventData.Id);
+        if (tasksResponse.Succeeded && tasksResponse.Result != null)
+            EventFormModalHelper.ApplyTasks(model, tasksResponse.Result, ResolveAssignmentDisplayName);
+
+        return model;
     }
 
     // **************************************************************************************************************************
@@ -510,7 +660,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
                     {
                         EventId = eventId,
                         Title = title,
-                        Amount = string.IsNullOrWhiteSpace(item.Amount) ? null : item.Amount.Trim(),
+                        Amount = item.Amount.TrimOrNull(),
                         PeopleNeeded = people,
                         SortOrder = sort++,
                     });
@@ -535,8 +685,8 @@ public class EventsController( IEventService eventService, IEventItemService eve
                     {
                         EventId = eventId,
                         Title = title,
-                        TaskTime = string.IsNullOrWhiteSpace(task.Time) ? null : task.Time.Trim(),
-                        TaskLocation = string.IsNullOrWhiteSpace(task.Location) ? null : task.Location.Trim(),
+                        TaskTime = task.Time.TrimOrNull(),
+                        TaskLocation = task.Location.TrimOrNull(),
                         PeopleNeeded = people,
                         SortOrder = sort++,
                     });
@@ -548,11 +698,11 @@ public class EventsController( IEventService eventService, IEventItemService eve
     // **************************************************************************************************************************
     private static void NormalizePaymentFields(AddEventViewModel model)
     {
-        model.PaymentMethod = TrimOrNull(model.PaymentMethod);
-        model.PaymentNumber = TrimOrNull(model.PaymentNumber);
-        model.PaymentName = TrimOrNull(model.PaymentName);
-        model.PaymentComment = TrimOrNull(model.PaymentComment);
-        model.PaymentAmount = TrimOrNull(model.PaymentAmount);
+        model.PaymentMethod = model.PaymentMethod.TrimOrNull();
+        model.PaymentNumber = model.PaymentNumber.TrimOrNull();
+        model.PaymentName = model.PaymentName.TrimOrNull();
+        model.PaymentComment = model.PaymentComment.TrimOrNull();
+        model.PaymentAmount = model.PaymentAmount.TrimOrNull();
     }
 
     // **************************************************************************************************************************
@@ -603,6 +753,28 @@ public class EventsController( IEventService eventService, IEventItemService eve
     }
 
     // **************************************************************************************************************************
+    private async Task<IReadOnlyDictionary<string, EventCardBadgeHelper.CardBadges>> BuildCardBadgesAsync(string userId, IEnumerable<Event> events)
+    {
+        var map = new Dictionary<string, EventCardBadgeHelper.CardBadges>(StringComparer.Ordinal);
+        foreach (var ev in events)
+        {
+            if (!ev.ItemsTasksEnabled)
+            {
+                map[ev.Id] = new EventCardBadgeHelper.CardBadges(null, false);
+                continue;
+            }
+
+            var itemsResponse = await _eventItemService.GetItemsForEventAsync(userId, ev.Id);
+            var tasksResponse = await _eventTaskService.GetTasksForEventAsync(userId, ev.Id);
+            var items = itemsResponse.Result ?? [];
+            var tasks = tasksResponse.Result ?? [];
+            map[ev.Id] = EventCardBadgeHelper.Compute(ev.ItemsTasksEnabled, userId, items, tasks);
+        }
+
+        return map;
+    }
+
+    // **************************************************************************************************************************
     private static string? ResolveAssignmentDisplayName(User? user)
     {
         if (user == null)
@@ -617,36 +789,6 @@ public class EventsController( IEventService eventService, IEventItemService eve
         return null;
     }
 
-    // **************************************************************************************************************************
-    private static string? TrimOrNull(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    // **************************************************************************************************************************
-    private static decimal? ParsePaymentAmount(string? amountRaw)
-    {
-        if (string.IsNullOrWhiteSpace(amountRaw))
-            return null;
-
-        var normalized = amountRaw.Trim();
-        foreach (var token in new[] { "kr", "sek", ":-" })
-            normalized = normalized.Replace(token, "", StringComparison.OrdinalIgnoreCase);
-
-        normalized = normalized.Replace(" ", "", StringComparison.Ordinal)
-            .Replace("\u00a0", "", StringComparison.Ordinal)
-            .Trim();
-
-        if (decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount))
-            return amount;
-
-        var swedish = CultureInfo.GetCultureInfo("sv-SE");
-        if (decimal.TryParse(normalized, NumberStyles.Number, swedish, out amount))
-            return amount;
-
-        if (decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.CurrentCulture, out amount))
-            return amount;
-
-        return null;
-    }
 }
 
 

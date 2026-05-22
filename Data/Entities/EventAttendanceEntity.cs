@@ -25,6 +25,10 @@ public class EventAttendanceEntity
 
     public DateTime RespondedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>When true, the event is hidden from this user's event lists until they join again.</summary>
+    // Suggested by LLM: "When true, the event is hidden from this user's event lists until they join again."
+    public bool HiddenFromList { get; set; }
+
     [ForeignKey(nameof(EventId))]
     public virtual EventEntity Event { get; set; } = null!;
 

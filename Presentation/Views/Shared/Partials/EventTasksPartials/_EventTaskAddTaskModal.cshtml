@@ -1,8 +1,6 @@
 @model Presentation.Models.EventDetailsViewModel?
 @{
-    var isDraft = ViewData["EventModalDraft"] as bool? == true
-        || string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "CreateNewEvent", StringComparison.OrdinalIgnoreCase)
-        || (ViewContext.HttpContext.Request.Path.Value?.StartsWith("/events/create", StringComparison.OrdinalIgnoreCase) ?? false);
+    var isDraft = ViewData["EventModalDraft"] as bool? == true;
     var eventId = Model?.Id ?? ViewContext.RouteData.Values["id"]?.ToString();
     var canPost = !isDraft && !string.IsNullOrEmpty(eventId) && Model?.CanAddTasks == true;
     var canDraft = isDraft;

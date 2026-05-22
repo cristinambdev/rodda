@@ -11,4 +11,5 @@ public class EventAttendance
     public string UserId { get; set; } = null!;
     public User? User { get; set; }
     public AttendanceStatus Status { get; set; }
+    public bool HiddenFromList { get; set; }
 }

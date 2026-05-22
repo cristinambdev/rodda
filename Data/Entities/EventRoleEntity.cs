@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Data.Entities;
 
-[Index(nameof(EventId))] 
+[Index(nameof(EventId))]
 [Index(nameof(UserId))]
 [Table("EventRoles")]
 public class EventRoleEntity
@@ -21,6 +21,9 @@ public class EventRoleEntity
     public EventRoleType Role { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>When true, the event is hidden from this user's event lists (remove from my list).</summary>
+    public bool HiddenFromList { get; set; }
 
     [ForeignKey(nameof(EventId))]
     public virtual EventEntity Event { get; set; } = null!;

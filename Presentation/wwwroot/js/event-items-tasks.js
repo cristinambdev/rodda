@@ -12,8 +12,19 @@ function isPersistableEventId(eventId) {
 
 // ***********************************************************************************************************
 function getEventIdFromPath() {
+  const form = document.getElementById("edit-event-form");
+  const fromForm =
+    form?.dataset.eventId?.trim() ||
+    form?.querySelector('input[name="EventId"]')?.value?.trim() ||
+    "";
+  if (fromForm) return fromForm;
+
+  const editId = new URLSearchParams(window.location.search).get("edit")?.trim();
+  if (editId) return editId;
+
   const pathSegments = window.location.pathname.split("/");
-  return pathSegments[pathSegments.indexOf("events") + 1] || "";
+  const segment = pathSegments[pathSegments.indexOf("events") + 1] || "";
+  return segment === "create" ? "" : segment;
 }
 
 // ***********************************************************************************************************

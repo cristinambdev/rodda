@@ -6,6 +6,7 @@ namespace Domain.Extensions;
 public static class MapExtensions
 {
     // **************************************************************************************************************************
+    // Maps an object from one type to another.
     public static TDestination MapTo<TDestination>(this object source)
     {
         // Null check for the source object.

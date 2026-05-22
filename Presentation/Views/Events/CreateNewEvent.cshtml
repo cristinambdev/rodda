@@ -1,8 +1,12 @@
 ﻿@model Presentation.Models.AddEventViewModel
 @{
     Layout = "_PortalLayout";
-    ViewData["Title"] = "New Event";
-    ViewData["EventModalDraft"] = true;
+    var isEdit = Model.IsEdit;
+    var eventModalModel = ViewData["EventDetailsModalModel"] as Presentation.Models.EventDetailsViewModel;
+    var itemCount = eventModalModel?.Items?.Count ?? 0;
+    var taskCount = eventModalModel?.Tasks?.Count ?? 0;
+    ViewData["Title"] = isEdit ? "Edit Event" : "New Event";
+    ViewData["EventModalDraft"] = !isEdit;
 }
 
 <!-- New event toolbar -->
@@ -10,12 +14,27 @@
     <button type="button" class="newevent-back" id="newevent-back" aria-label="Go back">
         <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
     </button>
-    <h1 class="newevent-title">New Event</h1>
+    <h1 class="newevent-title">@(isEdit ? "Edit Event" : "New Event")</h1>
 </div>
 
 <!-- New event form -->
-<form class="newevent-form no-ajax" id="edit-event-form" asp-controller="Events" asp-action="Add" method="post" enctype="multipart/form-data" novalidate data-is-new="true">
+<form class="newevent-form no-ajax"
+      id="edit-event-form"
+      asp-controller="Events"
+      asp-action="@(isEdit ? "Edit" : "Add")"
+      asp-route-id="@(isEdit ? Model.EventId : null)"
+      method="post"
+      enctype="multipart/form-data"
+      novalidate
+      data-is-new="@(isEdit ? "false" : "true")"
+      data-event-id="@Model.EventId"
+      data-return-url="@(isEdit ? Url.Action("EventDetails", "Events", new { id = Model.EventId }) : "/events")">
     @Html.AntiForgeryToken()
+    @if (isEdit)
+    {
+        <input type="hidden" asp-for="EventId" />
+        <input type="hidden" asp-for="CoverImageUrl" id="cover-image-url" />
+    }
     <!-- Event image input and preview -->
     <div class="newevent-cover-container">
         <input type="file" id="cover-input" name="cover" class="visually-hidden" accept="image/*" />
@@ -73,6 +92,7 @@
             <input id="newevent-location"
                    name="location"
                    type="text"
+                   value="@Model.Location"
                    placeholder="Where is it?"
                    autocomplete="street-address" />
         </div>
@@ -87,7 +107,7 @@
                       name="description"
                       class="form-input-field newevent-description-field"
                       rows="5"
-                      placeholder="Tell people about it ..."></textarea>
+                      placeholder="Tell people about it ...">@Model.Description</textarea>
             <div class="newevent-description-toolbar" role="toolbar" aria-label="Text formatting">
                 <button type="button" class="newevent-toolbar-btn" aria-label="Bold" data-desc-cmd="bold">
                     <i class="fa-solid fa-bold" aria-hidden="true"></i>
@@ -144,6 +164,7 @@
                         <span class="newevent-payment-label">Payment method</span>
                         <input type="text"
                                name="PaymentMethod"
+                               value="@Model.PaymentMethod"
                                class="newevent-payment-input"
                                placeholder="e.g. swish, bank transfer, etc."
                                autocomplete="off" />
@@ -152,6 +173,7 @@
                         <span class="newevent-payment-label">Amount</span>
                         <input type="text"
                                name="PaymentAmount"
+                               value="@Model.PaymentAmount"
                                placeholder="e.g. 50kr"
                                class="newevent-payment-input"
                                inputmode="text"
@@ -161,6 +183,7 @@
                         <span class="newevent-payment-label">Number</span>
                         <input type="tel"
                                name="PaymentNumber"
+                               value="@Model.PaymentNumber"
                                class="newevent-payment-input"
                                placeholder="e.g. phone, bank number, etc."
                                inputmode="tel"
@@ -171,6 +194,7 @@
                     <span class="newevent-payment-label">Name (and comments)</span>
                     <input type="text"
                            name="PaymentName"
+                           value="@Model.PaymentName"
                            placeholder="e.g. Sarah"
                            class="newevent-payment-input"
                            autocomplete="name" />
@@ -182,9 +206,9 @@
     <!-- Event items and tasks -->
     <div class="form-group newevent-items-group">
         <div class="newevent-items-disclosure-card newevent-disclosure" id="newevent-items-tasks-card">
-            <input type="hidden" name="ItemsTasksEnabled" id="newevent-items-tasks-enabled" value="false" />
-            <input type="hidden" name="AllowGuestBringItems" id="newevent-allow-guest-items" value="false" />
-            <input type="hidden" name="AllowGuestTasks" id="newevent-allow-guest-tasks" value="false" />
+            <input type="hidden" name="ItemsTasksEnabled" id="newevent-items-tasks-enabled" value="@(Model.ItemsTasksEnabled == true ? "true" : "false")" />
+            <input type="hidden" name="AllowGuestBringItems" id="newevent-allow-guest-items" value="@(Model.AllowGuestBringItems == true ? "true" : "false")" />
+            <input type="hidden" name="AllowGuestTasks" id="newevent-allow-guest-tasks" value="@(Model.AllowGuestTasks == true ? "true" : "false")" />
             <input type="hidden" name="DraftBringItemsJson" id="newevent-draft-bring-items" value="[]" />
             <input type="hidden" name="DraftGuestTasksJson" id="newevent-draft-guest-tasks" value="[]" />
             <button type="button"
@@ -213,7 +237,7 @@
                             <i class="fa-solid fa-box" aria-hidden="true"></i>
                         </span>
                         <span class="eventitem-mini-label">ITEMS TO BRING</span>
-                        <span class="eventitem-mini-sub" id="eventitem-items-count">0 items</span>
+                        <span class="eventitem-mini-sub" id="eventitem-items-count">@itemCount item@(itemCount == 1 ? "" : "s")</span>
                     </button>
                     <!--Tasks to do-->
                     <button type="button"
@@ -226,7 +250,7 @@
                             <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
                         </span>
                         <span class="eventtask-mini-label">TASKS TO DO</span>
-                        <span class="eventtask-mini-sub" id="eventtasks-count">0 tasks</span>
+                        <span class="eventtask-mini-sub" id="eventtasks-count">@taskCount task@(taskCount == 1 ? "" : "s")</span>
                     </button>
                 </div>
             </section>
@@ -269,20 +293,20 @@
 
     <!-- Event submit button -->
     <div class="form-group">
-        <button type="submit" class="btn btn-primary newevent-submit">Create event</button>
+        <button type="submit" class="btn btn-primary newevent-submit">@(isEdit ? "Save changes" : "Create event")</button>
     </div>
 </form>
 
 @{
     var eventModalViewData = new ViewDataDictionary(ViewData)
     {
-        ["EventModalDraft"] = true
+        ["EventModalDraft"] = !isEdit
     };
 }
 
-<div id="eventitem-modals-root" data-event-modal-draft="true">
-    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
-    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
-    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
-    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" model="@((Presentation.Models.EventDetailsViewModel?)null)" view-data="eventModalViewData" />
+<div id="eventitem-modals-root" data-event-modal-draft="@(isEdit ? "false" : "true")">
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" model="eventModalModel" view-data="eventModalViewData" />
+    <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" model="eventModalModel" view-data="eventModalViewData" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" model="eventModalModel" view-data="eventModalViewData" />
+    <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" model="eventModalModel" view-data="eventModalViewData" />
 </div>

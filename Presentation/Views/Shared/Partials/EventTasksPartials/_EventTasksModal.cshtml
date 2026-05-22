@@ -1,12 +1,9 @@
-@using System.Security.Claims
 @model Presentation.Models.EventDetailsViewModel?
 @{
-    var isDraft = ViewData["EventModalDraft"] as bool? == true
-        || string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "CreateNewEvent", StringComparison.OrdinalIgnoreCase)
-        || (ViewContext.HttpContext.Request.Path.Value?.StartsWith("/events/create", StringComparison.OrdinalIgnoreCase) ?? false);
+    var isDraft = ViewData["EventModalDraft"] as bool? == true;
     var eventId = Model?.Id ?? ViewContext.RouteData.Values["id"]?.ToString() ?? "";
     var tasks = Model?.Tasks ?? new List<Presentation.Models.EventTaskViewModel>();
-    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var currentUserId = User.GetUserId();
     var canManage = Model?.CanManageItemsTasks == true || isDraft;
     var canAddTasks = Model?.CanAddTasks == true || isDraft;
     var canClaimTasks = Model?.CanClaimTasks == true || isDraft;

@@ -3,18 +3,22 @@ using Domain.Models;
 
 namespace Presentation.Helpers;
 
-/// <summary>Builds slim JSON for client-side list filtering; cards are rendered via <c>GetSingleEventCard</c>.</summary>
 public static class PortalEventsHelper
 {
+    // ************************************************************************************************
+    // Builds slim JSON for client-side list filtering; cards are rendered via <c>GetSingleEventCard</c>.
     public static IReadOnlyList<object> ToPortalPayload(IEnumerable<Event> events, string userId)
     {
         var now = DateTimeOffset.UtcNow;
         return events.Select(e => ToItem(e, userId, now)).ToList();
     }
 
+    // ************************************************************************************************
+    // Builds a single item for the portal payload.
     private static object ToItem(Event e, string userId, DateTimeOffset now)
     {
-        var role = e.Roles.FirstOrDefault(r => r.UserId == userId);
+        var role = e.Roles.FirstOrDefault(r => r.UserId == userId && !r.HiddenFromList);
+        var myAttendance = e.Attendances.FirstOrDefault(a => a.UserId == userId && !a.HiddenFromList);
         var isCreator = !string.IsNullOrEmpty(e.CreatedByUserId)
             && string.Equals(e.CreatedByUserId, userId, StringComparison.Ordinal);
 
@@ -25,6 +29,15 @@ public static class PortalEventsHelper
             _ => null
         };
 
+        string? myAttendanceStatus = myAttendance?.Status switch
+        {
+            AttendanceStatus.Accepted => "Accepted",
+            AttendanceStatus.Declined => "Declined",
+            AttendanceStatus.Maybe => "Maybe",
+            AttendanceStatus.Pending => "Pending",
+            _ => null
+        };
+
         var startUtc = e.StartAt.ToUniversalTime();
 
         return new
@@ -32,6 +45,7 @@ public static class PortalEventsHelper
             id = e.Id,
             creator = isCreator ? "you" : "",
             myEventsRole = myEventsRole ?? "",
+            myAttendanceStatus = myAttendanceStatus ?? "",
             eventDateIso = startUtc.ToString("yyyy-MM-dd"),
             eventTime24 = startUtc.ToString("HH:mm"),
             timeScope = e.StartAt < now ? "past" : "upcoming"

@@ -15,6 +15,8 @@ function getEventIdFromPath() {
  */
 function getEventDetailsPageConfig() {
   const page = document.getElementById("event-details-page");
+  const params = new URLSearchParams(window.location.search);
+  const fromMyEvents = params.get("from") === "myevents";
   return {
     eventId: page?.dataset.eventId || getEventIdFromPath(),
     eventTitle:
@@ -22,7 +24,21 @@ function getEventDetailsPageConfig() {
       document.getElementById("eventitem-title")?.textContent?.trim() ||
       "this event",
     canManage: page?.dataset.canManage === "true",
+    listReturnUrl: fromMyEvents ? "/events/my-events" : "/events",
   };
+}
+
+// **********************************************************************************************************
+function submitRemoveFromMyList(eventId, returnUrl) {
+  if (!eventId || !window.PortalUi.getAntiForgeryToken()) {
+    window.alert("Could not remove the event from your list.");
+    return;
+  }
+
+  const query = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : "";
+  window.PortalUi.submitPostForm(
+    `/events/${encodeURIComponent(eventId)}/remove-from-list${query}`
+  );
 }
 
 /**
@@ -158,6 +174,11 @@ function bindEventDetailsContextMenuActions() {
       return;
     }
 
+    if (action === "remove-from-list") {
+      submitRemoveFromMyList(eventId, getEventDetailsPageConfig().listReturnUrl);
+      return;
+    }
+
     if (action === "delete") {
       if (!canManage) {
         window.alert("You don't have permission to delete this event.");
@@ -187,6 +208,14 @@ function bindEventDetailsDeleteModal() {
   if (!deleteModal || deleteModal.dataset.deleteBound === "1") return;
 
   deleteModal.dataset.deleteBound = "1";
+
+  deleteModal
+    .querySelector('[data-event-details-delete-action="list"]')
+    ?.addEventListener("click", () => {
+      const { eventId, listReturnUrl } = getEventDetailsPageConfig();
+      if (!eventId) return;
+      submitRemoveFromMyList(eventId, listReturnUrl);
+    });
 
   deleteModal
     .querySelector('[data-event-details-delete-action="everyone"]')

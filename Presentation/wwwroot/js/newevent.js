@@ -33,11 +33,8 @@ function initNewEventPage() {
     return type !== "hidden" && type !== "checkbox" && type !== "radio" && type !== "file";
   });
 
-  /**
-   * Toggles filled-state classes used by `newevent.css` for populated fields.
-   * @param {HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement} control
-   * @returns {void}
-   */
+   // ************************************************************************************************
+  //Toggles filled-state classes used by `newevent.css` for populated fields.
   function applyFilledState(control) {
     const isFilled = String(control.value || "").trim().length > 0;
     control.classList.toggle("newevent-field-filled", isFilled);
@@ -45,10 +42,9 @@ function initNewEventPage() {
     if (shell) shell.classList.toggle("newevent-field-shell-filled", isFilled);
   }
 
-  /**
-   * Recomputes filled styling after programmatic updates.
-   * @returns {void}
-   */
+ // ************************************************************************************************
+   // Recomputes filled styling after programmatic updates.
+
   function refreshFilledStates() {
     fillStateControls.forEach((control) => applyFilledState(control));
   }
@@ -58,19 +54,16 @@ function initNewEventPage() {
     control.addEventListener("change", () => applyFilledState(control));
   });
 
-  /**
-   * @param {string} url
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Shows the cover preview image.
   function showCoverPreview(url) {
     if (coverImg) coverImg.src = url;
     coverLabelEmpty?.setAttribute("hidden", "");
     coverPreview?.removeAttribute("hidden");
   }
 
-  /**
-   * @returns {void}
-   */
+   // ************************************************************************************************
+  // Shows the empty cover preview image.
   function showCoverEmpty() {
     if (coverInput) coverInput.value = "";
     if (coverImg) coverImg.src = "";
@@ -94,6 +87,10 @@ function initNewEventPage() {
   coverDelete?.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
+    const coverUrlInput = document.getElementById("cover-image-url");
+    if (coverUrlInput instanceof HTMLInputElement) {
+      coverUrlInput.value = "";
+    }
     showCoverEmpty();
   });
 
@@ -105,6 +102,11 @@ function initNewEventPage() {
   });
 
   back?.addEventListener("click", () => {
+    const returnUrl = form.dataset.returnUrl?.trim();
+    if (returnUrl) {
+      window.location.href = returnUrl;
+      return;
+    }
     if (window.history.length > 1) {
       window.history.back();
       return;
@@ -112,10 +114,8 @@ function initNewEventPage() {
     window.location.href = "/events";
   });
 
-  /**
-   * @param {string} wrap
-   * @returns {void}
-   */
+   // ************************************************************************************************
+  // Wraps the selection in the textarea with the specified wrap characters.
   function wrapSelection(textarea, wrap) {
     const start = textarea.selectionStart ?? 0;
     const end = textarea.selectionEnd ?? 0;
@@ -128,6 +128,8 @@ function initNewEventPage() {
     textarea.focus();
   }
 
+   // ************************************************************************************************
+  // Handles toolbar button clicks for the description textarea.
   document.querySelectorAll(".newevent-description-toolbar [data-desc-cmd]").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (!description) return;
@@ -138,46 +140,39 @@ function initNewEventPage() {
     });
   });
 
-  /**
-   * @returns {void}
-   */
+   // ************************************************************************************************
+  // Synchronizes the payment disclosure UI.
   function syncNewEventPaymentDisclosureUi() {
     paymentDisclosureTrigger?.setAttribute("aria-expanded", paymentOpen ? "true" : "false");
     paymentDisclosureRoot?.classList.toggle("newevent-disclosure-open", paymentOpen);
   }
 
-  /********************************************************************************/
-
-  /**
-   * @returns {void}
-   */
+   // ************************************************************************************************
+  // Synchronizes the items/tasks disclosure UI.
   function syncNewEventItemsTasksDisclosureUi() {
     itemsTasksDisclosureTrigger?.setAttribute("aria-expanded", itemsTasksOpen ? "true" : "false");
     itemsTasksDisclosureRoot?.classList.toggle("newevent-disclosure-open", itemsTasksOpen);
   }
 
-  /********************************************************************************/
-
-  /**
-   * Toggles payment panel visibility only; values stay in the form so POST still includes them when collapsed.
-   * @param {boolean} open
-   * @returns {void}
-   */
+   // ************************************************************************************************
+  // Toggles payment panel visibility only; values stay in the form so POST still includes them when collapsed.
   function setPaymentPanelOpen(open) {
     paymentOpen = open;
     if (paymentPanel) paymentPanel.hidden = !open;
     syncNewEventPaymentDisclosureUi();
   }
 
-  setPaymentPanelOpen(false);
+  const hasPaymentFields = Array.from(
+    paymentPanel?.querySelectorAll(".newevent-payment-input") ?? []
+  ).some((el) => String(/** @type {HTMLInputElement} */ (el).value || "").trim().length > 0);
+
+  setPaymentPanelOpen(hasPaymentFields);
   paymentDisclosureTrigger?.addEventListener("click", () => {
     setPaymentPanelOpen(!paymentOpen);
   });
 
-  /**
-   * @param {boolean} enabled
-   * @returns {void}
-   */
+   // ************************************************************************************************
+  // Toggles items/tasks panel visibility only; values stay in the form so POST still includes them when collapsed.
   function setItemsTasksEnabled(enabled) {
     itemsTasksOpen = enabled;
     if (itemsTasksEnabledInput instanceof HTMLInputElement) {
@@ -195,19 +190,42 @@ function initNewEventPage() {
     syncNewEventItemsTasksDisclosureUi();
   }
 
-  setItemsTasksEnabled(false);
+  const itemsTasksInitiallyEnabled =
+    itemsTasksEnabledInput instanceof HTMLInputElement &&
+    itemsTasksEnabledInput.value === "true";
+  setItemsTasksEnabled(itemsTasksInitiallyEnabled);
   itemsTasksDisclosureTrigger?.addEventListener("click", () => {
     setItemsTasksEnabled(!itemsTasksOpen);
   });
 
+  const existingCoverUrl = document.getElementById("cover-image-url");
+  if (existingCoverUrl instanceof HTMLInputElement && existingCoverUrl.value.trim()) {
+    showCoverPreview(existingCoverUrl.value.trim());
+  }
+
   refreshFilledStates();
   initNewEventDraftModals();
+  syncPersistedItemsTasksCounts();
 }
 
 /**
- * Client-side items/tasks modals on `/events/create` (no event id yet).
+ * Updates mini-card counts when items/tasks are server-rendered (edit event).
  * @returns {void}
  */
+function syncPersistedItemsTasksCounts() {
+  const root = document.getElementById("eventitem-modals-root");
+  if (!root || root.dataset.eventModalDraft === "true") return;
+
+  const nItems = document.querySelectorAll("#eventitems-modal-rows article.eventitem-bring-row[data-item-id]").length;
+  const nTasks = document.querySelectorAll("#eventtasks-modal-rows article.eventitem-bring-row[data-task-id]").length;
+  const itemsCountEl = document.getElementById("eventitem-items-count");
+  const tasksCountEl = document.getElementById("eventtasks-count");
+  if (itemsCountEl) itemsCountEl.textContent = `${nItems} item${nItems === 1 ? "" : "s"}`;
+  if (tasksCountEl) tasksCountEl.textContent = `${nTasks} task${nTasks === 1 ? "" : "s"}`;
+}
+
+// ************************************************************************************************
+// Initializes the draft items/tasks modals.
 function initNewEventDraftModals() {
   const addItemForm = document.getElementById("eventitem-add-item-form");
   if (!addItemForm || addItemForm.dataset.draftOnly !== "true") return;
@@ -234,7 +252,10 @@ function initNewEventDraftModals() {
   const addTaskModal = document.getElementById("eventitem-add-task-modal");
   const addTaskForm = document.getElementById("eventitem-add-task-form");
 
-  /** @type {{ bringItems: Array<{ title: string, amount: string, people: number }>, guestTasks: Array<{ title: string, location: string, time: string, people: number }> }} */
+  // ************************************************************************************************
+  // Defines the draft items/tasks data structure.
+  /** @type {{ bringItems: Array<{ title: string, amount: string, people: number }>,
+   * guestTasks: Array<{ title: string, location: string, time: string, people: number }> }} */
   const draft = { bringItems: [], guestTasks: [] };
   let editingItemIndex = -1;
   let editingTaskIndex = -1;
@@ -242,17 +263,15 @@ function initNewEventDraftModals() {
   const addItemModalTitle = document.getElementById("eventitem-add-item-modal-title");
   const addTaskModalTitle = document.getElementById("eventitem-add-task-modal-title");
 
-  /**
-   * @returns {string}
-   */
+  // ************************************************************************************************
+  // Returns the draft event title.
   function draftEventTitle() {
     const titleInput = document.getElementById("newevent-title");
     return titleInput?.value?.trim() || "New event";
   }
 
-  /**
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Synchronizes the draft modal titles.
   function syncDraftModalTitles() {
     const t = draftEventTitle().toUpperCase();
     if (itemsSubtitleEl) itemsSubtitleEl.textContent = t;
@@ -261,9 +280,8 @@ function initNewEventDraftModals() {
     if (addTaskSubtitleEl) addTaskSubtitleEl.textContent = t;
   }
 
-  /**
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Resets the draft item form.
   function resetDraftItemForm() {
     editingItemIndex = -1;
     addItemForm.reset();
@@ -272,9 +290,8 @@ function initNewEventDraftModals() {
     if (addItemModalTitle) addItemModalTitle.textContent = "Add item";
   }
 
-  /**
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Resets the draft task form.
   function resetDraftTaskForm() {
     editingTaskIndex = -1;
     if (!addTaskForm) return;
@@ -284,10 +301,8 @@ function initNewEventDraftModals() {
     if (addTaskModalTitle) addTaskModalTitle.textContent = "Add task";
   }
 
-  /**
-   * @param {number} index
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Opens the draft item for edit.
   function openDraftItemForEdit(index) {
     const row = draft.bringItems[index];
     if (!row) return;
@@ -302,10 +317,8 @@ function initNewEventDraftModals() {
     window.PortalUi.setModalVisible(addItemModal, true);
   }
 
-  /**
-   * @param {number} index
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Opens the draft task for edit.
   function openDraftTaskForEdit(index) {
     const row = draft.guestTasks[index];
     if (!row) return;
@@ -321,12 +334,8 @@ function initNewEventDraftModals() {
     window.PortalUi.setModalVisible(addTaskModal, true);
   }
 
-  /**
-   * @param {HTMLElement | null} rowsEl
-   * @param {Array<{ title: string, amount?: string, location?: string, time?: string, people?: number }>} rows
-   * @param {"item" | "task"} kind
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Renders the draft rows.
   function renderDraftRows(rowsEl, rows, kind) {
     if (!rowsEl) return;
     rowsEl.innerHTML = "";
@@ -393,10 +402,8 @@ function initNewEventDraftModals() {
     });
   }
 
-  /**
-   * Copies in-memory draft rows into hidden fields so the create POST persists them server-side.
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Copies in-memory draft rows into hidden fields so the create POST persists them server-side.
   function syncDraftPayloadToForm() {
     const enabled = itemsTasksEnabledInput instanceof HTMLInputElement && itemsTasksEnabledInput.value === "true";
     if (draftBringItemsInput instanceof HTMLInputElement) {
@@ -407,9 +414,8 @@ function initNewEventDraftModals() {
     }
   }
 
-  /**
-   * @returns {void}
-   */
+  // ************************************************************************************************
+  // Refreshes the draft counts.
   function refreshDraftCounts() {
     const nItems = draft.bringItems.length;
     const nTasks = draft.guestTasks.length;
@@ -418,6 +424,8 @@ function initNewEventDraftModals() {
     syncDraftPayloadToForm();
   }
 
+  // ************************************************************************************************
+  // Handles the before-modal-open event.
   document.addEventListener("portal-ui:before-modal-open", (e) => {
     const target = e.detail?.target;
     const trigger = e.detail?.trigger;
@@ -437,6 +445,8 @@ function initNewEventDraftModals() {
     }
   });
 
+  // ************************************************************************************************
+  // Handles the input event for the event title.
   document.getElementById("newevent-title")?.addEventListener("input", syncDraftModalTitles);
 
   itemRowsEl?.addEventListener("click", (e) => {
@@ -458,12 +468,14 @@ function initNewEventDraftModals() {
   });
 
   if (allowItemsToggle && allowItemsHidden) {
+    allowItemsToggle.checked = allowItemsHidden.value === "true";
     allowItemsToggle.addEventListener("change", () => {
       allowItemsHidden.value = allowItemsToggle.checked ? "true" : "false";
     });
   }
 
   if (allowTasksToggle && allowTasksHidden) {
+    allowTasksToggle.checked = allowTasksHidden.value === "true";
     allowTasksToggle.addEventListener("change", () => {
       allowTasksHidden.value = allowTasksToggle.checked ? "true" : "false";
     });

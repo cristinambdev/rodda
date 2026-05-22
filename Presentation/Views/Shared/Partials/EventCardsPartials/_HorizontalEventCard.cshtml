@@ -9,7 +9,7 @@
     var isPast = start < DateTimeOffset.UtcNow;
     var hasCover = !string.IsNullOrWhiteSpace(Model.CoverImageUrl);
     var title = Model.Title;
-    var detailUrl = $"/events/{Model.Id}";
+    var detailUrl = EventUrls.DetailsPath(Model.Slug, Model.Id);
     if (ViewData["DetailFromMyEvents"] as bool? == true)
     {
         detailUrl += "?from=myevents";
@@ -30,6 +30,7 @@
         : role?.Role == EventRoleType.CoOwner ? "Co-owner"
         : null;
     var attendanceCounts = AttendanceCounts.From(Model.Attendances);
+    var myAttendance = Model.Attendances.FirstOrDefault(a => a.UserId == userId && !a.HiddenFromList);
 
     var accepted = Model.Attendances.Where(a => a.Status == AttendanceStatus.Accepted).ToList();
     var attendanceMuted = accepted.Count == 0;
@@ -39,6 +40,10 @@
         : (accepted.Sum(a => Math.Max(1, a.GuestCount)) == 1
             ? "1 person attending"
             : $"{accepted.Sum(a => Math.Max(1, a.GuestCount))} people attending");
+
+    var workloadBadges = ViewData["EventCardBadges"] is IReadOnlyDictionary<string, EventCardBadgeHelper.CardBadges> cardBadges
+        ? cardBadges.GetValueOrDefault(Model.Id)
+        : null;
 
     var cardClass = "card event-card horizontal" + (isPast ? " event-card--past" : "") + (hasCover ? "" : " event-card--no-cover");
     var attendanceClass = "event-card-attendance" + (attendanceMuted ? " event-card-attendance--muted" : "");
@@ -67,18 +72,24 @@
                 </div>
             </a>
         }
-        @if (!string.IsNullOrEmpty(roleBadge) || isHost)
+        @if (!string.IsNullOrEmpty(roleBadge) || isHost || myAttendance != null)
         {
             <div class="event-card-thumb-badge-stack">
                 @if (!string.IsNullOrEmpty(roleBadge))
                 {
-                    <span class="badge badge-green event-card-role-badge">@roleBadge</span>
+                    <span class="badge @AttendanceStatusLabels.RoleBadgeCssClass event-card-role-badge">@roleBadge</span>
                 }
                 @if (isHost)
                 {
                     <div class="event-card-attendance-badge" aria-label="Guest attendance summary">
                         <partial name="~/Views/Shared/Partials/EventDetailsPartials/_AttendanceSummaryBadges.cshtml" model="attendanceCounts" />
                     </div>
+                }
+                else if (myAttendance != null)
+                {
+                    <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge">
+                        @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
+                    </span>
                 }
             </div>
         }
@@ -88,6 +99,19 @@
         <div class="card-header">
             <div class="event-card-datetime-row">
                 <p class="event-card-datetime">@listDateTime</p>
+                @if (workloadBadges != null && (!string.IsNullOrEmpty(workloadBadges.WorkloadLabel) || workloadBadges.UserHasItemsOrTasks))
+                {
+                    <div class="event-card-status-stack" aria-label="Items and tasks status">
+                        @if (!string.IsNullOrEmpty(workloadBadges!.WorkloadLabel))
+                        {
+                            <span class="badge badge-blue">@workloadBadges.WorkloadLabel</span>
+                        }
+                        @if (workloadBadges.UserHasItemsOrTasks)
+                        {
+                            <span class="badge badge-orange">You have tasks/items</span>
+                        }
+                    </div>
+                }
             </div>
         </div>
 

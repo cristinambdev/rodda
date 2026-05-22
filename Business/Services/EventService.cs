@@ -13,6 +13,7 @@ public interface IEventService
 {
     Task<EventResult> CreateEventAsync(string userId, AddEventFormData formData);
     Task<EventResult<IEnumerable<Event>>> GetEventsForUserAsync(string userId);
+    Task<EventResult<IEnumerable<Event>>> GetManagedEventsForUserAsync(string userId);
     Task<EventResult<Event>> GetEventForUserAsync(string userId, string id);
     Task<EventResult> UpdateEventAsync(string userId, string eventId, UpdateEventFormData formData);
     Task<EventResult> UpdateEventSettingsAsync(string userId, string eventId, bool allowGuestBringItems, bool allowGuestTasks);
@@ -21,13 +22,16 @@ public interface IEventService
     Task<EventResult> DeleteChatMessageAsync(string messageId, string currentUserId);
     Task<EventResult> JoinEventAsync(string userId, string eventId, int guestCount = 1);
     Task<EventResult> LeaveEventAsync(string userId, string eventId);
+    Task<EventResult> RemoveFromMyListAsync(string userId, string eventId);
+    Task<string?> ResolveEventIdAsync(string slugOrId);
 }
 
-public class EventService(IEventRepository eventRepository, IEventChatRepository eventChatRepository, IEventAttendanceRepository eventAttendanceRepository, IEventAccessService eventAccessService) : IEventService
+public class EventService(IEventRepository eventRepository, IEventChatRepository eventChatRepository, IEventAttendanceRepository eventAttendanceRepository, IEventRoleRepository eventRoleRepository, IEventAccessService eventAccessService) : IEventService
 {
     private readonly IEventRepository _eventRepository = eventRepository;
     private readonly IEventChatRepository _eventChatRepository = eventChatRepository;
     private readonly IEventAttendanceRepository _eventAttendanceRepository = eventAttendanceRepository;
+    private readonly IEventRoleRepository _eventRoleRepository = eventRoleRepository;
     private readonly IEventAccessService _eventAccessService = eventAccessService;
 
     // **************************************************************************************************************************
@@ -41,6 +45,11 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
 
         if (string.IsNullOrEmpty(eventEntity.Id))
             eventEntity.Id = Guid.NewGuid().ToString();
+
+        eventEntity.Slug = await EventSlugHelper.AssignUniqueSlugAsync(
+            _eventRepository,
+            eventEntity,
+            formData.Slug);
 
         // Set the Creator ID
         eventEntity.CreatedByUserId = userId;
@@ -63,12 +72,12 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
 
         var result = await _eventRepository.AddAsync(eventEntity);
         return result.Succeeded
-            ? new EventResult { Succeeded = true, StatusCode = 201, EventId = eventEntity.Id }
+            ? new EventResult { Succeeded = true, StatusCode = 201, EventId = eventEntity.Id, EventSlug = eventEntity.Slug }
             : new EventResult { Succeeded = false, StatusCode = 500, ErrorMessage = result.ErrorMessage };
     }
 
     // **************************************************************************************************************************
-    // READ: events the user actively belongs to (host/co-host or accepted attendance).
+    // READ: events linked to the user (host/co-host or any attendance), unless removed from their list.
     public async Task<EventResult<IEnumerable<Event>>> GetEventsForUserAsync(string userId)
     {
         var response = await _eventRepository.GetAllAsync
@@ -79,9 +88,42 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
                 where: e =>
                     e.Roles.Any(r =>
                         r.UserId == userId &&
+                        !r.HiddenFromList &&
                         (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner)) ||
                     e.Attendances.Any(a =>
-                        a.UserId == userId && a.Status == AttendanceStatus.Accepted),
+                        a.UserId == userId && !a.HiddenFromList),
+                includes:
+                [
+                    x => x.CreatedByUser,
+                    x => x.Roles,
+                    x => x.Attendances
+                ],
+                includeChains:
+                [
+                    q => q.Include(x => x.ChatMessages).ThenInclude(c => c.AuthorUser)
+                ]
+            );
+        if (!response.Succeeded || response.Result == null)
+            return new EventResult<IEnumerable<Event>> { Succeeded = false, StatusCode = response.StatusCode, ErrorMessage = response.ErrorMessage };
+
+        var events = response.Result.Select(MapEvent).ToList();
+        return new EventResult<IEnumerable<Event>> { Succeeded = true, StatusCode = 200, Result = events };
+    }
+
+    // **************************************************************************************************************************
+    // READ: events the user created (owner) or co-owns, unless removed from their list.
+    public async Task<EventResult<IEnumerable<Event>>> GetManagedEventsForUserAsync(string userId)
+    {
+        var response = await _eventRepository.GetAllAsync
+            (
+                selector: e => e,
+                orderByDescending: true,
+                sortBy: e => e.CreatedAt,
+                where: e =>
+                    e.Roles.Any(r =>
+                        r.UserId == userId &&
+                        !r.HiddenFromList &&
+                        (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner)),
                 includes:
                 [
                     x => x.CreatedByUser,
@@ -102,8 +144,12 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
 
     // **************************************************************************************************************************
     // READ: single event when the caller has active membership; otherwise 404.
-    public async Task<EventResult<Event>> GetEventForUserAsync(string userId, string id)
+    public async Task<EventResult<Event>> GetEventForUserAsync(string userId, string slugOrId)
     {
+        var id = await ResolveEventIdAsync(slugOrId);
+        if (id == null)
+            return new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         var access = await _eventAccessService.VerifyViewAccessAsync(userId, id);
         if (!access.Succeeded)
             return new EventResult<Event> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
@@ -141,36 +187,49 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     // **************************************************************************************************************************
     // Generated with help of AI
     // UPDATE
-    public async Task<EventResult> UpdateEventAsync(string userId, string eventId, UpdateEventFormData formData)
+    public async Task<EventResult> UpdateEventAsync(string userId, string slugOrId, UpdateEventFormData formData)
     {
         if (formData == null)
             return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Not all required fields are supplied" };
 
-        var fetchResponse = await _eventRepository.GetEntityAsync(e => e.Id == userId);
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var fetchResponse = await _eventRepository.GetEntityAsync(
+            e => e.Id == eventId,
+            includes: [x => x.Roles]);
 
         var eventEntity = fetchResponse.Result;
         if (!fetchResponse.Succeeded || eventEntity == null)
             return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
-        // Check if user is owner or co-owner
         var userRole = eventEntity.Roles.FirstOrDefault(r => r.UserId == userId);
         if (userRole == null || (userRole.Role != EventRoleType.Owner && userRole.Role != EventRoleType.CoOwner))
             return new EventResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to edit this event." };
 
         formData.MapOnto(eventEntity);
+        eventEntity.Slug = await EventSlugHelper.AssignUniqueSlugAsync(
+            _eventRepository,
+            eventEntity,
+            formData.Slug);
         eventEntity.UpdatedAt = DateTime.UtcNow;
 
         var updateResponse = await _eventRepository.UpdateAsync(eventEntity);
         return updateResponse.Succeeded
-            ? new EventResult { Succeeded = true, StatusCode = 200 }
+            ? new EventResult { Succeeded = true, StatusCode = 200, EventId = eventEntity.Id, EventSlug = eventEntity.Slug }
             : new EventResult { Succeeded = false, StatusCode = 500, ErrorMessage = updateResponse.ErrorMessage };
     }
 
     // **************************************************************************************************************************
     // UPDATE: guest item/task policy toggles from event details modals
     // Generated with help of AI
-    public async Task<EventResult> UpdateEventSettingsAsync(string userId, string eventId, bool allowGuestBringItems, bool allowGuestTasks)
+    public async Task<EventResult> UpdateEventSettingsAsync(string userId, string slugOrId, bool allowGuestBringItems, bool allowGuestTasks)
     {
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
         if (!access.Succeeded)
             return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
@@ -202,10 +261,14 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
 
     // **************************************************************************************************************************
     // JOIN EVENT: Updates party size for members who already have view access (use share link to enter first).
-    public async Task<EventResult> JoinEventAsync(string userId, string eventId, int guestCount = 1)
+    public async Task<EventResult> JoinEventAsync(string userId, string slugOrId, int guestCount = 1)
     {
         if (guestCount < 1)
             return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Guest count must be at least 1." };
+
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
         var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
         if (!access.Succeeded)
@@ -223,6 +286,7 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
         else if (attendance.Status != AttendanceStatus.Accepted)
             return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
+        attendance.HiddenFromList = false;
         attendance.GuestCount = guestCount;
         attendance.RespondedAt = DateTime.UtcNow;
 
@@ -234,8 +298,12 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
 
     // **************************************************************************************************************************
     // LEAVE EVENT: Marks the user's attendance as declined (keeps the row for history / re-join).
-    public async Task<EventResult> LeaveEventAsync(string userId, string eventId)
+    public async Task<EventResult> LeaveEventAsync(string userId, string slugOrId)
     {
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
         if (!access.Succeeded)
             return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
@@ -257,9 +325,52 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     }
 
     // **************************************************************************************************************************
-    // DELETE
-    public async Task<EventResult> DeleteEventAsync(string userId, string id)
+    // REMOVE FROM MY LIST: Hides the event from the user's lists without deleting the event.
+    public async Task<EventResult> RemoveFromMyListAsync(string userId, string slugOrId)
     {
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var eventResponse = await _eventRepository.GetEntityAsync(
+            e => e.Id == eventId,
+            includes: [x => x.Roles, x => x.Attendances]);
+
+        if (!eventResponse.Succeeded || eventResponse.Result == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var entity = eventResponse.Result;
+        foreach (var role in entity.Roles.Where(r => r.UserId == userId))
+        {
+            role.HiddenFromList = true;
+            var roleUpdate = await _eventRoleRepository.UpdateAsync(role);
+            if (!roleUpdate.Succeeded)
+                return new EventResult { Succeeded = false, StatusCode = roleUpdate.StatusCode, ErrorMessage = roleUpdate.ErrorMessage };
+        }
+
+        foreach (var attendance in entity.Attendances.Where(a => a.UserId == userId))
+        {
+            attendance.HiddenFromList = true;
+            var attendanceUpdate = await _eventAttendanceRepository.UpdateAsync(attendance);
+            if (!attendanceUpdate.Succeeded)
+                return new EventResult { Succeeded = false, StatusCode = attendanceUpdate.StatusCode, ErrorMessage = attendanceUpdate.ErrorMessage };
+        }
+
+        return new EventResult { Succeeded = true, StatusCode = 200 };
+    }
+
+    // **************************************************************************************************************************
+    // DELETE
+    public async Task<EventResult> DeleteEventAsync(string userId, string slugOrId)
+    {
+        var id = await ResolveEventIdAsync(slugOrId);
+        if (id == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
         var fetchResponse = await _eventRepository.GetEntityAsync(
             e => e.Id == id,
             includes: [x => x.Roles]);
@@ -284,10 +395,14 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     // ------------------ CHAT ---------------------------------
     // **************************************************************************************************************************
     // Add Chat message
-    public async Task<EventResult> AddChatMessageAsync(string eventId, string userId, AddChatMessageFormData formData)
+    public async Task<EventResult> AddChatMessageAsync(string slugOrId, string userId, AddChatMessageFormData formData)
     {
         if (formData == null)
             return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Message cannot be empty." };
+
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
 
         var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
         if (!access.Succeeded)
@@ -344,9 +459,28 @@ public class EventService(IEventRepository eventRepository, IEventChatRepository
     }
 
     // **************************************************************************************************************************
+    public async Task<string?> ResolveEventIdAsync(string slugOrId)
+    {
+        if (string.IsNullOrWhiteSpace(slugOrId))
+            return null;
+
+        var key = slugOrId.Trim();
+        if (Guid.TryParse(key, out _))
+        {
+            var byId = await _eventRepository.GetEntityAsync(e => e.Id == key);
+            return byId.Succeeded && byId.Result != null ? key : null;
+        }
+
+        var bySlug = await _eventRepository.GetEntityAsync(e => e.Slug == key);
+        return bySlug.Succeeded && bySlug.Result != null ? bySlug.Result.Id : null;
+    }
+
+    // **************************************************************************************************************************
+    // Maps an EventEntity to an Event.
     private static Event MapEvent(EventEntity entity)
     {
         var result = entity.MapTo<Event>();
+        result.Slug = entity.Slug;
         result.CoverImageUrl = entity.CoverImageUrl;
         result.CreatedByUserId = entity.CreatedByUserId;
         result.CreatorDisplayName = entity.CreatedByUser?.DisplayName;

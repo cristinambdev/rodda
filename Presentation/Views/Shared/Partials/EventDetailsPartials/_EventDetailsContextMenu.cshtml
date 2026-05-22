@@ -19,6 +19,14 @@
     <span>Edit</span>
   </button>
   <button type="button"
+          class="event-card-context-menu-item"
+          role="menuitem"
+          data-event-details-menu-action="remove-from-list"
+          @(canManageEvent ? "hidden" : null)>
+    <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+    <span>Remove from my list</span>
+  </button>
+  <button type="button"
           class="event-card-context-menu-item danger"
           role="menuitem"
           data-event-details-menu-action="delete"

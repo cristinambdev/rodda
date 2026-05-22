@@ -10,4 +10,5 @@ public class EventRole
     public User? User { get; set; }
     public EventRoleType Role { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool HiddenFromList { get; set; }
 }

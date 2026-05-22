@@ -25,15 +25,12 @@ function bootstrapPortalEvents() {
 
 /********************************************************************************/
 
-/**
- * @param {any} raw
- * @returns {any}
- */
 function normalizePortalEvent(raw) {
   return {
     id: String(raw?.id || "").trim(),
     creator: String(raw?.creator || "").trim(),
     myEventsRole: String(raw?.myEventsRole || "").trim(),
+    myAttendanceStatus: String(raw?.myAttendanceStatus || "").trim(),
     eventDateIso: String(raw?.eventDateIso || "").trim(),
     eventTime24: String(raw?.eventTime24 || "").trim(),
     timeScope: raw?.timeScope === "past" ? "past" : "upcoming",
@@ -42,10 +39,6 @@ function normalizePortalEvent(raw) {
 
 /********************************************************************************/
 
-/**
- * @param {any} event
- * @returns {number | null}
- */
 function eventDateTimeMs(event) {
   const iso = String(event?.eventDateIso || "").trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
@@ -59,9 +52,6 @@ function eventDateTimeMs(event) {
 
 /********************************************************************************/
 
-/**
- * @returns {void}
- */
 function syncEventTimeScopes() {
   const now = Date.now();
   EVENTS.forEach((ev) => {
@@ -73,10 +63,6 @@ function syncEventTimeScopes() {
 
 /********************************************************************************/
 
-/**
- * @param {any} event
- * @returns {string}
- */
 function normalizeMyEventsRoleKey(event) {
   return String(event?.myEventsRole || "")
     .trim()
@@ -87,11 +73,6 @@ function normalizeMyEventsRoleKey(event) {
 
 /********************************************************************************/
 
-/**
- * @param {string} eventId
- * @param {{ fromMyEvents?: boolean }} [options]
- * @returns {Promise<string>}
- */
 async function fetchHorizontalEventCardHtml(eventId, options) {
   const id = encodeURIComponent(String(eventId || "").trim());
   if (!id) return "";
@@ -109,12 +90,6 @@ async function fetchHorizontalEventCardHtml(eventId, options) {
 
 /********************************************************************************/
 
-/**
- * @param {HTMLElement} ul
- * @param {string} eventId
- * @param {{ fromMyEvents?: boolean }} [options]
- * @returns {Promise<void>}
- */
 async function appendHorizontalEventCard(ul, eventId, options) {
   const html = (await fetchHorizontalEventCardHtml(eventId, options)).trim();
   if (!html || !(ul instanceof HTMLElement)) return;
@@ -125,16 +100,10 @@ async function appendHorizontalEventCard(ul, eventId, options) {
   ul.appendChild(li);
 }
 
-/********************************************************************************/
-
 // ================================================================================================
 // All Events list (client-rendered only when lists are empty)
 // ================================================================================================
 
-/**
- * @param {"asc" | "desc"} direction
- * @returns {(a: any, b: any) => number}
- */
 function alleventsSortByDate(direction) {
   const factor = direction === "desc" ? -1 : 1;
   return (a, b) => {
@@ -149,10 +118,6 @@ function alleventsSortByDate(direction) {
 
 /********************************************************************************/
 
-/**
- * @param {HTMLElement} root
- * @returns {Promise<void>}
- */
 async function renderAlleventsLists(root) {
   const upcomingUl = root.querySelector(
     '[data-allevents-panel="upcoming"] [data-allevents-list-items="upcoming"]'
@@ -180,26 +145,19 @@ async function renderAlleventsLists(root) {
 
 /********************************************************************************/
 
-/**
- * @returns {Promise<void>}
- */
 async function initAlleventsList() {
   const root = document.querySelector("[data-allevents-list]");
   if (!root) return;
   await renderAlleventsLists(root);
 }
 
-/********************************************************************************/
-
 // ================================================================================================
 // My Events list
 // ================================================================================================
 
-/**
- * @param {any} e
- * @returns {boolean}
- */
 function isMyEventsEvent(e) {
+  const id = String(e?.id || "").trim();
+  if (!id) return false;
   const creator = String(e?.creator || "")
     .trim()
     .toLowerCase();
@@ -210,10 +168,6 @@ function isMyEventsEvent(e) {
 
 /********************************************************************************/
 
-/**
- * @param {"asc" | "desc"} direction
- * @returns {(a: any, b: any) => number}
- */
 function myeventsSortByDate(direction) {
   const factor = direction === "desc" ? -1 : 1;
   return (a, b) => {
@@ -228,11 +182,6 @@ function myeventsSortByDate(direction) {
 
 /********************************************************************************/
 
-/**
- * @param {HTMLElement} root
- * @param {any[]} mine
- * @returns {Promise<void>}
- */
 async function renderMyEventsLists(root, mine) {
   const upcomingUl = root.querySelector(
     '[data-myevents-panel="upcoming"] [data-myevents-list-items="upcoming"]'
@@ -261,9 +210,6 @@ async function renderMyEventsLists(root, mine) {
 
 /********************************************************************************/
 
-/**
- * @returns {Promise<void>}
- */
 async function initMyEventsPage() {
   const root = document.querySelector("[data-myevents-list]");
   if (!root) return;

@@ -3,8 +3,8 @@ using Domain.Extensions;
 using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Presentation.Extensions;
 using Presentation.Models;
-using System.Security.Claims;
 
 namespace Presentation.Controllers;
 
@@ -26,7 +26,7 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
             return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
         }
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -56,7 +56,7 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
             return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
         }
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -80,7 +80,7 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteItem(string eventId, string itemId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -100,7 +100,7 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ClaimItem(string eventId, string itemId, string? assignmentId = null)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 
@@ -127,7 +127,7 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UnclaimItem(string eventId, string itemId, string? assignmentId = null)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.GetUserId();
         if (userId == null)
             return Unauthorized();
 

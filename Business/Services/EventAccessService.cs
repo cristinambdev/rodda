@@ -23,19 +23,28 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
     private readonly IEventAttendanceRepository _attendanceRepository = attendanceRepository;
 
     // **************************************************************************************************************************
-    // Host/co-host role or accepted attendance grants read access; declined users are excluded.
+    // Host/co-host or any attendance row that is not hidden from the user's lists.
     public bool HasViewAccess(EventEntity eventEntity, string userId)
+    {
+        return HasListMembership(eventEntity, userId);
+    }
+
+    // **************************************************************************************************************************
+    // Checks if the user has list membership.
+    internal static bool HasListMembership(EventEntity eventEntity, string userId)
     {
         if (eventEntity.Roles.Any(r =>
                 r.UserId == userId &&
+                !r.HiddenFromList &&
                 (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner)))
             return true;
 
         return eventEntity.Attendances.Any(a =>
-            a.UserId == userId && a.Status == AttendanceStatus.Accepted);
+            a.UserId == userId && !a.HiddenFromList);
     }
 
     // **************************************************************************************************************************
+    // Verifies if the user has view access to an event.
     public async Task<EventResult> VerifyViewAccessAsync(string userId, string eventId)
     {
         var response = await _eventRepository.GetEntityAsync(
@@ -82,6 +91,7 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
         {
             var attendance = attendanceResponse.Result;
             attendance.Status = AttendanceStatus.Accepted;
+            attendance.HiddenFromList = false;
             attendance.GuestCount = Math.Max(1, attendance.GuestCount);
             attendance.RespondedAt = DateTime.UtcNow;
 
@@ -96,6 +106,7 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
             EventId = eventId,
             UserId = userId,
             Status = AttendanceStatus.Accepted,
+            HiddenFromList = false,
             GuestCount = 1,
             RespondedAt = DateTime.UtcNow
         });
@@ -106,6 +117,7 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
     }
 
     // **************************************************************************************************************************
+    // Gets or creates a share link for an event.
     public async Task<EventResult<string>> GetOrCreateShareLinkAsync(string userId, string eventId)
     {
         var hostError = await VerifyHostAccessAsync(userId, eventId);
@@ -135,6 +147,7 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
     }
 
     // **************************************************************************************************************************
+    // Revokes a share link for an event.
     public async Task<EventResult> RevokeShareLinkAsync(string userId, string eventId)
     {
         var hostError = await VerifyHostAccessAsync(userId, eventId);
@@ -155,6 +168,7 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
     }
 
     // **************************************************************************************************************************
+    // Verifies if the user has host access to an event.
     private async Task<EventResult?> VerifyHostAccessAsync(string userId, string eventId)
     {
         var response = await _eventRepository.GetEntityAsync(
