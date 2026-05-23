@@ -147,11 +147,11 @@
     --badge-green-text-color: var(--white-100);
     /*badges-blue*/
     --badge-blue-background-color: var(--blue);
-    --badge-blue-border-color: var(--white-100);
+    --badge-blue-border-color: var(--blue);
     --badge-blue-text-color: var(--white-100);
     /*badges-orange*/
     --badge-orange-background-color: var(--orange-dark);
-    --badge-orange-border-color: var(--white-100);
+    --badge-orange-border-color: var(--orange-dark);
     --badge-orange-text-color: var(--white-100);
   /*badges-purple*/
   --badge-purple-background-color: var(--purple);
@@ -677,17 +677,6 @@ html,body
   white-space: nowrap;
 }
 
-.event-card.horizontal .event-card-status-stack
-{
-  margin-left: auto;
-  margin-right: -1.6rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: .2rem;
-  flex-shrink: 0;
-}
-
 /* --- Title --- */
 .event-card.horizontal .event-card-title
 {
@@ -729,6 +718,7 @@ html,body
 /* --- Header: Image --- */
 .event-card.vertical .card-header
 {
+  position: relative;
   padding: 0;
   line-height: 0;
 }
@@ -736,6 +726,8 @@ html,body
 .event-card.vertical .event-card-image
 {
   display: block;
+  position: relative;
+  z-index: 1;
   width: 100%;
   aspect-ratio: 16 / 10;
   object-fit: cover;
@@ -745,6 +737,8 @@ html,body
 .event-card.vertical .event-card-hero-placeholder--home
 {
   display: flex;
+  position: relative;
+  z-index: 1;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -844,9 +838,7 @@ html,body
   white-space: nowrap;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  z-index: 3;
   pointer-events: none;
-  position: absolute;
 }
 
 /* --- Role / status colors --- */
@@ -900,63 +892,48 @@ html,body
   color: var(--badge-gray-text-color);
 }
 
-/* --- Guest attendance summary (Accepted / Declined / Pending) --- */
+/* --- Event cards: stacks position overlays; pills flow inside flex --- */
 
-.badge.event-attendance-badge
+.event-card .event-card-status-stack
 {
-  position: static;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .2rem;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
-.badge.event-attendance-badge.badge-green
+.event-card .event-card-status-stack .badge
 {
-  background-color: var(--badge-green-background-color);
-  border-color: var(--badge-green-border-color);
-  color: var(--badge-green-text-color);
-}
-
-.badge.event-attendance-badge.badge-red
-{
-  background-color: var(--badge-red-background-color);
-  border-color: var(--badge-red-border-color);
-  color: var(--badge-red-text-color);
-}
-
-.badge.event-attendance-badge.badge-gray
-{
-  background-color: var(--badge-gray-background-color);
-  border-color: var(--badge-gray-border-color);
-  color: var(--badge-gray-text-color);
-}
-
-/* Workload pills: square corners (unfilled / you have tasks-items) */
-.event-card.horizontal .event-card-status-stack .badge
-{
-  position: static;
   border-radius: 0;
 }
 
-/* --- Horizontal event cards --- */
-
-.event-card.horizontal .event-card-thumb-badge-stack
+.event-card.horizontal .event-card-thumb-badge-stack,
+.event-card.vertical .event-card-badge-stack
 {
   position: absolute;
-  top: 0.4rem;
-  left: -0.2rem;
   z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: .25rem;
   pointer-events: none;
+}
+
+/* --- Horizontal event cards --- */
+
+.event-card.horizontal .event-card-thumb-badge-stack
+{
+  top: 0.4rem;
+  left: -0.3rem;
   max-width: calc(100% + 0.5rem);
 }
 
-.event-card.horizontal .event-card-thumb-badge-stack .badge
+.event-card.horizontal .event-card-status-stack
 {
-  position: static;
-  top: auto;
-  left: auto;
-  right: auto;
+  margin-left: auto;
+  margin-right: -1.6rem;
 }
 
 .event-card.horizontal .event-card-attendance-badge
@@ -968,61 +945,35 @@ html,body
   max-width: 5.5rem;
 }
 
-.event-card.horizontal .event-card-attendance-badge .badge
-{
-  position: static;
-  top: auto;
-  left: auto;
-  right: auto;
-}
-
-.event-card.horizontal .badge-blue,
-.event-card.horizontal .badge-orange
-{
-  right: -0.5rem;
-}
-
-.event-card.horizontal .badge-green
-{
-  top: 0.4rem;
-  left: -0.2rem;
-}
-
-.event-card.horizontal .badge-blue
-{
-  top: .4rem;
-}
-
-.event-card.horizontal .badge-orange
-{
-  top: 1.5rem;
-}
-
 /* --- Vertical event cards --- */
 
-.event-card.vertical .badge-green,
-.event-card.vertical .badge-blue
+.event-card.vertical .event-card-status-stack
+{
+  position: absolute;
+  top: .5rem;
+  right: -.2rem;
+  z-index: 3;
+  max-width: calc(100% - 1rem);
+}
+
+.event-card.vertical .event-card-badge-stack
 {
   top: .5rem;
+  left: -.35rem;
+  right: auto;
+  max-width: calc(100% - 1rem);
 }
 
-.event-card.vertical .badge-green
+.event-card.vertical .event-card-attendance-badge
 {
-  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: .2rem;
+  max-width: 100%;
 }
 
-.event-card.vertical .badge-blue,
-.event-card.vertical .badge-orange
-{
-  right: 0;
-}
-
-.event-card.vertical .badge-orange
-{
-  top: 1.7rem;
-}
-
-/* --- Event details hero --- */
+/* --- Badges on Event details hero --- */
 
 .eventitem-hero .eventitem-hero-badge-stack
 {
@@ -1041,25 +992,19 @@ html,body
 
 .eventitem-hero .eventitem-hero-role-badge
 {
-  position: static;
-  top: auto;
-  left: auto;
-  transform: none;
   padding: .35rem .8rem;
   font-size: .8rem;
-  border-radius: var(--radius-sm);
 }
 
 .eventitem-hero .eventitem-hero-attendance-badges
 {
-  position: static;
-  top: auto;
-  left: auto;
-  transform: none;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: .35rem;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
   pointer-events: none;
 }
 

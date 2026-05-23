@@ -15,16 +15,23 @@
         ? Model.Location!.Name!
         : Model.Location?.Street ?? "";
 
+    // Role and attendance badges
     var role = Model.Roles.FirstOrDefault(r => r.UserId == userId);
-    var isCreator = !string.IsNullOrEmpty(Model.CreatedByUserId)
+   var isCreator = !string.IsNullOrEmpty(Model.CreatedByUserId)
         && string.Equals(Model.CreatedByUserId, userId, StringComparison.Ordinal);
+    var isHost = isCreator
+        || role?.Role == EventRoleType.Owner
+        || role?.Role == EventRoleType.CoOwner;
     string? roleBadge = isCreator ? "Creator"
         : role?.Role == EventRoleType.Owner ? "Owner"
         : role?.Role == EventRoleType.CoOwner ? "Co-owner"
         : null;
+    var attendanceCounts = AttendanceCounts.From(Model.Attendances);
+    var myAttendance = Model.Attendances.FirstOrDefault(a => a.UserId == userId && !a.HiddenFromList);
 
     var accepted = Model.Attendances.Where(a => a.Status == AttendanceStatus.Accepted).ToList();
     var attendanceMuted = accepted.Count == 0;
+
     var attendanceIcon = "fa-solid fa-users";
     var attendanceLabel = accepted.Count == 0
         ? "No one has joined yet"
@@ -49,17 +56,41 @@
        aria-label="View @title"></a>
 
     <div class="@headerClass">
-        @if (!string.IsNullOrEmpty(roleBadge))
+        @if (!string.IsNullOrEmpty(roleBadge) || isHost || myAttendance != null)
         {
-            <span class="badge badge-green">@roleBadge</span>
-        }
-        @if (workloadBadges != null && !string.IsNullOrEmpty(workloadBadges.WorkloadLabel))
-        {
-            <span class="badge badge-blue">@workloadBadges.WorkloadLabel</span>
-        }
-        @if (workloadBadges?.UserHasItemsOrTasks == true)
-        {
-            <span class="badge badge-orange status-you">You have tasks/items</span>
+            <div class="event-card-badge-stack">
+            @if (!string.IsNullOrEmpty(roleBadge))
+                {
+                    <!-- Role badge: Creator, Owner, Co-owner -->
+                    <span class="badge @AttendanceStatusLabels.RoleBadgeCssClass event-card-role-badge">@roleBadge</span>
+                }
+                @if (isHost)
+                {
+                    <!-- Guest summary of (Accepted, Declined, Pending) for host counting-->
+                    <div class="event-card-attendance-badge" aria-label="Guest attendance summary">
+                        <partial name="~/Views/Shared/Partials/EventDetailsPartials/_AttendanceSummaryBadges.cshtml" model="attendanceCounts" />
+                    </div>
+                }
+                else if (myAttendance != null)
+                {
+                    <!-- User own attendance badges: Accepted, Declined, Pending -->
+                    <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge">
+                        @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
+                    </span>
+                }
+            </div>
+            <div class="event-card-status-stack">
+                <!-- Workload badge: Claimed, Unclaimed items/tasks amount -->
+                @if (workloadBadges != null && !string.IsNullOrEmpty(workloadBadges.WorkloadLabel))
+                {
+                    <span class="badge badge-blue">@workloadBadges.WorkloadLabel</span>
+                }
+                <!-- You have tasks/items badge -->
+                @if (workloadBadges?.UserHasItemsOrTasks == true)
+                {
+                    <span class="badge badge-orange status-you">You have tasks/items</span>
+                }
+            </div>
         }
         @if (hasCover)
         {

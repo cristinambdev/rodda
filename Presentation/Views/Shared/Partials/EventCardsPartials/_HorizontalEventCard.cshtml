@@ -75,10 +75,12 @@
         @if (!string.IsNullOrEmpty(roleBadge) || isHost || myAttendance != null)
         {
             <div class="event-card-thumb-badge-stack">
+            <!-- Role badge: Creator, Owner, Co-owner -->
                 @if (!string.IsNullOrEmpty(roleBadge))
                 {
                     <span class="badge @AttendanceStatusLabels.RoleBadgeCssClass event-card-role-badge">@roleBadge</span>
                 }
+            <!-- Guest summary of (Accepted, Declined, Pending) for host counting-->
                 @if (isHost)
                 {
                     <div class="event-card-attendance-badge" aria-label="Guest attendance summary">
@@ -87,6 +89,7 @@
                 }
                 else if (myAttendance != null)
                 {
+                    <!-- User own attendance badges: Accepted, Declined, Pending -->
                     <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge">
                         @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
                     </span>
