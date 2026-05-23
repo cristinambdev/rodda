@@ -1,0 +1,149 @@
+@model Presentation.Models.EventDetailsViewModel
+@using Presentation.Models
+@{
+    var rows = Model.OrganizerContributions;
+    if (rows.Count == 0)
+    {
+        return;
+    }
+
+    var itemCount = Model.Items?.Count ?? 0;
+    var taskCount = Model.Tasks?.Count ?? 0;
+
+    void RenderContributionCell(IList<EventContributionsViewModel>? cellLines)
+    {
+        var lines = cellLines ?? Array.Empty<EventContributionsViewModel>();
+        if (lines.Count == 0)
+        {
+            @:—
+        }
+        else if (lines.Count == 1 && !lines[0].IsEveryoneLine && !lines[0].IsDone)
+        {
+            @lines[0].Text
+        }
+        else
+        {
+            <ul class="event-details-organizer-cell-list">
+                @foreach (var line in lines)
+                {
+                    <li class="@(line.IsEveryoneLine ? "event-details-organizer-cell-li--everyone" : line.IsDone ? "event-details-organizer-cell-li--with-check" : null)">
+                        @if (line.IsEveryoneLine)
+                        {
+                            <span class="event-details-organizer-everyone-line">
+                                <span class="event-details-organizer-line-text">@line.Text</span>
+                                @if (line.IsDone)
+                                {
+                                    <i class="fa-solid fa-check event-details-organizer-check-icon" aria-hidden="true"></i>
+                                }
+                            </span>
+                        }
+                        else if (line.IsDone)
+                        {
+                            <span class="event-details-organizer-line-with-check">
+                                <span class="event-details-organizer-line-text">@line.Text</span>
+                                <i class="fa-solid fa-check event-details-organizer-check-icon" aria-hidden="true"></i>
+                            </span>
+                        }
+                        else
+                        {
+                            @line.Text
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    }
+}
+
+<div class="event-details-organizer" data-event-details-organizer>
+  <section class="event-details-organizer-section" aria-labelledby="event-details-organizer-table-heading">
+    <h2 class="event-details-organizer-h2" id="event-details-organizer-table-heading">
+      <i class="fa-solid fa-users" aria-hidden="true"></i>
+      Guests & contributions
+    </h2>
+    <div class="event-details-organizer-table-scroll" role="region" aria-label="Guests, items, and tasks">
+      <table class="event-details-organizer-table">
+        <thead>
+          <tr>
+            <th scope="col">Person</th>
+            <th scope="col">Items</th>
+            <th scope="col">Tasks</th>
+          </tr>
+        </thead>
+        <tbody id="event-details-organizer-tbody">
+          @foreach (var row in rows)
+          {
+              var rowClass = "event-details-organizer-tr"
+                  + (row.IsSelf ? " event-details-organizer-tr--self" : "")
+                  + (row.IsPlaceholderPerson ? " event-details-organizer-tr--open-slots" : "");
+              <tr class="@rowClass">
+                <td class="event-details-organizer-td event-details-organizer-td-person@(row.IsPlaceholderPerson ? " event-details-organizer-td-person--placeholder" : "")">
+                  @if (row.IsPlaceholderPerson)
+                  {
+                      @:—
+                  }
+                  else
+                  {
+                      @row.PersonName
+                      @if (row.PlusGuests > 0)
+                      {
+                          <span class="event-details-guests-plus-suffix">+@row.PlusGuests</span>
+                      }
+                  }
+                </td>
+                <td class="event-details-organizer-td event-details-organizer-td-items">
+                  @{ RenderContributionCell(row.Items); }
+                </td>
+                <td class="event-details-organizer-td event-details-organizer-td-tasks">
+                  @{ RenderContributionCell(row.Tasks); }
+                </td>
+              </tr>
+          }
+          <tr class="event-details-organizer-tr event-details-organizer-tr--total">
+            <td colspan="3" class="event-details-organizer-td event-details-organizer-td-total">
+              Total guests: @Model.OrganizerContributionsTotalGuests
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="event-details-organizer-footnote" id="event-details-organizer-footnote">
+      Symbol <i class="fa-solid fa-check event-details-organizer-check-icon" aria-hidden="true"></i> is added when the element has been marked as done
+      by the corresponding person on their todo list.
+    </p>
+    @if (Model.ItemsTasksEnabled)
+    {
+      <div class="eventitem-mini-grid" data-eventitem-mini-grid="organizer">
+        <button
+          type="button"
+          class="eventitem-mini-card eventitem-mini-card-items"
+          data-type="modal"
+          data-target="#eventitems-modal"
+          aria-expanded="false"
+          aria-haspopup="dialog"
+        >
+          <span class="eventitem-mini-icon-circle" aria-hidden="true">
+            <i class="fa-solid fa-box" aria-hidden="true"></i>
+          </span>
+          <span class="eventitem-mini-label">ITEMS TO BRING</span>
+          <span class="eventitem-mini-sub" id="eventitem-organizer-items-count">@itemCount @(itemCount == 1 ? "item" : "items")</span>
+        </button>
+        <button
+          type="button"
+          class="eventitem-mini-card eventitem-mini-card-tasks"
+          data-type="modal"
+          data-target="#eventtasks-modal"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="eventtasks-modal"
+        >
+          <span class="eventtask-mini-icon-circle" aria-hidden="true">
+            <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+          </span>
+          <span class="eventtask-mini-label">TASKS TO DO</span>
+          <span class="eventtask-mini-sub" id="eventitem-organizer-eventtasks-count">@taskCount @(taskCount == 1 ? "task" : "tasks")</span>
+        </button>
+      </div>
+    }
+  </section>
+</div>

@@ -42,4 +42,7 @@ public class EventDetailsViewModel
     public List<EventGuestRosterViewModel> HostGuestRoster { get; set; } = new();
     public IEnumerable<EventRole> EventRoles { get; set; } = new List<EventRole>();
     public List<ChatMessageViewModel> ChatMessages { get; set; } = new();
+    public List<EventContributionsViewModel> OrganizerContributions { get; set; } = new();
+    public int OrganizerContributionsTotalGuests { get; set; }
+    public bool OrganizerContributionsShowFootnote { get; set; }
 }

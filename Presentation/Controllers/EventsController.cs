@@ -506,6 +506,9 @@ public class EventsController( IEventService eventService, IEventItemService eve
         model.CanClaimTasks = model.CanManageItemsTasks ||
             (hasAcceptedAttendance && model.Tasks.Count > 0);
 
+        if (model.CanManageItemsTasks)
+            EventOrganizerContributionsHelper.ApplyTo(model, userId);
+
         if (!string.IsNullOrWhiteSpace(invite))
             return RedirectToAction(nameof(EventDetails), new { id });
 

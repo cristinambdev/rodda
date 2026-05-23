@@ -2254,7 +2254,7 @@ body.eventtasks-modal-open
 
 .event-details-organizer-footnote
 {
-  margin: 0.65rem 0 0;
+  margin: 0.65rem 0 .5rem;
   padding: 0 .15rem;
   font-size: .6875rem;
   line-height: var(--leading-normal);
@@ -2267,8 +2267,6 @@ body.eventtasks-modal-open
   font-size: .85em;
   vertical-align: middle;
 }
-
-
 
 .event-details-organizer-tr--self
 {
@@ -2301,15 +2299,11 @@ body.eventtasks-modal-open
   transition: background-color 0.12s ease;
 }
 
-
-
 .event-details-members-row--all .event-details-members-name
 {
   font-weight: var(--font-weight-bold);
   letter-spacing: .04em;
 }
-
-
 
 .event-details-members-row:not(:has(.event-details-members-check--on))
 {
@@ -2332,8 +2326,6 @@ body.eventtasks-modal-open
   background: #ecfdf5;
 }
 
-
-
 #event-details-members-modal[data-members-context="guest-task"] .event-details-members-check--on .fa-check
 {
   color: #10b981;
@@ -2352,18 +2344,6 @@ body.eventtasks-modal-open
   color: var(--white-100);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 .event-details-members-avatar--you
 {
   background: color-mix(in srgb, var(--color-primary) 85%, var(--dark-900));
@@ -2377,28 +2357,10 @@ body.eventtasks-modal-open
   min-width: 0;
 }
 
-
-
-
-
-
-
 .event-details-members-check--on .fa-check
 {
   color: var(--purple);
 }
-
-
-
-
-
-
-
-
-
-
-
-/* (moved) list modal shell + header primitives live under “Items to bring / Tasks to do modals” */
 
 /* LIST ROW CARDS (items-to-bring + tasks) */
 .eventitem-bring-row
@@ -2461,7 +2423,7 @@ body.eventtasks-modal-open
   flex-shrink: 0;
 }
 
-/* Row includes a “You” person badge — dark edge + very light gray fill */
+/* Row includes a “You” person badge */
 .eventitem-bring-row--has-you
 {
   border-color: var(--gray-700);
@@ -2763,8 +2725,6 @@ body.eventtasks-modal-open
 {
   background: color-mix(in srgb, var(--red) 12%, var(--white-100));
 }
-
-/* (moved) add button + guest policy container styles live under “Items to bring / Tasks to do modals” */
 
 /* PAST EVENT LOCKOUT */
 .eventitem-page-past .modal-content-add,

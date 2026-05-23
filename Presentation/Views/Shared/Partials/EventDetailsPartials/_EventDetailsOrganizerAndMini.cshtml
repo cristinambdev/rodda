@@ -4,64 +4,7 @@
     var taskCount = Model.Tasks?.Count ?? 0;
 }
 
-<!-- Organizer/co-owner-only section -->
-<div class="event-details-organizer" data-event-details-organizer hidden>
-  <section class="event-details-organizer-section" aria-labelledby="event-details-organizer-table-heading">
-    <h2 class="event-details-organizer-h2" id="event-details-organizer-table-heading">
-      <i class="fa-solid fa-users" aria-hidden="true"></i>
-      Guests & contributions
-    </h2>
-    <div class="event-details-organizer-table-scroll" role="region" aria-label="Guests, items, and tasks">
-      <table class="event-details-organizer-table">
-        <thead>
-          <tr>
-            <th scope="col">Person</th>
-            <th scope="col">Items</th>
-            <th scope="col">Tasks</th>
-          </tr>
-        </thead>
-        <tbody id="event-details-organizer-tbody"></tbody>
-      </table>
-    </div>
-    <p class="event-details-organizer-footnote" id="event-details-organizer-footnote" hidden>
-      Symbol <i class="fa-solid fa-check event-details-organizer-check-icon" aria-hidden="true"></i> is added when the element has been marked as done
-      by the corresponding person on their todo list.
-    </p>
-    <div class="eventitem-mini-grid" data-eventitem-mini-grid="organizer">
-      <button
-        type="button"
-        class="eventitem-mini-card eventitem-mini-card-items"
-        data-type="modal"
-        data-target="#eventitems-modal"
-        aria-expanded="false"
-        aria-haspopup="dialog"
-      >
-        <span class="eventitem-mini-icon-circle" aria-hidden="true">
-          <i class="fa-solid fa-box" aria-hidden="true"></i>
-        </span>
-        <span class="eventitem-mini-label">ITEMS TO BRING</span>
-        <span class="eventitem-mini-sub" id="eventitem-organizer-items-count">@itemCount @(itemCount == 1 ? "item" : "items")</span>
-      </button>
-      <button
-        type="button"
-        class="eventitem-mini-card eventitem-mini-card-tasks"
-        data-type="modal"
-        data-target="#eventtasks-modal"
-        aria-haspopup="dialog"
-        aria-expanded="false"
-        aria-controls="eventtasks-modal"
-      >
-        <span class="eventtask-mini-icon-circle" aria-hidden="true">
-          <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
-        </span>
-        <span class="eventtask-mini-label">TASKS TO DO</span>
-        <span class="eventtask-mini-sub" id="eventitem-organizer-eventtasks-count">@taskCount @(taskCount == 1 ? "task" : "tasks")</span>
-      </button>
-    </div>
-  </section>
-</div>
-
-<!-- Guest mini cards (toggled by JS) -->
+<!-- Guest mini cards for joined guests (not owner/co-owner) -->
 <div class="eventitem-mini-grid" data-eventitem-mini-grid="guest">
   <button
     type="button"

@@ -39,6 +39,7 @@
      hidden></div>
 
 <section class="eventitem-hero" aria-label="Event cover">
+    <!-- Cover image -->
     @if (!string.IsNullOrWhiteSpace(Model.CoverImageUrl))
     {
         <img id="eventitem-hero-img"
@@ -59,30 +60,44 @@
         </div>
     }
     <div class="eventitem-hero-overlay">
+        <!-- Hero badges: Role, Attendance, Claimed items/tasks -->
         @if (showHeroBadges)
         {
             <div class="eventitem-hero-badge-stack">
+
                 @if (!string.IsNullOrEmpty(roleBadge))
                 {
+                    <!-- Role badge: Creator, Owner, Co-owner -->
                     <span class="badge @AttendanceStatusLabels.RoleBadgeCssClass eventitem-hero-role-badge">@roleBadge</span>
                 }
+
                 @if (Model.CanManageItemsTasks)
                 {
+                    <!-- Attendance badges: Accepted, Declined, Pending -->
                     <div class="badge eventitem-hero-attendance-badges" aria-label="Guest attendance summary">
                         <partial name="~/Views/Shared/Partials/EventDetailsPartials/_AttendanceSummaryBadges.cshtml" model="attendanceCounts" />
                     </div>
                 }
-                else if (showGuestAttendanceBadge && myAttendance != null)
+                @if (!Model.CanManageItemsTasks && showGuestAttendanceBadge && myAttendance != null)
                 {
+                    <!-- User own attendance badges: Accepted, Declined, Pending -->
                     <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge">
                         @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
                     </span>
                 }
+
+                @if (Model.CanManageItemsTasks)
+                {
+                    <!-- Claimed items/tasks badge: Claimed, Unclaimed -->
+                    <span class="badge eventitem-hero-claimed-items-tasks-badge">Claimed</span>
+                }
             </div>
         }
+        <!-- Go back button -->
         <a class="eventitem-hero-fab" id="eventitem-back" aria-label="Go back" asp-controller="Events" asp-action="Events">
             <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
         </a>
+        <!-- Event options button -->
         <div class="eventitem-hero-options-wrap" data-menu-wrap>
             <button type="button"
                     class="eventitem-hero-fab"
@@ -100,6 +115,7 @@
 </section>
 
 <div class="eventitem-body">
+    <!-- Event title and creator -->
     <div class="eventitem-title-block">
         <h3 class="eventitem-title" id="eventitem-title">@Model.Title</h3>
         <p class="eventitem-creator">
@@ -107,6 +123,7 @@
         </p>
     </div>
 
+    <!-- Event date and time -->
     <div class="eventitem-info-card">
         <div class="eventitem-info-row">
             <i class="fa-regular fa-calendar" aria-hidden="true"></i>
@@ -116,6 +133,7 @@
             <i class="fa-regular fa-clock" aria-hidden="true"></i>
             <p class="eventitem-info-text" id="eventitem-time">@Model.StartAt.ToString("HH:mm")</p>
         </div>
+        <!-- Event location -->
         @if (Model.Location != null)
         {
             <div class="eventitem-info-row location">
@@ -126,6 +144,7 @@
                 </div>
             </div>
         }
+        <!-- Event payment variables -->
         @{
             var payment = Model.Payment;
             var hasPayment = payment != null && (
@@ -148,6 +167,7 @@
                     : (string.IsNullOrWhiteSpace(paymentTail) ? null : paymentTail);
             }
         }
+        <!-- Event payment display-->
         @if (hasPayment)
         {
             <hr class="eventitem-info-divider" />
@@ -167,6 +187,7 @@
         }
     </div>
 
+    <!-- Event description -->
     @if (!string.IsNullOrWhiteSpace(Model.Description))
     {
         <div class="eventitem-description">
@@ -175,28 +196,43 @@
         </div>
     }
 
+    <!-- Guest contributions -->
+    @if (Model.CanManageItemsTasks && Model.OrganizerContributions.Count > 0)
+    {
+        <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsGuestContributions.cshtml" model="Model" />
+    }
+
+    <!-- Join section -->
     <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsJoinSection.cshtml" model="Model" />
 
-    @if (Model.ItemsTasksEnabled)
+    <!-- Organizer and mini section -->
+    @if (Model.ItemsTasksEnabled && !Model.CanManageItemsTasks)
     {
         <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsOrganizerAndMini.cshtml" model="Model" />
     }
 
+    <!-- Chat section -->
     @if (Model.ChatEnabled)
     {
         <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsChat.cshtml" model="Model" />
     }
 </div>
 
+<!-- Modals -->
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsGuestsModal.cshtml" model="Model" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsAddCommunityGuestDialog.cshtml" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsJoinDialog.cshtml" model="Model" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsDeleteDialog.cshtml" />
 <partial name="~/Views/Shared/Partials/EventDetailsPartials/_EventDetailsShareDialog.cshtml" />
+
+<!-- Modals for items and tasks -->
 <div id="eventitem-modals-root">
     @Html.AntiForgeryToken()
+    <!-- Event items modal -->
     <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemsModal.cshtml" model="Model" />
+    <!-- Event items add item modal -->
     <partial name="~/Views/Shared/Partials/EventItemsPartials/_EventItemAddItemModal.cshtml" model="Model" />
+    <!-- Event tasks modal -->
     <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTasksModal.cshtml" model="Model" />
     <partial name="~/Views/Shared/Partials/EventTasksPartials/_EventTaskAddTaskModal.cshtml" model="Model" />
 </div>
