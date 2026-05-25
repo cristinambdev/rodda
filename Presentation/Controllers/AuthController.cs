@@ -5,6 +5,7 @@ using Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.Models;
+using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 
 namespace Presentation.Controllers;
@@ -117,7 +118,10 @@ public class AuthController(IAuthService authService, UserManager<UserEntity> us
             bypassTwoFactor: true);
 
         if (signInResult.Succeeded)
+        {
+            await SignInWithProfileClaimsAsync(info);
             return RedirectToLocal(returnUrl);
+        }
 
         var email = info.Principal.FindFirstValue(ClaimTypes.Email);
         if (string.IsNullOrWhiteSpace(email))
@@ -154,8 +158,26 @@ public class AuthController(IAuthService authService, UserManager<UserEntity> us
             return View("SignIn", new SignInViewModel());
         }
 
-        await _signInManager.SignInAsync(user, isPersistent: false);
+        await SignInWithProfileClaimsAsync(info, user);
         return RedirectToLocal(returnUrl);
+    }
+
+    // **************************************************************************************************************************
+    private async Task SignInWithProfileClaimsAsync(ExternalLoginInfo info, UserEntity? user = null)
+    {
+        user ??= await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+        if (user == null)
+            return;
+
+        var picture = info.Principal.FindFirstValue("picture");
+        if (string.IsNullOrWhiteSpace(picture))
+            return;
+
+        await _signInManager.SignOutAsync();
+        await _signInManager.SignInWithClaimsAsync(
+            user,
+            new AuthenticationProperties { IsPersistent = false },
+            [new Claim("image", picture)]);
     }
 
     // **************************************************************************************************************************

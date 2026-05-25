@@ -1,5 +1,24 @@
+@using System.Security.Claims
+@using Business.Services
+@inject IUserService UserService
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    string? imageUrl = null;
+    if (isAuthenticated)
+    {
+        var profile = await UserService.GetUserProfileAsync(User!.Identity?.Name);
+        imageUrl = profile?.ProfileImageUrl;
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            var imageClaim = User?.Claims.FirstOrDefault(c => c.Type is "image" or "picture");
+            imageUrl = imageClaim?.Value;
+        }
+    }
+    var hasAvatar = isAuthenticated && !string.IsNullOrWhiteSpace(imageUrl);
+    var displayName = isAuthenticated
+        ? await UserService.GetDisplayNameAsync(User!.Identity?.Name)
+        : "";
+    var showName = !string.IsNullOrWhiteSpace(displayName);
 }
 <header class="header" role="banner">
   <a class="header-brand" asp-controller="Home" asp-action="Index" aria-label="Rodda home">
@@ -7,9 +26,36 @@
     <span class="header-title">Rodda</span>
   </a>
   <div class="header-actions">
-    <a class="header-notification" href="#" aria-label="Notification settings">
-      <i class="fa-regular fa-bell" aria-hidden="true"></i>
-    </a>
+    <div class="header-icon-row">
+      <a class="header-notification" href="#" aria-label="Notification settings">
+        <i class="fa-regular fa-bell" aria-hidden="true"></i>
+      </a>
+      <div class="header-profile-group" hidden="@(!isAuthenticated)">
+        <button
+          type="button"
+          class="header-notification header-profile"
+          aria-label="Profile menu"
+          data-header-profile
+          aria-haspopup="menu"
+          aria-expanded="false"
+        >
+          @if (hasAvatar)
+          {
+            <span class="header-profile-avatar">
+              <img src="@imageUrl" alt="" decoding="async" />
+            </span>
+          }
+          else
+          {
+            <i class="fa-regular fa-user" aria-hidden="true"></i>
+          }
+        </button>
+        @if (showName)
+        {
+          <span class="header-profile-name">@displayName</span>
+        }
+      </div>
+    </div>
     <div class="header-auth-buttons">
       <a
         class="btn btn-primary-low-profile header-auth-btn login"
@@ -30,15 +76,6 @@
         Sign up
       </a>
     </div>
-    <button
-      type="button"
-      class="header-notification header-profile"
-      aria-label="Profile menu"
-      data-header-profile
-      hidden="@(!isAuthenticated)"
-    >
-      <i class="fa-regular fa-user" aria-hidden="true"></i>
-    </button>
   </div>
 </header>
 

@@ -2215,17 +2215,25 @@ body:has(.main-layout)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 3.25rem;
-  padding: 0 1rem;
-  padding-top: max(.35rem, env(safe-area-inset-top, 0px));
+  min-height: 3.25rem;
+  height: auto;
+  padding: max(.35rem, env(safe-area-inset-top, 0px)) 1rem .35rem;
   background: var(--white-100);
   border-bottom: 1px solid var(--gray-300);
+  overflow: visible;
 }
 
 .header-actions
 {
   display: inline-flex;
   align-items: center;
+  gap: .25rem;
+}
+
+.header-icon-row
+{
+  display: inline-flex;
+  align-items: flex-start;
   gap: .25rem;
 }
 
@@ -2283,6 +2291,66 @@ body:has(.main-layout)
 {
   outline: none;
   box-shadow: var(--navlink-focus-ring);
+}
+
+/* Bell and profile icon share the top row; display name stays inside the header below the icon. */
+.header-profile-group
+{
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 2.5rem;
+  flex-shrink: 0;
+}
+
+.header-profile-group[hidden]
+{
+  display: none;
+}
+
+.header-profile-group .header-profile
+{
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+}
+
+.header-profile-avatar
+{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--gray-100);
+}
+
+.header-profile-avatar img
+{
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header-profile-name
+{
+  display: block;
+  width: 100%;
+  margin-top: -.3rem;
+  font-family: var(--font-standard);
+  font-size: .625rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  text-align: center;
+  color: var(--gray-800);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ========================================================================== */

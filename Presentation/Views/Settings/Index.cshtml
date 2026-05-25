@@ -1,5 +1,7 @@
+@model Presentation.Models.SettingsViewModel
 @{
     ViewData["Title"] = "Settings";
+    var hasAvatar = !string.IsNullOrWhiteSpace(Model.ProfileImageUrl);
 }
 
 <div class="settings-page">
@@ -12,8 +14,373 @@
         </div>
     </div>
 
-    <section class="settings-profile-card" aria-labelledby="settings-profile-heading">
+    <form
+        class="settings-profile-card"
+        id="settings-profile-form"
+        data-settings-profile-form
+        method="post"
+        action="@Url.Action("UpdateProfile", "Settings")"
+        data-settings-update-url="@Url.Action("UpdateProfile", "Settings")"
+        enctype="multipart/form-data"
+        novalidate
+        aria-labelledby="settings-profile-heading"
+    >
+        @Html.AntiForgeryToken()
         <h2 class="visually-hidden" id="settings-profile-heading">Your profile</h2>
-        <p class="page-lead">Account preferences will be available here soon.</p>
+
+        <div class="settings-profile-avatar-wrap">
+            <label class="settings-profile-avatar" for="settings-avatar-input">
+                <img
+                    id="settings-avatar-image"
+                    class="settings-profile-avatar-image"
+                    alt=""
+                    decoding="async"
+                    @(hasAvatar ? $"src=\"{Model.ProfileImageUrl}\"" : "hidden")
+                />
+                <span class="settings-profile-avatar-placeholder" id="settings-avatar-placeholder" aria-hidden="true" @(hasAvatar ? "hidden" : null)>
+                    <i class="fa-solid fa-circle-user"></i>
+                </span>
+                <span class="settings-profile-avatar-edit" aria-hidden="true">
+                    <i class="fa-solid fa-pen"></i>
+                </span>
+                <span class="visually-hidden">Change profile picture</span>
+            </label>
+            <button
+                type="button"
+                class="settings-profile-avatar-remove"
+                id="settings-avatar-remove"
+                data-settings-avatar-remove
+                aria-label="Remove profile picture"
+                @(hasAvatar ? null : "hidden")
+            >
+                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+            </button>
+            <input
+                id="settings-avatar-input"
+                type="file"
+                name="avatar"
+                class="visually-hidden"
+                accept="image/*"
+            />
+            <input type="hidden" name="clearAvatar" id="settings-clear-avatar" value="0" />
+        </div>
+
+        <div class="settings-profile-fields">
+            <div class="form-group">
+                <label class="form-label" for="settings-display-name">Display name</label>
+                <div class="form-input-field">
+                    <span class="form-input-field-icon" aria-hidden="true">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <input
+                        id="settings-display-name"
+                        name="displayName"
+                        type="text"
+                        value="@Model.DisplayName"
+                        autocomplete="name"
+                        maxlength="60"
+                        required
+                    />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="settings-email">Email</label>
+                <div class="form-input-field">
+                    <span class="form-input-field-icon" aria-hidden="true">
+                        <i class="fa-solid fa-envelope"></i>
+                    </span>
+                    <input
+                        id="settings-email"
+                        name="email"
+                        type="email"
+                        value="@Model.Email"
+                        autocomplete="email"
+                        maxlength="256"
+                        required
+                    />
+                </div>
+            </div>
+        </div>
+
+        <p class="settings-dialog-feedback" data-settings-profile-feedback hidden aria-live="polite"></p>
+        <button type="submit" class="btn btn-primary settings-profile-save">Save profile</button>
+    </form>
+
+    <form
+        class="settings-section"
+        id="settings-notifications-form"
+        data-settings-notifications-form
+        method="post"
+        novalidate
+        aria-labelledby="settings-notifications-heading"
+    >
+        @Html.AntiForgeryToken()
+        <h2 class="settings-section-title" id="settings-notifications-heading">
+            CHOOSE WHEN TO RECEIVE NOTIFICATIONS
+        </h2>
+
+        <ul class="settings-toggle-list" role="list">
+            <li class="settings-toggle-row">
+                <span class="settings-toggle-icon" aria-hidden="true">
+                    <i class="fa-regular fa-calendar-plus"></i>
+                </span>
+                <div class="settings-toggle-copy">
+                    <span class="settings-toggle-label">New Events</span>
+                    <span class="settings-toggle-sub">When you are invited to a new event.</span>
+                </div>
+                <label class="newevent-switch settings-switch">
+                    <input
+                        type="checkbox"
+                        id="settings-notify-new-events"
+                        name="notifyNewEvents"
+                        value="true"
+                        @(Model.NotifyNewEvents ? "checked" : null)
+                    />
+                    <span class="newevent-switch-track" aria-hidden="true"></span>
+                </label>
+            </li>
+            <li class="settings-toggle-row">
+                <span class="settings-toggle-icon" aria-hidden="true">
+                    <i class="fa-regular fa-pen-to-square"></i>
+                </span>
+                <div class="settings-toggle-copy">
+                    <span class="settings-toggle-label">Event Changes</span>
+                    <span class="settings-toggle-sub">When an event you joined is updated.</span>
+                </div>
+                <label class="newevent-switch settings-switch">
+                    <input
+                        type="checkbox"
+                        id="settings-notify-event-changes"
+                        name="notifyEventChanges"
+                        value="true"
+                        @(Model.NotifyEventChanges ? "checked" : null)
+                    />
+                    <span class="newevent-switch-track" aria-hidden="true"></span>
+                </label>
+            </li>
+            <li class="settings-toggle-row">
+                <span class="settings-toggle-icon" aria-hidden="true">
+                    <i class="fa-regular fa-comment"></i>
+                </span>
+                <div class="settings-toggle-copy">
+                    <span class="settings-toggle-label">Event Comments</span>
+                    <span class="settings-toggle-sub">When someone comments on an event you joined.</span>
+                </div>
+                <label class="newevent-switch settings-switch">
+                    <input
+                        type="checkbox"
+                        id="settings-notify-event-comments"
+                        name="notifyEventComments"
+                        value="true"
+                        @(Model.NotifyEventComments ? "checked" : null)
+                    />
+                    <span class="newevent-switch-track" aria-hidden="true"></span>
+                </label>
+            </li>
+            <li class="settings-toggle-row">
+                <span class="settings-toggle-icon" aria-hidden="true">
+                    <i class="fa-solid fa-user-plus"></i>
+                </span>
+                <div class="settings-toggle-copy">
+                    <span class="settings-toggle-label">Co-ownership</span>
+                    <span class="settings-toggle-sub">When you are added as a co-owner of an event.</span>
+                </div>
+                <label class="newevent-switch settings-switch">
+                    <input
+                        type="checkbox"
+                        id="settings-notify-co-ownership"
+                        name="notifyCoOwnership"
+                        value="true"
+                        @(Model.NotifyCoOwnership ? "checked" : null)
+                    />
+                    <span class="newevent-switch-track" aria-hidden="true"></span>
+                </label>
+            </li>
+        </ul>
+    </form>
+
+    <form
+        class="settings-section"
+        id="settings-account-form"
+        data-settings-account-form
+        method="post"
+        novalidate
+        aria-labelledby="settings-account-heading"
+    >
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="language" id="settings-language-input" value="@Model.Language" />
+        <h2 class="settings-section-title" id="settings-account-heading">ACCOUNT &amp; SECURITY</h2>
+
+        <ul class="settings-action-list" role="list">
+            <li class="settings-action-item">
+                <details class="settings-disclosure" data-settings-disclosure="language">
+                    <summary class="settings-action-row">
+                        <span class="settings-action-icon" aria-hidden="true">
+                            <i class="fa-solid fa-globe"></i>
+                        </span>
+                        <span class="settings-action-label">Change Language</span>
+                        <span class="settings-action-value" id="settings-language-current">@Model.LanguageLabel</span>
+                        <span class="settings-action-chevron" aria-hidden="true">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </span>
+                    </summary>
+                    <div class="settings-disclosure-body">
+                        <ul class="settings-language-list" role="list" data-settings-language-list>
+                            <li>
+                                <button type="button" class="settings-language-option" data-settings-language="en" aria-pressed="@(Model.Language == "en" ? "true" : "false")">English</button>
+                            </li>
+                            <li>
+                                <button type="button" class="settings-language-option" data-settings-language="sv" aria-pressed="@(Model.Language == "sv" ? "true" : "false")">Swedish</button>
+                            </li>
+                            <li>
+                                <button type="button" class="settings-language-option" data-settings-language="no" aria-pressed="@(Model.Language == "no" ? "true" : "false")">Norwegian</button>
+                            </li>
+                            <li>
+                                <button type="button" class="settings-language-option" data-settings-language="es" aria-pressed="@(Model.Language == "es" ? "true" : "false")">Spanish</button>
+                            </li>
+                        </ul>
+                    </div>
+                </details>
+            </li>
+
+            <li class="settings-action-item">
+                <details class="settings-disclosure" data-settings-disclosure="password">
+                    <summary class="settings-action-row">
+                        <span class="settings-action-icon" aria-hidden="true">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <span class="settings-action-label">Change Password</span>
+                        <span class="settings-action-chevron" aria-hidden="true">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </span>
+                    </summary>
+                    <div class="settings-disclosure-body settings-password-form" data-settings-password-form>
+                        <div class="form-group">
+                            <label class="visually-hidden" for="settings-new-password">New password</label>
+                            <div class="form-input-field">
+                                <span class="form-input-field-icon" aria-hidden="true">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                                <input
+                                    id="settings-new-password"
+                                    name="newPassword"
+                                    type="password"
+                                    autocomplete="new-password"
+                                    placeholder="Enter new password"
+                                />
+                                <button type="button" class="form-input-field-toggle" data-password-toggle aria-controls="settings-new-password" aria-label="Show password">
+                                    <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="visually-hidden" for="settings-confirm-password">Confirm new password</label>
+                            <div class="form-input-field">
+                                <span class="form-input-field-icon" aria-hidden="true">
+                                    <i class="fa-solid fa-lock"></i>
+                                </span>
+                                <input
+                                    id="settings-confirm-password"
+                                    name="confirmPassword"
+                                    type="password"
+                                    autocomplete="new-password"
+                                    placeholder="Confirm new password"
+                                />
+                                <button type="button" class="form-input-field-toggle" data-password-toggle aria-controls="settings-confirm-password" aria-label="Show password">
+                                    <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="settings-password-feedback" data-settings-password-feedback aria-live="polite" hidden></p>
+                        <button type="submit" class="btn btn-primary settings-password-submit">Save password</button>
+                    </div>
+                </details>
+            </li>
+
+            <li class="settings-action-item">
+                <details class="settings-disclosure" data-settings-disclosure="privacy">
+                    <summary class="settings-action-row">
+                        <span class="settings-action-icon" aria-hidden="true">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </span>
+                        <span class="settings-action-label">Privacy settings</span>
+                        <span class="settings-action-chevron" aria-hidden="true">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </span>
+                    </summary>
+                    <ul class="settings-disclosure-body settings-toggle-list settings-toggle-list--inset" role="list">
+                        <li class="settings-toggle-row">
+                            <div class="settings-toggle-copy">
+                                <span class="settings-toggle-label">Show me in the community</span>
+                                <span class="settings-toggle-sub">Other Rodda users you share events with can see your name.</span>
+                            </div>
+                            <label class="newevent-switch settings-switch">
+                                <input
+                                    type="checkbox"
+                                    id="settings-privacy-community"
+                                    name="privacyShowInCommunity"
+                                    value="true"
+                                    @(Model.PrivacyShowInCommunity ? "checked" : null)
+                                />
+                                <span class="newevent-switch-track" aria-hidden="true"></span>
+                            </label>
+                        </li>
+                        <li class="settings-toggle-row">
+                            <div class="settings-toggle-copy">
+                                <span class="settings-toggle-label">Show my attendance to other guests</span>
+                                <span class="settings-toggle-sub">Hide your "joined" status from the guest list on event pages.</span>
+                            </div>
+                            <label class="newevent-switch settings-switch">
+                                <input
+                                    type="checkbox"
+                                    id="settings-privacy-attendance"
+                                    name="privacyShowAttendance"
+                                    value="true"
+                                    @(Model.PrivacyShowAttendance ? "checked" : null)
+                                />
+                                <span class="newevent-switch-track" aria-hidden="true"></span>
+                            </label>
+                        </li>
+                    </ul>
+                </details>
+            </li>
+        </ul>
+    </form>
+
+    <section class="settings-section settings-section-danger" aria-labelledby="settings-danger-heading">
+        <h2 class="visually-hidden" id="settings-danger-heading">Danger zone</h2>
+        <button type="button" class="settings-delete-account-btn" data-open-delete-account-dialog>
+            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+            DELETE ACCOUNT
+        </button>
     </section>
 </div>
+
+<dialog id="settings-delete-account-dialog" class="settings-delete-account-dialogue">
+    <div class="settings-delete-account-dialogue-panel card">
+        <div class="settings-delete-account-dialogue-body">
+            <button type="button" class="settings-delete-account-dialogue-close" data-settings-delete-account-close aria-label="Close">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+            <span class="settings-delete-account-dialogue-icon" aria-hidden="true">
+                <i class="fa-regular fa-trash-can"></i>
+            </span>
+            <h3 class="settings-delete-account-dialogue-heading">Are you sure you want to delete your account?</h3>
+            <p class="settings-delete-account-dialogue-text">This action cannot be undone.</p>
+            <div class="settings-delete-account-dialogue-actions">
+                <button type="button" class="settings-delete-account-confirm-btn" data-settings-delete-confirm>
+                    DELETE ACCOUNT
+                </button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+@section Scripts {
+    <script src="~/js/settings.js" asp-append-version="true"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        if (typeof initSettingsPage === "function") initSettingsPage();
+      });
+    </script>
+}

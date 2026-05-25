@@ -27,7 +27,7 @@
 
     <div class="main-layout">
 
-        <partial name="~/Views/Shared/Partials/LayoutPartials/_Header.cshtml" />
+        @await Html.PartialAsync("~/Views/Shared/Partials/LayoutPartials/_Header.cshtml")
 
         <main class="app-main" id="main-content">
             @RenderBody()

@@ -628,7 +628,8 @@ function initProfileNavMenu() {
   if (profileNavMenuInitialized) return;
 
   const profileBtn = /** @type {HTMLElement | null} */ (document.querySelector("[data-header-profile]"));
-  if (!profileBtn || profileBtn.hidden) return;
+  const profileGroup = profileBtn?.closest(".header-profile-group");
+  if (!profileBtn || profileBtn.hidden || (profileGroup instanceof HTMLElement && profileGroup.hidden)) return;
 
   const shell = document.body;
   const settingsUrl = shell.dataset.settingsUrl || "/settings";
@@ -691,7 +692,7 @@ function initProfileNavMenu() {
   document.addEventListener("click", (e) => {
     const target = /** @type {HTMLElement} */ (e.target);
     if (target.closest(".profile-nav-popover")) return;
-    if (target.closest("[data-header-profile]")) return;
+    if (target.closest("[data-header-profile], .header-profile-group")) return;
     closeMenu();
   });
 

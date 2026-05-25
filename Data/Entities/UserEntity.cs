@@ -9,6 +9,9 @@ public class UserEntity : IdentityUser
     [StringLength(256)]
     public string DisplayName { get; set; } = null!;
 
+    [StringLength(512)]
+    public string? ProfileImageUrl { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

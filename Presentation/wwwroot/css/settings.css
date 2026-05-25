@@ -125,6 +125,51 @@
     }
   }
 
+  .settings-profile-avatar-remove
+  {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    z-index: 1;
+    width: 1.45rem;
+    height: 1.45rem;
+    padding: 0;
+    border-radius: 50%;
+    background: #ff4d43;
+    color: var(--white-100);
+    border: 2px solid var(--white-100);
+    box-shadow: var(--shadow-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .62rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+
+    &[hidden]
+    {
+      display: none;
+    }
+
+    &:hover
+    {
+      background: #d6362c;
+    }
+
+    &:focus-visible
+    {
+      outline: 2px solid #ff4d43;
+      outline-offset: 2px;
+    }
+
+    i
+    {
+      display: block;
+      line-height: 1;
+    }
+  }
+
   .settings-profile-identity
   {
     display: flex;
@@ -184,6 +229,84 @@
     &:empty
     {
       display: none;
+    }
+  }
+
+  .settings-profile-fields
+  {
+    width: 100%;
+    max-width: 18rem;
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+
+    .form-group
+    {
+      margin: 0;
+      width: 100%;
+    }
+
+    .form-label
+    {
+      display: block;
+      margin: 0 0 .25rem;
+      font-size: .72rem;
+      font-weight: var(--font-weight-semibold);
+      color: var(--gray-700);
+      text-align: left;
+    }
+
+    .form-input-field
+    {
+      width: 100%;
+    }
+  }
+
+  .settings-profile-save
+  {
+    margin-top: .35rem;
+    min-width: 10rem;
+  }
+
+  .settings-profile-email-btn
+  {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    border: none;
+    background: transparent;
+    padding: .1rem .3rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-standard);
+    font-size: .82rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    max-width: 100%;
+
+    &:hover,
+    &:focus-visible
+    {
+      background: var(--gray-100);
+      outline: none;
+    }
+  }
+
+  .settings-profile-email-text
+  {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .settings-dialog-feedback
+  {
+    margin: .5rem 0 0;
+    font-size: .8rem;
+    color: var(--red-dark);
+
+    &[data-settings-feedback-tone="ok"]
+    {
+      color: var(--green-dark);
     }
   }
 
