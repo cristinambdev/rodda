@@ -43,6 +43,7 @@
     --green: #22c55e;
     --green-light: #81c784;
     --green-semilight: #4ade80;
+    --green-lighter: #bff0cd;
     --green-dark: #16a34a;
     --green-mint: #d8f3dc;
     --green-mint-dark: #1b4332;
@@ -61,7 +62,7 @@
     /* --- Reds --- */
     --red: #ef4444;
     --red-pale: #fef2f2;
-    --red-light: #e57373;
+    --red-light: #ebafaf;
     --red-semilight: #f87171;
     --red-dark: #dc2626;
     /* --- Oranges --- */
@@ -200,6 +201,13 @@
     --btn-secondary-low-profile-hover-text-color: var(--dark-400);
     --btn-secondary-low-profile-hover-border-color: var(--transparent);
     --btn-secondary-low-profile-hover-background-color: var(--transparent);
+    /*button-danger*/
+    --btn-danger-text-color: var(--red);
+    --btn-danger-background-color: var(--red-light);
+    --btn-danger-border-color: var(--red-light);
+    --btn-danger-hover-text-color: var(--white-100);
+    --btn-danger-hover-border-color: var(--red-light);
+    --btn-danger-hover-background-color: var(--red-light);
     /*button round Add (FAB — teal disc, white ring, 15% halo, + on white chip)*/
     --fab-background-color: var(--green-primary);
     --fab-hover-background-color: var(--green-primary-hover);
@@ -1106,15 +1114,6 @@ a.event-card-context-menu-item
   border-radius: var(--radius-lg);
 }
 
-
-
-
-
-
-
-
-
-
 /* Grayed cards. Past / ended events — list cards (“Past”, uncategorized past) */
 .card.event-card.event-card--past
 {
@@ -1700,6 +1699,94 @@ button.form-input-field-toggle
     transform: translateY(1px);
   }
 }
+.btn-primary-low-profile
+{
+  color: var(--btn-primary-low-profile-text-color);
+  background-color: var(--btn-primary-low-profile-background-color);
+  border-color: var(--btn-primary-low-profile-border-color);
+
+  &:hover:not(:disabled)
+  {
+    color: var(--btn-primary-low-profile-hover-text-color);
+    background-color: var(--btn-primary-low-profile-hover-background-color);
+    border-color: var(--btn-primary-low-profile-hover-border-color);
+  }
+
+  &:focus-visible
+  {
+    outline: none;
+    box-shadow: var(--btn-focus-ring);
+  }
+
+  &:disabled
+  {
+    opacity: var(--button-disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled)
+  {
+    transform: translateY(1px);
+  }
+}
+
+.btn.btn-secondary,
+a.btn.btn-secondary
+{
+  color: var(--btn-secondary-text-color);
+  background-color: var(--btn-secondary-background-color);
+  border-color: var(--btn-secondary-border-color);
+
+  &:hover
+  {
+    color: var(--btn-secondary-hover-text-color);
+    background-color: var(--btn-secondary-hover-background-color);
+    border-color: var(--btn-secondary-hover-border-color);
+  }
+
+  &:focus-visible
+  {
+    outline: none;
+    box-shadow: var(--btn-focus-ring);
+  }
+
+  &:disabled
+  {
+    opacity: var(--button-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+.btn-danger
+{
+  color: var(--btn-danger-text-color);
+  background-color: var(--btn-danger-background-color);
+  border-color: var(--btn-danger-border-color);
+
+  &:hover:not(:disabled)
+  {
+    color: var(--btn-danger-hover-text-color);
+    background-color: var(--btn-danger-hover-background-color);
+    border-color: var(--btn-danger-hover-border-color);
+  }
+
+  &:focus-visible
+  {
+    outline: none;
+    box-shadow: var(--btn-focus-ring);
+  }
+
+  &:disabled
+  {
+    opacity: var(--button-disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled)
+  {
+    transform: translateY(1px);
+  }
+}
 
 /* Icon close (modals, dialogues) — uses --btn-close-* tokens */
 .button.btn-close,
@@ -1788,11 +1875,67 @@ button.btn-round-add
   }
 }
 
-/* ========================================================================== */
-/* Dropdown                                                                   */
-/* ========================================================================== */
+.btn-secondary
+{
+  color: var(--btn-secondary-text-color);
+  background-color: var(--btn-secondary-background-color);
+  border-color: var(--btn-secondary-border-color);
 
+  &:hover:not(:disabled)
+  {
+    color: var(--btn-secondary-hover-text-color);
+    background-color: var(--btn-secondary-hover-background-color);
+    border-color: var(--btn-secondary-hover-border-color);
+  }
 
+  &:focus-visible
+  {
+    outline: none;
+    box-shadow: var(--btn-focus-ring);
+  }
+
+  &:disabled
+  {
+    opacity: var(--button-disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled)
+  {
+    transform: translateY(1px);
+  }
+}
+
+.btn-secondary-low-profile
+{
+  color: var(--btn-secondary-low-profile-text-color);
+  background-color: var(--btn-secondary-low-profile-background-color);
+  border-color: var(--btn-secondary-low-profile-border-color);
+
+  &:hover:not(:disabled)
+  {
+    color: var(--btn-secondary-low-profile-hover-text-color);
+    background-color: var(--btn-secondary-low-profile-hover-background-color);
+    border-color: var(--btn-secondary-low-profile-hover-border-color);
+  }
+
+  &:focus-visible
+  {
+    outline: none;
+    box-shadow: var(--btn-focus-ring);
+  }
+
+  &:disabled
+  {
+    opacity: var(--button-disabled-opacity);
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled)
+  {
+    transform: translateY(1px);
+  }
+}
 
 /* ========================================================================== */
 /* Alerts                                                                     */
@@ -1804,14 +1947,6 @@ button.btn-round-add
   border-radius: var(--radius-md);
   font-size: 1rem;
 }
-
-
-
-
-
-
-
-
 
 /* ========================================================================== */
 /* Tables                                                                     */
@@ -1968,21 +2103,11 @@ tbody td
   flex-direction: column;
 }
 
-
-
 /* Footer */
 .edit-add-item-dialogue--members .modal-footer
 {
   padding: 0 1rem 1rem;
 }
-
-
-
-
-
-
-
-
 
 /* Members list */
 .event-details-members-list
@@ -2023,13 +2148,10 @@ tbody td
   color: var(--white-100);
 }
 
-
-
-
-
-
-
-.event-details-members-avatar--you { background: color-mix(in srgb, var(--color-primary) 85%, var(--dark-900)); }
+.event-details-members-avatar--you
+{
+  background: color-mix(in srgb, var(--color-primary) 85%, var(--dark-900));
+}
 
 .event-details-members-name
 {
@@ -2039,22 +2161,10 @@ tbody td
   min-width: 0;
 }
 
-
-
-
-
-
-
 .event-details-members-check--on .fa-check
 {
   color: var(--purple);
 }
-
-
-
-
-
-
 
 /* ========================================================================== */
 /* WYSIWYG                                                                    */

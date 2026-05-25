@@ -22,6 +22,14 @@ builder.Services.AddIdentity<UserEntity, IdentityRole>(x =>
     x.Password.RequireNonAlphanumeric = false;
 }).AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
 
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        IConfigurationSection googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
+        options.ClientId = googleAuthNSection["ClientId"]!;
+        options.ClientSecret = googleAuthNSection["ClientSecret"]!;
+    });
+
 builder.Services.ConfigureApplicationCookie(x =>
 {
     x.LoginPath = "/Auth/SignIn";

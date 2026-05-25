@@ -4,25 +4,35 @@
 @{
     Layout = "_PortalLayout";
     ViewData["Title"] = Model.Title;
+    // Temp data for success and open modal messages
     ViewData["SuccessMessage"] = TempData["SuccessMessage"];
     ViewData["OpenModal"] = TempData["OpenModal"];
+    // Item and task counts
     var itemCount = Model.Items?.Count ?? 0;
     var taskCount = Model.Tasks?.Count ?? 0;
+    // Attendance counts: Accepted, Declined, Pending, Maybe
     var attendanceCounts = (
         Model.HostGuestRoster.Count(r => r.Status == Domain.Enums.AttendanceStatus.Accepted),
         Model.HostGuestRoster.Count(r => r.Status == Domain.Enums.AttendanceStatus.Declined),
         Model.HostGuestRoster.Count(r => r.Status is Domain.Enums.AttendanceStatus.Pending or Domain.Enums.AttendanceStatus.Maybe));
+    // Current user ID
     var userId = User.GetUserId() ?? "";
+    // Current user role
     var myRole = Model.EventRoles.FirstOrDefault(r => r.UserId == userId);
+    // Is creator
     var isCreator = string.Equals(Model.CreatorDisplayLabel, "Myself", StringComparison.Ordinal);
+    // Role badge: Creator, Owner, Co-owner
     string? roleBadge = isCreator ? "Creator"
         : myRole?.Role == EventRoleType.Owner ? "Owner"
         : myRole?.Role == EventRoleType.CoOwner ? "Co-owner"
         : null;
+    // Current user attendance
     var myAttendance = Model.Attendees.FirstOrDefault(a => string.Equals(a.UserId, userId, StringComparison.Ordinal));
+    // Show guest attendance badge
     var showGuestAttendanceBadge = myAttendance != null
         && string.IsNullOrEmpty(roleBadge)
         && myAttendance.Status != AttendanceStatus.Accepted;
+    // Show hero badges
     var showHeroBadges = !string.IsNullOrEmpty(roleBadge) || Model.CanManageItemsTasks || showGuestAttendanceBadge;
 }
 
@@ -60,7 +70,7 @@
         </div>
     }
     <div class="eventitem-hero-overlay">
-        <!-- Hero badges: Role, Attendance, Claimed items/tasks -->
+        <!-- Hero badges: Role, Attendance -->
         @if (showHeroBadges)
         {
             <div class="eventitem-hero-badge-stack">
@@ -77,19 +87,6 @@
                     <div class="badge eventitem-hero-attendance-badges" aria-label="Guest attendance summary">
                         <partial name="~/Views/Shared/Partials/EventDetailsPartials/_AttendanceSummaryBadges.cshtml" model="attendanceCounts" />
                     </div>
-                }
-                @if (!Model.CanManageItemsTasks && showGuestAttendanceBadge && myAttendance != null)
-                {
-                    <!-- User own attendance badges: Accepted, Declined, Pending -->
-                    <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge">
-                        @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
-                    </span>
-                }
-
-                @if (Model.CanManageItemsTasks)
-                {
-                    <!-- Claimed items/tasks badge: Claimed, Unclaimed -->
-                    <span class="badge eventitem-hero-claimed-items-tasks-badge">Claimed</span>
                 }
             </div>
         }

@@ -2,9 +2,15 @@
 // eventdetails-chat.js — Tap a message to reveal delete; posts to DeleteChatMessage on confirm
 // *************************************************************************************************
 
-/**
- * Wires click/keyboard selection on deletable chat rows so the delete control appears once.
- */
+// - Deletable chat rows expose a trash control only while selected; selection clears on outside click.
+// - Delete POST is handled by markup/forms; this module wires selection UX only.
+
+// *************************************************************************************************
+// Chat delete selection
+// *************************************************************************************************
+
+// Wires click/keyboard selection on deletable chat rows so the delete control appears once per row.
+// @returns {void}
 function bindEventDetailsChatDelete() {
   const chatList = document.getElementById("event-details-chat-list");
   if (!chatList) return;
@@ -14,13 +20,8 @@ function bindEventDetailsChatDelete() {
   );
   if (!deletableItems.length) return;
 
-  // **********************************************************************************************
-  // Selection state
-  // **********************************************************************************************
-
-  /**
-   * @param {HTMLElement | null} item
-   */
+  // @param {HTMLElement | null} item
+  // @returns {void}
   function setSelectedChatItem(item) {
     deletableItems.forEach((row) => {
       const selected = row === item;
@@ -29,9 +30,7 @@ function bindEventDetailsChatDelete() {
     });
   }
 
-  // **********************************************************************************************
-  // Event handlers
-  // **********************************************************************************************
+  /********************************************************************************/
 
   deletableItems.forEach((item) => {
     item.addEventListener("click", (e) => {
@@ -61,3 +60,5 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!document.getElementById("event-details-page")) return;
   bindEventDetailsChatDelete();
 });
+
+/********************************************************************************/

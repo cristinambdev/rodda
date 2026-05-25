@@ -4,16 +4,27 @@ using Domain.Models;
 namespace Presentation.Helpers;
 
 // ************************************************************************************************
-// Workload / “you” pills on horizontal event list cards.
+// EventCardBadgeHelper — claimed/unclaimed items/tasks pills and “you have items/tasks” pills on horizontal/vertical event cards.
+// ************************************************************************************************
+// Consumers: `EventsController.BuildCardBadgesAsync` → `ViewData["EventCardBadges"]` on All Events list;
+//            `_HorizontalEventCard.cshtml`, `_VerticalEventCard.cshtml`.
+// Distinct from: `AttendanceCounts` / `AttendanceStatusLabels` (RSVP badges), organizer hero summary.
+// ************************************************************************************************
 public static class EventCardBadgeHelper
 {
     // ************************************************************************************************
-    // Record representing the workload / “you” pills on horizontal event list cards.
+    // CardBadges — DTO for one event’s list-card workload pill state.
+    // `WorkloadLabel` (unfilled count or “all filled”) and `UserHasItemsOrTasks` for “you” styling because record keeps `EventsController` dictionary typing explicit.
+    // Uses `Compute` factory. Razor reads via `ViewData["EventCardBadges"]` keyed by event id.
+    // ************************************************************************************************
     public sealed record CardBadges(string? WorkloadLabel, bool UserHasItemsOrTasks);
 
     // ************************************************************************************************
-    // Computes the workload / “you” pills on horizontal event list cards.
-    public static CardBadges Compute( bool itemsTasksEnabled, string userId, IEnumerable<EventItem> items, IEnumerable<EventTask> tasks)
+    // Compute — workload label and whether the current user has active item/task assignments.
+    // Counts open PERSON slots on available rows; detects user assigned/signed-up slots because list cards surface planning status without opening event details (FrontOffice card parity).
+    // Uses `EventItemService` / `EventTaskService` maintain assignments; skipped when `itemsTasksEnabled` false. Label-only on cards; does not block signup or change `EventOrganizerContributionsHelper`.
+    // ************************************************************************************************
+    public static CardBadges Compute(bool itemsTasksEnabled, string userId, IEnumerable<EventItem> items, IEnumerable<EventTask> tasks)
     {
         if (!itemsTasksEnabled)
             return new CardBadges(null, false);
@@ -35,7 +46,10 @@ public static class EventCardBadgeHelper
     }
 
     // ************************************************************************************************
-    // Counts the unfilled slots for a list of items.
+    // CountUnfilledSlots (items) — sum of open signup slots across active items.
+    // Delegates per-item to `CountOpenSlots` for item assignments because workload pill aggregates planning gaps for hosts/members scanning the list.
+    // Uses `Compute`. Card badge text only.
+    // ************************************************************************************************
     private static int CountUnfilledSlots(IEnumerable<EventItem> items)
     {
         if (!items.Any())
@@ -45,7 +59,10 @@ public static class EventCardBadgeHelper
     }
 
     // ************************************************************************************************
-    // Counts the unfilled slots for a list of tasks.
+    // CountUnfilledSlots (tasks) — sum of open signup slots across active tasks.
+    // Parallel to item overload for tasks because tasks contribute to the same workload metric.
+    // Uses `Compute`. Card badge text only.
+    // ************************************************************************************************
     private static int CountUnfilledSlots(IEnumerable<EventTask> tasks)
     {
         if (!tasks.Any())
@@ -53,8 +70,12 @@ public static class EventCardBadgeHelper
 
         return tasks.Sum(t => CountOpenSlots(t.SignupMode, t.Assignments));
     }
+
     // ************************************************************************************************
-    // Counts the open slots for a list of items.
+    // CountOpenSlots (items) — open PERSON slots still available for signup.
+    // Counts non-removed open-slot assignments with no `UserId` when signup mode is Available because matches modal “available” rows guests can claim.
+    // Uses `EventItemService` creates open slots from `PeopleNeeded`. Unfilled count on cards; claiming updates count on next list load.
+    // ************************************************************************************************
     private static int CountOpenSlots(SignupMode signupMode, IEnumerable<EventItemAssignment> assignments)
     {
         if (signupMode != SignupMode.Available)
@@ -67,7 +88,10 @@ public static class EventCardBadgeHelper
     }
 
     // ************************************************************************************************
-    // Counts the open slots for a list of tasks.
+    // CountOpenSlots (tasks) — open slots for tasks.
+    // Parallel to item overload because same signup semantics as bring-items.
+    // Uses `EventTaskService`. Card badge text only.
+    // ************************************************************************************************
     private static int CountOpenSlots(SignupMode signupMode, IEnumerable<EventTaskAssignment> assignments)
     {
         if (signupMode != SignupMode.Available)
@@ -80,7 +104,10 @@ public static class EventCardBadgeHelper
     }
 
     // ************************************************************************************************
-    // Checks if the user has an active assignment for a list of items.
+    // UserHasActiveAssignment (items) — user is on an item row (assigned or signed up, not completed-only).
+    // True if any non-removed assignment for `userId` is Assigned or SignedUp because drives “you” highlight on cards (`UserHasItemsOrTasks`); completed-only may not need highlight.
+    // Uses `HomeTodosHelper` also shows completed rows; card highlight is for active commitment. CSS/class on card partials only.
+    // ************************************************************************************************
     private static bool UserHasActiveAssignment(IEnumerable<EventItemAssignment> assignments, string userId)
     {
         if (!assignments.Any())
@@ -92,7 +119,10 @@ public static class EventCardBadgeHelper
     }
 
     // ************************************************************************************************
-    // Checks if the user has an active assignment for a list of tasks.
+    // UserHasActiveAssignment (tasks) — user is on a task row.
+    // Parallel to item overload because either items or tasks sets `UserHasItemsOrTasks`.
+    // Uses `Compute`. Card styling only.
+    // ************************************************************************************************
     private static bool UserHasActiveAssignment(IEnumerable<EventTaskAssignment> assignments, string userId)
     {
         if (!assignments.Any())

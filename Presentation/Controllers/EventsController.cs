@@ -43,7 +43,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
         ViewData["ActiveNav"] = "events-all";
         ViewData["EventCardBadges"] = model.CardBadges;
-        return View(model);
+        return View("AllEventsList", model);
     }
 
     // **************************************************************************************************************************
@@ -61,7 +61,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
         ViewData["ActiveNav"] = "events-mine";
         ViewData["PortalEventsJson"] = JsonSerializer.Serialize(PortalEventsHelper.ToPortalPayload(events, userId));
 
-        return View(new EventsViewModel
+        return View("MyEventsList", new EventsViewModel
         {
             Events = events,
             UserId = userId,
@@ -205,7 +205,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
             return View("CreateNewEvent", model);
         }
 
-        return RedirectToAction(nameof(EventDetails), new { id = EventUrls.DetailsSegment(result.EventSlug, result.EventId!) });
+        return RedirectToAction(nameof(EventDetails), new { id = result.EventId!.DetailsSegment(result.EventSlug) });
     }
 
     // **************************************************************************************************************************
@@ -337,7 +337,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
         var eventResponse = await _eventService.GetEventForUserAsync(userId, eventId);
         var pathSegment = eventResponse.Result != null
-            ? EventUrls.DetailsSegment(eventResponse.Result.Slug, eventId)
+            ? eventId.DetailsSegment(eventResponse.Result.Slug)
             : eventId;
         var shareUrl = $"{Request.Scheme}://{Request.Host}/events/{pathSegment}?invite={result.Result}";
         return Json(new { url = shareUrl, token = result.Result });

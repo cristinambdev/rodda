@@ -2,17 +2,24 @@
 // eventdetails-modals.js — Event details page actions (share, delete, hero menu)
 // *************************************************************************************************
 
-/**
- * @returns {string}
- */
+// - Hero ⋮ menu, share link copy/revoke, and delete-for-everyone flow on `#event-details-page`.
+// - Modal open/close is delegated to `site.js` (`PortalUi`); this file binds page-specific actions only.
+
+// *************************************************************************************************
+// Page config
+// *************************************************************************************************
+
+// Parses the event id from the URL path when `data-event-id` is absent on the page root.
+// @returns {string}
 function getEventIdFromPath() {
   const pathSegments = window.location.pathname.split("/");
   return pathSegments[pathSegments.indexOf("events") + 1] || "";
 }
 
-/**
- * @returns {{ eventId: string, eventTitle: string, canManage: boolean }}
- */
+/********************************************************************************/
+
+// Reads dataset + DOM fallbacks so menu actions share one source for id, title, and permissions.
+// @returns {{ eventId: string, eventTitle: string, canManage: boolean, listReturnUrl: string }}
 function getEventDetailsPageConfig() {
   const page = document.getElementById("event-details-page");
   const params = new URLSearchParams(window.location.search);
@@ -28,7 +35,16 @@ function getEventDetailsPageConfig() {
   };
 }
 
-// **********************************************************************************************************
+/********************************************************************************/
+
+// *************************************************************************************************
+// List removal + share link
+// *************************************************************************************************
+
+// POSTs remove-from-list with anti-forgery token via `PortalUi.submitPostForm`.
+// @param {string} eventId
+// @param {string} returnUrl
+// @returns {void}
 function submitRemoveFromMyList(eventId, returnUrl) {
   if (!eventId || !window.PortalUi.getAntiForgeryToken()) {
     window.alert("Could not remove the event from your list.");
@@ -41,20 +57,33 @@ function submitRemoveFromMyList(eventId, returnUrl) {
   );
 }
 
-/**
- * @param {string} message
- * @returns {void}
- */
-function setShareStatus(message) {
+/********************************************************************************/
+// Surfaces copy/revoke feedback in the share modal status line.
+// @param {string} message
+// @param {{ showCheck?: boolean }} [options]
+// @returns {void}
+function setShareStatus(message, options = {}) {
+  const { showCheck = false } = options;
   const statusEl = document.getElementById("event-details-share-status");
   if (!statusEl) return;
   statusEl.hidden = false;
+
+  const iconEl = statusEl.querySelector(".event-details-share-dialogue-status-icon");
+  if (iconEl) {
+    iconEl.hidden = !showCheck;
+  }
+
+  const textEl = statusEl.querySelector(".event-details-share-dialogue-status-text");
+  if (textEl) {
+    textEl.textContent = message;
+    return;
+  }
   statusEl.textContent = message;
 }
 
-/**
- * @returns {Promise<void>}
- */
+/********************************************************************************/
+// Fetches the active share URL and copies it to the clipboard.
+// @returns {Promise<void>}
 async function copyShareLink() {
   const { eventId } = getEventDetailsPageConfig();
   if (!eventId) return;
@@ -69,16 +98,18 @@ async function copyShareLink() {
     if (!data.url) throw new Error("Share link was empty.");
 
     await navigator.clipboard.writeText(data.url);
-    setShareStatus("Link copied. Anyone with this link can join while it stays active.");
+    setShareStatus("Link copied. Anyone with this link can join while it stays active.", {
+      showCheck: true,
+    });
   } catch (error) {
     console.error("Share link copy failed:", error);
     setShareStatus("Could not copy the share link.");
   }
 }
 
-/**
- * @returns {Promise<void>}
- */
+/********************************************************************************/
+// Revokes the active share token so a fresh link must be generated.
+// @returns {Promise<void>}
 async function revokeShareLink() {
   const { eventId } = getEventDetailsPageConfig();
   if (!eventId) return;
@@ -101,12 +132,11 @@ async function revokeShareLink() {
   }
 }
 
-/********************************************************************************/
-
-/**
- * Share modal: copy / revoke (open/close handled by `site.js` + portal modals).
- * @returns {void}
- */
+// *************************************************************************************************
+// Modal / menu bindings
+// *************************************************************************************************
+// Share modal: copy / revoke (open/close handled by `site.js` + portal modals).
+// @returns {void}
 function bindEventDetailsShareModal() {
   const shareModal = document.getElementById("event-details-share-dialog");
   if (!shareModal || shareModal.dataset.shareBound === "1") return;
@@ -128,20 +158,15 @@ function bindEventDetailsShareModal() {
 }
 
 /********************************************************************************/
-
-/**
- * Hero context menu actions (toggle handled by `site.js` `initAnchoredMenus`).
- * @returns {void}
- */
+// Hero context menu actions (toggle handled by `site.js` `initAnchoredMenus`).
+// @returns {void}
 function bindEventDetailsContextMenuActions() {
   const menu = document.getElementById("event-details-context-menu");
   if (!menu || menu.dataset.menuActionsBound === "1") return;
 
   menu.dataset.menuActionsBound = "1";
 
-  /**
-   * @returns {void}
-   */
+  // @returns {void}
   function closeHeroContextMenu() {
     menu.hidden = true;
     document
@@ -199,10 +224,8 @@ function bindEventDetailsContextMenuActions() {
 
 /********************************************************************************/
 
-/**
- * Delete-for-everyone POST (list link and close use markup + `site.js`).
- * @returns {void}
- */
+// Delete-for-everyone POST (list link and close use markup + `site.js`).
+// @returns {void}
 function bindEventDetailsDeleteModal() {
   const deleteModal = document.getElementById("event-details-delete-dialog");
   if (!deleteModal || deleteModal.dataset.deleteBound === "1") return;
@@ -232,9 +255,10 @@ function bindEventDetailsDeleteModal() {
     });
 }
 
-/**
- * @returns {void}
- */
+/********************************************************************************/
+
+// Entry point: wires share, hero menu, and delete modals when the details page is present.
+// @returns {void}
 function initEventDetailsActions() {
   if (!document.getElementById("event-details-page")) return;
 
@@ -243,4 +267,8 @@ function initEventDetailsActions() {
   bindEventDetailsDeleteModal();
 }
 
+/********************************************************************************/
+
 document.addEventListener("DOMContentLoaded", initEventDetailsActions);
+
+/********************************************************************************/

@@ -8,5 +8,11 @@
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "SqlConnection": ""
+  },
+  "Authentication": {
+    "Google": {
+      "ClientId": "",
+      "ClientSecret": ""
+    }
   }
 }

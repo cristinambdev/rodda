@@ -2,6 +2,13 @@
 // events-list-segment.js — Upcoming / Past panel toggle (server-rendered lists)
 // *************************************************************************************************
 
+// - Shared segmented control for All Events and My Events when lists are server-rendered (HTML already in the page).
+// - Does not fetch cards; only toggles which `[data-*-panel]` is visible and syncs pill state.
+
+// *************************************************************************************************
+// Page bootstrap
+// *************************************************************************************************
+
 document.addEventListener("DOMContentLoaded", () => {
   initEventsListSegment("[data-allevents-list]", "allevents");
   initEventsListSegment("[data-myevents-list]", "myevents");
@@ -9,11 +16,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /********************************************************************************/
 
-/**
- * @param {string} rootSelector
- * @param {string} prefix
- * @returns {void}
- */
+// *************************************************************************************************
+// Segmented control (Upcoming ↔ Past)
+// *************************************************************************************************
+
+// Wires range pills on a list root so clicking one shows the matching upcoming or past panel.
+// @param {string} rootSelector CSS selector for the list section root
+// @param {string} prefix Data-attribute prefix (`allevents` or `myevents`)
+// @returns {void}
 function initEventsListSegment(rootSelector, prefix) {
   const root = document.querySelector(rootSelector);
   if (!root) return;
@@ -23,9 +33,8 @@ function initEventsListSegment(rootSelector, prefix) {
   const past = root.querySelector(`[data-${prefix}-panel="past"]`);
   if (!buttons.length) return;
 
-  /**
-   * @param {string} range
-   */
+  // @param {string} range
+  // @returns {void}
   function applyRange(range) {
     buttons.forEach((btn) => {
       const on = btn.getAttribute(`data-${prefix}-range`) === range;

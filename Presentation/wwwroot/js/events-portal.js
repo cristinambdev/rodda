@@ -1,11 +1,19 @@
 // *************************************************************************************************
 // events-portal.js — Portal event lists (My Events; client-rendered panels)
 // *************************************************************************************************
-// Reads `#portal-events-data` for ids and sort/filter metadata, then fetches each card as HTML
-// from `GET /events/card/{eventId}` (`EventsController.GetSingleEventCard`).
+
+// - Reads `#portal-events-data` for ids and sort/filter metadata, then fetches each card as HTML
+//   from `GET /events/card/{eventId}` (`EventsController.GetSingleEventCard`).
+// - Exposes shared helpers (`EVENTS`, `eventDateTimeMs`, card appenders) consumed by `home-index.js`.
 
 let EVENTS = [];
 
+// *************************************************************************************************
+// Portal events bootstrap
+// *************************************************************************************************
+
+// Parses embedded JSON into `EVENTS` and recomputes upcoming/past scopes from real datetimes.
+// @returns {void}
 function bootstrapPortalEvents() {
   const el = document.getElementById("portal-events-data");
   if (!el?.textContent?.trim()) {
@@ -25,6 +33,9 @@ function bootstrapPortalEvents() {
 
 /********************************************************************************/
 
+// Maps server DTO fields to the slim client shape list scripts expect.
+// @param {Record<string, unknown>} raw
+// @returns {{ id: string, creator: string, myEventsRole: string, myAttendanceStatus: string, eventDateIso: string, eventTime24: string, timeScope: "past" | "upcoming" }}
 function normalizePortalEvent(raw) {
   return {
     id: String(raw?.id || "").trim(),
@@ -39,6 +50,9 @@ function normalizePortalEvent(raw) {
 
 /********************************************************************************/
 
+// Best-effort event datetime from ISO date + optional 24h time; null when date is missing.
+// @param {{ eventDateIso?: string, eventTime24?: string }} event
+// @returns {number | null}
 function eventDateTimeMs(event) {
   const iso = String(event?.eventDateIso || "").trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
@@ -52,6 +66,8 @@ function eventDateTimeMs(event) {
 
 /********************************************************************************/
 
+// Reclassifies each row as past/upcoming relative to now so segmented lists stay accurate.
+// @returns {void}
 function syncEventTimeScopes() {
   const now = Date.now();
   EVENTS.forEach((ev) => {
@@ -63,6 +79,9 @@ function syncEventTimeScopes() {
 
 /********************************************************************************/
 
+// Collapses role strings for My Events ownership checks (`owner`, `co owner`, etc.).
+// @param {{ myEventsRole?: string }} event
+// @returns {string}
 function normalizeMyEventsRoleKey(event) {
   return String(event?.myEventsRole || "")
     .trim()
@@ -73,6 +92,14 @@ function normalizeMyEventsRoleKey(event) {
 
 /********************************************************************************/
 
+// *************************************************************************************************
+// Event card fetching
+// *************************************************************************************************
+
+// Fetches a horizontal card partial for one event id.
+// @param {string} eventId
+// @param {{ fromMyEvents?: boolean }} [options]
+// @returns {Promise<string>}
 async function fetchHorizontalEventCardHtml(eventId, options) {
   const id = encodeURIComponent(String(eventId || "").trim());
   if (!id) return "";
@@ -90,6 +117,11 @@ async function fetchHorizontalEventCardHtml(eventId, options) {
 
 /********************************************************************************/
 
+// Appends one horizontal card `<li>` when fetch returns HTML.
+// @param {HTMLElement} ul
+// @param {string} eventId
+// @param {{ fromMyEvents?: boolean }} [options]
+// @returns {Promise<void>}
 async function appendHorizontalEventCard(ul, eventId, options) {
   const html = (await fetchHorizontalEventCardHtml(eventId, options)).trim();
   if (!html || !(ul instanceof HTMLElement)) return;
@@ -102,6 +134,9 @@ async function appendHorizontalEventCard(ul, eventId, options) {
 
 /********************************************************************************/
 
+// Fetches the home vertical card layout for one event id.
+// @param {string} eventId
+// @returns {Promise<string>}
 async function fetchVerticalEventCardHtml(eventId) {
   const id = encodeURIComponent(String(eventId || "").trim());
   if (!id) return "";
@@ -116,6 +151,10 @@ async function fetchVerticalEventCardHtml(eventId) {
 
 /********************************************************************************/
 
+// Appends one vertical home card `<li>` when fetch returns HTML.
+// @param {HTMLElement} ul
+// @param {string} eventId
+// @returns {Promise<void>}
 async function appendHomeVerticalEventCard(ul, eventId) {
   const html = (await fetchVerticalEventCardHtml(eventId)).trim();
   if (!html || !(ul instanceof HTMLElement)) return;
@@ -128,6 +167,9 @@ async function appendHomeVerticalEventCard(ul, eventId) {
 
 /********************************************************************************/
 
+// Calendar window for Home segments: start of today through end of week / month / year.
+// @param {"week" | "month" | "year"} range
+// @returns {{ fromMs: number, toMs: number }}
 function homeTimeRangeBoundsMs(range) {
   const now = new Date();
   const startOfDayMs = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -145,10 +187,13 @@ function homeTimeRangeBoundsMs(range) {
   return { fromMs, toMs };
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // All Events list (client-rendered only when lists are empty)
-// ================================================================================================
+// *************************************************************************************************
 
+// Stable comparator that pushes events with no parseable date to the bottom regardless of direction.
+// @param {"asc" | "desc"} direction
+// @returns {(a: typeof EVENTS[number], b: typeof EVENTS[number]) => number}
 function alleventsSortByDate(direction) {
   const factor = direction === "desc" ? -1 : 1;
   return (a, b) => {
@@ -163,6 +208,9 @@ function alleventsSortByDate(direction) {
 
 /********************************************************************************/
 
+// Fetches horizontal cards into empty All Events panels (skips when server already rendered rows).
+// @param {HTMLElement} root
+// @returns {Promise<void>}
 async function renderAlleventsLists(root) {
   const upcomingUl = root.querySelector(
     '[data-allevents-panel="upcoming"] [data-allevents-list-items="upcoming"]'
@@ -190,16 +238,21 @@ async function renderAlleventsLists(root) {
 
 /********************************************************************************/
 
+// Entry for All Events when panels need client-side hydration.
+// @returns {Promise<void>}
 async function initAlleventsList() {
   const root = document.querySelector("[data-allevents-list]");
   if (!root) return;
   await renderAlleventsLists(root);
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // My Events list
-// ================================================================================================
+// *************************************************************************************************
 
+// True when the viewer created or co-owns the event (matches list card role semantics).
+// @param {typeof EVENTS[number]} e
+// @returns {boolean}
 function isMyEventsEvent(e) {
   const id = String(e?.id || "").trim();
   if (!id) return false;
@@ -213,6 +266,9 @@ function isMyEventsEvent(e) {
 
 /********************************************************************************/
 
+// Same date sort helper as All Events, scoped to the mine-only subset.
+// @param {"asc" | "desc"} direction
+// @returns {(a: typeof EVENTS[number], b: typeof EVENTS[number]) => number}
 function myeventsSortByDate(direction) {
   const factor = direction === "desc" ? -1 : 1;
   return (a, b) => {
@@ -227,6 +283,10 @@ function myeventsSortByDate(direction) {
 
 /********************************************************************************/
 
+// Fetches horizontal cards for viewer-owned events into upcoming/past panels.
+// @param {HTMLElement} root
+// @param {typeof EVENTS} mine
+// @returns {Promise<void>}
 async function renderMyEventsLists(root, mine) {
   const upcomingUl = root.querySelector(
     '[data-myevents-panel="upcoming"] [data-myevents-list-items="upcoming"]'
@@ -255,6 +315,8 @@ async function renderMyEventsLists(root, mine) {
 
 /********************************************************************************/
 
+// Entry for My Events: filters `EVENTS` then hydrates both panels.
+// @returns {Promise<void>}
 async function initMyEventsPage() {
   const root = document.querySelector("[data-myevents-list]");
   if (!root) return;

@@ -721,41 +721,58 @@ a.delete-action
   text-decoration: none;
 }
 
-/* “Delete from my list” — secondary; “Delete for everyone” — destructive (`common.css` tokens) */
-.btn.delete-action-own-list,
-a.btn.delete-action-own-list
-{
-  color: var(--btn-secondary-text-color);
-  background-color: var(--btn-secondary-background-color);
-  border-color: var(--btn-secondary-border-color);
-
-  &:hover
-  {
-    color: var(--btn-secondary-hover-text-color);
-    background-color: var(--btn-secondary-hover-background-color);
-    border-color: var(--btn-secondary-hover-border-color);
-  }
-}
-
-.btn.delete-action-everyone
-{
-  color: var(--red-dark);
-  background-color: var(--red-pale);
-  border-color: color-mix(in srgb, var(--red) 22%, var(--red-pale));
-
-  &:hover:not(:disabled)
-  {
-    color: var(--red-dark);
-    background-color: color-mix(in srgb, var(--red) 10%, var(--red-pale));
-    border-color: color-mix(in srgb, var(--red) 32%, var(--red-pale));
-  }
-}
-
 /* Share event modal */
-.modal.event-details-share-dialogue .modal-panel.event-details-share-dialogue-panel
+.modal-panel.event-details-share-dialogue-panel
 {
   width: min(22rem, calc(100vw - 2rem));
   max-width: 100%;
+}
+
+.event-details-share-dialogue-header
+{
+  margin: 0;
+  min-height: 1rem;
+}
+
+.event-details-share-dialogue-close
+{
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+}
+
+.event-details-share-dialogue-body
+{
+  padding: 0;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.event-details-share-dialogue .icon
+{
+  font-size: 1rem;
+  color: var(--orange);
+}
+
+.event-details-share-dialogue-heading
+{
+  margin: .4rem 0 .35rem;
+  font-size: 1.35rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--dark-900);
+}
+
+.event-details-share-dialogue-actions
+{
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  margin-top: 1rem;
+}
+
+.event-details-share-dialogue-actions .btn
+{
+  width: 100%;
 }
 
 .event-details-share-dialogue-panel.card,
@@ -767,6 +784,30 @@ a.btn.delete-action-own-list
   border-color: var(--gray-300);
   box-shadow: var(--shadows-popup);
   border-radius: var(--radius-lg);
+}
+
+#event-details-share-status
+{
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  margin: 0;
+  font-size: .9rem;
+  font-weight: var(--font-weight-regular);
+  color: var(--green-dark);
+  text-align: left;
+  background: var(--green-lighter);
+  padding: .5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-300);
+}
+
+#event-details-share-status .event-details-share-dialogue-status-icon
+{
+  flex-shrink: 0;
+  margin-top: .1rem;
+  font-size: 1rem;
+  color: var(--green);
 }
 
 /* Flash message inside items / tasks list modals after POST redirect */

@@ -6,12 +6,19 @@ using Presentation.Models;
 namespace Presentation.Helpers;
 
 // ************************************************************************************************
-// Builds <see cref="EventDetailsViewModel"/> for items/tasks modals on the edit-event form.
-/// <summary>Builds <see cref="EventDetailsViewModel"/> for items/tasks modals on the edit-event form.</summary>
+// EventFormModalHelper — builds `EventDetailsViewModel` shells for items/tasks modals and host guest lists.
+// ************************************************************************************************
+// Consumers: `EventsController` (event details, edit form modals), item/task partials, guest modal.
+// Shared with: `EventOrganizerContributionsHelper.ResolveDisplayName` pattern via `ResolveAssignmentDisplayName`.
+// Permission flags here gate `_EventItemsModal`, `_EventTasksModal`, and claim/add buttons in UI.
+// ************************************************************************************************
 public static class EventFormModalHelper
 {
     // ************************************************************************************************
-    // Creates a shell <see cref="EventDetailsViewModel"/> for the items/tasks modals on the edit-event form.
+    // CreateShell — minimal event details model with manage/claim permissions for modals.
+    // Maps event via AutoMapper; sets `CanManageItemsTasks`, `CanAdd*` / `CanClaim*` from roles and flags because edit-event page embeds items/tasks modals before full item/task lists are loaded.
+    // Uses `EventsController.BuildEventDetailsModalAsync`; same role rules as `EventDetails` action. False permissions hide add/claim UI in modals without affecting read-only guests on details page.
+    // ************************************************************************************************
     public static EventDetailsViewModel CreateShell(Event eventData, string userId)
     {
         var model = eventData.MapTo<EventDetailsViewModel>();
@@ -26,8 +33,11 @@ public static class EventFormModalHelper
     }
 
     // ************************************************************************************************
-    // Applies the items to the <see cref="EventDetailsViewModel"/>.
-    public static void ApplyItems( EventDetailsViewModel model, IEnumerable<EventItem> items, Func<User?, string?> resolveDisplayName)
+    // ApplyItems — maps domain items (with assignments) onto the modal view model.
+    // Produces `EventItemViewModel` rows with `EventAssignmentSlotViewModel` tags for each slot because Razor item rows/modals need display names and slot state separate from domain entities.
+    // Uses `EventsController.EventDetails` and edit modal; `EventItemService` source data. Drives `_EventItemRow` / modal list; assignment changes refresh on redirect or reload.
+    // ************************************************************************************************
+    public static void ApplyItems(EventDetailsViewModel model, IEnumerable<EventItem> items, Func<User?, string?> resolveDisplayName)
     {
         model.Items = items.Select(item =>
         {
@@ -47,8 +57,11 @@ public static class EventFormModalHelper
     }
 
     // ************************************************************************************************
-    // Applies the tasks to the <see cref="EventDetailsViewModel"/>.
-    public static void ApplyTasks( EventDetailsViewModel model, IEnumerable<EventTask> tasks, Func<User?, string?> resolveDisplayName)
+    // ApplyTasks — maps domain tasks (with assignments) onto the modal view model.
+    // Same as `ApplyItems` for `EventTask` / task location display because tasks modals share the same assignment slot shape as items.
+    // Uses `EventTaskService`; `EventOrganizerContributionsHelper` reads same assignment data on details. Task modal UI; host contributions table task column after page load.
+    // ************************************************************************************************
+    public static void ApplyTasks(EventDetailsViewModel model, IEnumerable<EventTask> tasks, Func<User?, string?> resolveDisplayName)
     {
         model.Tasks = tasks.Select(task =>
         {
@@ -69,7 +82,12 @@ public static class EventFormModalHelper
     }
 
     // ************************************************************************************************
-    // Merges event roles and attendances into one host-guest roster for the guests modal.
+    // BuildHostGuestRoster — merged roles + attendances for the host guests modal.
+    // One row per user: display name, role label (Owner/Co-owner), attendance status, guest count because hosts
+    // need RSVP overview; list order puts creator and owners first.
+    // Uses `_EventDetailsGuestsModal.cshtml`; `EventDetails` sets `HostGuestRoster` when `CanManageItemsTasks`.
+    // Changing sort or merge logic affects modal only; join POST updates underlying attendance rows.
+    // ************************************************************************************************
     public static List<EventGuestRosterViewModel> BuildHostGuestRoster(Event eventData)
     {
         var byUser = new Dictionary<string, EventGuestRosterViewModel>(StringComparer.Ordinal);
@@ -117,7 +135,12 @@ public static class EventFormModalHelper
     }
 
     // ************************************************************************************************
-    // Resolves the display name for an assignment.
+    // ResolveAssignmentDisplayName — display name for assignment tags and roster rows.
+    // Prefers `User.DisplayName`, then email; null if no user.
+    // It is used as a delegate in `ApplyItems`/`ApplyTasks` and in `EventsController` mappings to build assignment
+    // tags and roster rows.
+    // Renaming users in DB updates all assignment labels on next request; open slots use placeholder instead.
+    // ************************************************************************************************
     public static string? ResolveAssignmentDisplayName(User? user)
     {
         if (user == null)

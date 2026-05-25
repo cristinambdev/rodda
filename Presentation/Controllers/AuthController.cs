@@ -1,14 +1,19 @@
 ﻿using Business.Services;
+using Data.Entities;
 using Domain.Extensions;
 using Domain.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.Models;
+using System.Security.Claims;
 
 namespace Presentation.Controllers;
 
-public class AuthController(IAuthService authService) : Controller
+public class AuthController(IAuthService authService, UserManager<UserEntity> userManager, SignInManager<UserEntity> signInManager) : Controller
 {
     private readonly IAuthService _authService = authService;
+    private readonly UserManager<UserEntity> _userManager = userManager;
+    private readonly SignInManager<UserEntity> _signInManager = signInManager;
 
     // **************************************************************************************************************************
     [HttpGet]
@@ -77,6 +82,80 @@ public class AuthController(IAuthService authService) : Controller
     {
         await _authService.SignOutAsync();
         return RedirectToAction("SignIn");
+    }
+
+    // *************************************************************************************************
+    // Redirects the user to Google
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+    {
+        var redirectUrl = Url.Action(nameof(ExternalSignInCallback), "Auth", new { returnUrl });
+        var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+        return Challenge(properties, provider);
+    }
+
+    // *************************************************************************************************
+    [HttpGet]
+    public async Task<IActionResult> ExternalSignInCallback(string? returnUrl = null, string? remoteError = null)
+    {
+        if (!string.IsNullOrEmpty(remoteError))
+        {
+            ModelState.AddModelError(string.Empty, $"Error from external provider: {remoteError}");
+            ViewBag.ReturnUrl = returnUrl ?? "/index";
+            return View("SignIn", new SignInViewModel());
+        }
+
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info == null)
+            return RedirectToAction(nameof(SignIn), new { returnUrl });
+
+        var signInResult = await _signInManager.ExternalLoginSignInAsync(
+            info.LoginProvider,
+            info.ProviderKey,
+            isPersistent: false,
+            bypassTwoFactor: true);
+
+        if (signInResult.Succeeded)
+            return RedirectToLocal(returnUrl);
+
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            ModelState.AddModelError(string.Empty, "Google did not provide an email address for this account.");
+            ViewBag.ReturnUrl = returnUrl ?? "/index";
+            return View("SignIn", new SignInViewModel());
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            var displayName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? "Google User";
+            user = new UserEntity { UserName = email, Email = email, DisplayName = displayName };
+
+            var identityResult = await _userManager.CreateAsync(user);
+            if (!identityResult.Succeeded)
+            {
+                foreach (var error in identityResult.Errors)
+                    ModelState.AddModelError(string.Empty, error.Description);
+
+                ViewBag.ReturnUrl = returnUrl ?? "/index";
+                return View("SignIn", new SignInViewModel());
+            }
+        }
+
+        var linkResult = await _userManager.AddLoginAsync(user, info);
+        if (!linkResult.Succeeded)
+        {
+            foreach (var error in linkResult.Errors)
+                ModelState.AddModelError(string.Empty, error.Description);
+
+            ViewBag.ReturnUrl = returnUrl ?? "/index";
+            return View("SignIn", new SignInViewModel());
+        }
+
+        await _signInManager.SignInAsync(user, isPersistent: false);
+        return RedirectToLocal(returnUrl);
     }
 
     // **************************************************************************************************************************

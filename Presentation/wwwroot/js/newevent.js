@@ -2,9 +2,15 @@
 // newevent.js — New Event form (BackOffice MVC `/events/create`)
 // *************************************************************************************************
 
-// Wires toolbar back navigation, cover preview, disclosure panels, and filled-state styling.
-// Form submit is handled by the server (`EventsController.Add`); this module does not intercept POST.
+// - Wires toolbar back navigation, cover preview, disclosure panels, and filled-state styling.
+// - Form submit is handled by the server (`EventsController.Add`); draft items/tasks sync via hidden fields.
 
+// *************************************************************************************************
+// Page bootstrap
+// *************************************************************************************************
+
+// Entry point for create/edit event page: cover, disclosures, draft modals, filled-state styling.
+// @returns {void}
 function initNewEventPage() {
   const form = document.getElementById("edit-event-form");
   if (!form) return;
@@ -33,8 +39,9 @@ function initNewEventPage() {
     return type !== "hidden" && type !== "checkbox" && type !== "radio" && type !== "file";
   });
 
-   // ************************************************************************************************
-  //Toggles filled-state classes used by `newevent.css` for populated fields.
+  // Toggles filled-state classes used by `newevent.css` for populated fields.
+  // @param {HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement} control
+  // @returns {void}
   function applyFilledState(control) {
     const isFilled = String(control.value || "").trim().length > 0;
     control.classList.toggle("newevent-field-filled", isFilled);
@@ -42,9 +49,8 @@ function initNewEventPage() {
     if (shell) shell.classList.toggle("newevent-field-shell-filled", isFilled);
   }
 
- // ************************************************************************************************
-   // Recomputes filled styling after programmatic updates.
-
+  // Recomputes filled styling after programmatic updates.
+  // @returns {void}
   function refreshFilledStates() {
     fillStateControls.forEach((control) => applyFilledState(control));
   }
@@ -54,16 +60,17 @@ function initNewEventPage() {
     control.addEventListener("change", () => applyFilledState(control));
   });
 
-  // ************************************************************************************************
-  // Shows the cover preview image.
+  // Shows the cover preview image from a blob or persisted URL.
+  // @param {string} url
+  // @returns {void}
   function showCoverPreview(url) {
     if (coverImg) coverImg.src = url;
     coverLabelEmpty?.setAttribute("hidden", "");
     coverPreview?.removeAttribute("hidden");
   }
 
-   // ************************************************************************************************
-  // Shows the empty cover preview image.
+  // Clears cover preview and hidden URL so POST omits hero when deleted.
+  // @returns {void}
   function showCoverEmpty() {
     if (coverInput) coverInput.value = "";
     if (coverImg) coverImg.src = "";
@@ -114,8 +121,10 @@ function initNewEventPage() {
     window.location.href = "/events";
   });
 
-   // ************************************************************************************************
-  // Wraps the selection in the textarea with the specified wrap characters.
+  // Wraps the selection in the textarea with Markdown-like markers.
+  // @param {HTMLTextAreaElement} textarea
+  // @param {string} wrap
+  // @returns {void}
   function wrapSelection(textarea, wrap) {
     const start = textarea.selectionStart ?? 0;
     const end = textarea.selectionEnd ?? 0;
@@ -128,7 +137,6 @@ function initNewEventPage() {
     textarea.focus();
   }
 
-   // ************************************************************************************************
   // Handles toolbar button clicks for the description textarea.
   document.querySelectorAll(".newevent-description-toolbar [data-desc-cmd]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -140,22 +148,23 @@ function initNewEventPage() {
     });
   });
 
-   // ************************************************************************************************
-  // Synchronizes the payment disclosure UI.
+  // Syncs payment disclosure chevron/aria state with panel visibility.
+  // @returns {void}
   function syncNewEventPaymentDisclosureUi() {
     paymentDisclosureTrigger?.setAttribute("aria-expanded", paymentOpen ? "true" : "false");
     paymentDisclosureRoot?.classList.toggle("newevent-disclosure-open", paymentOpen);
   }
 
-   // ************************************************************************************************
-  // Synchronizes the items/tasks disclosure UI.
+  // Syncs items/tasks disclosure chevron/aria state with section visibility.
+  // @returns {void}
   function syncNewEventItemsTasksDisclosureUi() {
     itemsTasksDisclosureTrigger?.setAttribute("aria-expanded", itemsTasksOpen ? "true" : "false");
     itemsTasksDisclosureRoot?.classList.toggle("newevent-disclosure-open", itemsTasksOpen);
   }
 
-   // ************************************************************************************************
   // Toggles payment panel visibility only; values stay in the form so POST still includes them when collapsed.
+  // @param {boolean} open
+  // @returns {void}
   function setPaymentPanelOpen(open) {
     paymentOpen = open;
     if (paymentPanel) paymentPanel.hidden = !open;
@@ -171,8 +180,9 @@ function initNewEventPage() {
     setPaymentPanelOpen(!paymentOpen);
   });
 
-   // ************************************************************************************************
   // Toggles items/tasks panel visibility only; values stay in the form so POST still includes them when collapsed.
+  // @param {boolean} enabled
+  // @returns {void}
   function setItemsTasksEnabled(enabled) {
     itemsTasksOpen = enabled;
     if (itemsTasksEnabledInput instanceof HTMLInputElement) {
@@ -208,10 +218,8 @@ function initNewEventPage() {
   syncPersistedItemsTasksCounts();
 }
 
-/**
- * Updates mini-card counts when items/tasks are server-rendered (edit event).
- * @returns {void}
- */
+// Updates mini-card counts when items/tasks are server-rendered (edit event).
+// @returns {void}
 function syncPersistedItemsTasksCounts() {
   const root = document.getElementById("eventitem-modals-root");
   if (!root || root.dataset.eventModalDraft === "true") return;
@@ -224,8 +232,14 @@ function syncPersistedItemsTasksCounts() {
   if (tasksCountEl) tasksCountEl.textContent = `${nTasks} task${nTasks === 1 ? "" : "s"}`;
 }
 
-// ************************************************************************************************
-// Initializes the draft items/tasks modals.
+/********************************************************************************/
+
+// *************************************************************************************************
+// Draft items/tasks modals (create flow)
+// *************************************************************************************************
+
+// In-memory draft rows for create event; copies into hidden fields on submit.
+// @returns {void}
 function initNewEventDraftModals() {
   const addItemForm = document.getElementById("eventitem-add-item-form");
   if (!addItemForm || addItemForm.dataset.draftOnly !== "true") return;
@@ -252,10 +266,8 @@ function initNewEventDraftModals() {
   const addTaskModal = document.getElementById("eventitem-add-task-modal");
   const addTaskForm = document.getElementById("eventitem-add-task-form");
 
-  // ************************************************************************************************
   // Defines the draft items/tasks data structure.
-  /** @type {{ bringItems: Array<{ title: string, amount: string, people: number }>,
-   * guestTasks: Array<{ title: string, location: string, time: string, people: number }> }} */
+// @type {{ bringItems: Array<{ title: string, amount: string, people: number }>, guestTasks: Array<{ title: string, location: string, time: string, people: number }> }}
   const draft = { bringItems: [], guestTasks: [] };
   let editingItemIndex = -1;
   let editingTaskIndex = -1;
@@ -263,14 +275,12 @@ function initNewEventDraftModals() {
   const addItemModalTitle = document.getElementById("eventitem-add-item-modal-title");
   const addTaskModalTitle = document.getElementById("eventitem-add-task-modal-title");
 
-  // ************************************************************************************************
   // Returns the draft event title.
   function draftEventTitle() {
     const titleInput = document.getElementById("newevent-title");
     return titleInput?.value?.trim() || "New event";
   }
 
-  // ************************************************************************************************
   // Synchronizes the draft modal titles.
   function syncDraftModalTitles() {
     const t = draftEventTitle().toUpperCase();
@@ -280,7 +290,6 @@ function initNewEventDraftModals() {
     if (addTaskSubtitleEl) addTaskSubtitleEl.textContent = t;
   }
 
-  // ************************************************************************************************
   // Resets the draft item form.
   function resetDraftItemForm() {
     editingItemIndex = -1;
@@ -290,7 +299,6 @@ function initNewEventDraftModals() {
     if (addItemModalTitle) addItemModalTitle.textContent = "Add item";
   }
 
-  // ************************************************************************************************
   // Resets the draft task form.
   function resetDraftTaskForm() {
     editingTaskIndex = -1;
@@ -301,7 +309,6 @@ function initNewEventDraftModals() {
     if (addTaskModalTitle) addTaskModalTitle.textContent = "Add task";
   }
 
-  // ************************************************************************************************
   // Opens the draft item for edit.
   function openDraftItemForEdit(index) {
     const row = draft.bringItems[index];
@@ -317,7 +324,6 @@ function initNewEventDraftModals() {
     window.PortalUi.setModalVisible(addItemModal, true);
   }
 
-  // ************************************************************************************************
   // Opens the draft task for edit.
   function openDraftTaskForEdit(index) {
     const row = draft.guestTasks[index];
@@ -334,7 +340,6 @@ function initNewEventDraftModals() {
     window.PortalUi.setModalVisible(addTaskModal, true);
   }
 
-  // ************************************************************************************************
   // Renders the draft rows.
   function renderDraftRows(rowsEl, rows, kind) {
     if (!rowsEl) return;
@@ -402,7 +407,6 @@ function initNewEventDraftModals() {
     });
   }
 
-  // ************************************************************************************************
   // Copies in-memory draft rows into hidden fields so the create POST persists them server-side.
   function syncDraftPayloadToForm() {
     const enabled = itemsTasksEnabledInput instanceof HTMLInputElement && itemsTasksEnabledInput.value === "true";
@@ -414,7 +418,6 @@ function initNewEventDraftModals() {
     }
   }
 
-  // ************************************************************************************************
   // Refreshes the draft counts.
   function refreshDraftCounts() {
     const nItems = draft.bringItems.length;
@@ -424,7 +427,6 @@ function initNewEventDraftModals() {
     syncDraftPayloadToForm();
   }
 
-  // ************************************************************************************************
   // Handles the before-modal-open event.
   document.addEventListener("portal-ui:before-modal-open", (e) => {
     const target = e.detail?.target;
@@ -445,7 +447,6 @@ function initNewEventDraftModals() {
     }
   });
 
-  // ************************************************************************************************
   // Handles the input event for the event title.
   document.getElementById("newevent-title")?.addEventListener("input", syncDraftModalTitles);
 

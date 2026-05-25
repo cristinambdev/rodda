@@ -1,16 +1,33 @@
 // *************************************************************************************************
 // event-items-tasks.js — Items/tasks modals on event details and create (`#eventitem-modals-root`)
 // *************************************************************************************************
+
+// - Persists guest-policy toggles and hydrates add-item / add-task modals for edit flows on saved events.
+// - Draft create flow (`data-event-modal-draft="true"`) is handled in `newevent.js`; this module skips POST when draft.
+
+// *************************************************************************************************
+// Event id + draft guards
+// *************************************************************************************************
+
+// True when modals run in-memory only during event create (no server id yet).
+// @returns {boolean}
 function isEventModalDraft() {
   return document.getElementById("eventitem-modals-root")?.dataset.eventModalDraft === "true";
 }
 
-// ***********************************************************************************************************
+/********************************************************************************/
+
+// Create route uses the literal segment `create`; those rows must not hit update-settings.
+// @param {string} eventId
+// @returns {boolean}
 function isPersistableEventId(eventId) {
   return Boolean(eventId) && eventId !== "create";
 }
 
-// ***********************************************************************************************************
+/********************************************************************************/
+
+// Resolves event id from hidden form field, `?edit=`, or `/events/{id}` path segment.
+// @returns {string}
 function getEventIdFromPath() {
   const form = document.getElementById("edit-event-form");
   const fromForm =
@@ -27,7 +44,14 @@ function getEventIdFromPath() {
   return segment === "create" ? "" : segment;
 }
 
-// ***********************************************************************************************************
+/********************************************************************************/
+
+// *************************************************************************************************
+// Guest policy persistence
+// *************************************************************************************************
+
+// POSTs allow-guest-items/tasks flags; rolls back checkbox state on failure so UI matches server.
+// @returns {Promise<void>}
 async function updateEventSettings() {
   if (isEventModalDraft()) return;
 
@@ -86,6 +110,9 @@ async function updateEventSettings() {
 }
 
 /********************************************************************************/
+
+// Wires change listeners once per checkbox so toggles persist without duplicate POSTs.
+// @returns {void}
 function bindGuestPolicyToggles() {
   if (isEventModalDraft()) return;
 
@@ -103,14 +130,21 @@ function bindGuestPolicyToggles() {
 }
 
 /********************************************************************************/
+
+// Normalizes optional `data-*` values from edit triggers onto modal form fields.
+// @param {string | null | undefined} value
+// @param {string} [fallback]
+// @returns {string}
 function readDataAttr(value, fallback = "") {
   return value != null && String(value).length > 0 ? String(value) : fallback;
 }
 
 /********************************************************************************/
-/**
- * Fills the add-item modal for edit; runs before the modal opens via `data-type="modal"`.
- */
+
+// Fills the add-item modal for edit; runs before the modal opens via `data-type="modal"`.
+// @param {HTMLElement} trigger
+// @param {HTMLFormElement | null} addItemForm
+// @returns {boolean}
 function populateAddItemFormForEdit(trigger, addItemForm) {
   if (!addItemForm || addItemForm.dataset.draftOnly === "true") return false;
 
@@ -146,9 +180,11 @@ function populateAddItemFormForEdit(trigger, addItemForm) {
 }
 
 /********************************************************************************/
-/**
- * Fills the add-task modal for edit; runs before the modal opens via `data-type="modal"`.
- */
+
+// Fills the add-task modal for edit; runs before the modal opens via `data-type="modal"`.
+// @param {HTMLElement} trigger
+// @param {HTMLFormElement | null} addTaskForm
+// @returns {boolean}
 function populateAddTaskFormForEdit(trigger, addTaskForm) {
   if (!addTaskForm || addTaskForm.dataset.draftOnly === "true") return false;
 
@@ -192,6 +228,13 @@ function populateAddTaskFormForEdit(trigger, addTaskForm) {
 }
 
 /********************************************************************************/
+
+// *************************************************************************************************
+// Modal bootstrap
+// *************************************************************************************************
+
+// Wires edit/reset handlers, permission gates, and guest-policy toggles for items/tasks modals.
+// @returns {void}
 function initEventItemsTasksModals() {
   const modalsRoot = document.getElementById("eventitem-modals-root");
   if (!modalsRoot) return;
@@ -224,7 +267,8 @@ function initEventItemsTasksModals() {
     }
   });
 
-// ***********************************************************************************************************
+  // Removes guest-policy and add rows when the viewer cannot manage or add items/tasks.
+  // @returns {void}
   function applyManageGates() {
     if (modalsRoot.dataset.eventModalDraft === "true") return;
 
@@ -249,7 +293,11 @@ function initEventItemsTasksModals() {
     }
   }
 
-// ***********************************************************************************************************
+  /********************************************************************************/
+
+  // Resets add-item form to create mode before opening from an "Add" trigger.
+  // @param {HTMLFormElement | null} form
+  // @returns {void}
   function resetAddItemForm(form) {
     if (!form || form.dataset.draftOnly === "true") return;
     const createAction = form.getAttribute("action");
@@ -263,7 +311,11 @@ function initEventItemsTasksModals() {
     if (people) people.value = "1";
   }
 
-// ***********************************************************************************************************
+  /********************************************************************************/
+
+  // Resets add-task form to create mode before opening from an "Add" trigger.
+  // @param {HTMLFormElement | null} form
+  // @returns {void}
   function resetAddTaskForm(form) {
     if (!form || form.dataset.draftOnly === "true") return;
     const createAction = form.getAttribute("action");
@@ -278,4 +330,8 @@ function initEventItemsTasksModals() {
   }
 }
 
+/********************************************************************************/
+
 document.addEventListener("DOMContentLoaded", initEventItemsTasksModals);
+
+/********************************************************************************/

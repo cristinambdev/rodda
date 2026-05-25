@@ -9,7 +9,7 @@
     var isPast = start < DateTimeOffset.UtcNow;
     var hasCover = !string.IsNullOrWhiteSpace(Model.CoverImageUrl);
     var title = Model.Title;
-    var detailUrl = EventUrls.DetailsPath(Model.Slug, Model.Id);
+    var detailUrl = Model.DetailsPath();
     var listDateTime = start.ToString("ddd, MMM d · h:mm tt", CultureInfo.InvariantCulture);
     var listLocation = !string.IsNullOrWhiteSpace(Model.Location?.Name)
         ? Model.Location!.Name!

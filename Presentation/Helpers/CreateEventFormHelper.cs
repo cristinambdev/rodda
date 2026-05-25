@@ -8,11 +8,20 @@ using Presentation.Models;
 namespace Presentation.Helpers;
 
 // ************************************************************************************************
-// Maps domain events to the shared create/edit event form model.
+// CreateEventFormHelper — maps domain events to `AddEventViewModel` and normalizes create/edit form posts.
+// ************************************************************************************************
+// Consumers: `EventsController` create/update/edit actions, `AddEventViewModel` payment parsing.
+// Data in: `Event` entity or `IFormCollection` on POST; writes into `AddEventViewModel` / redirect targets.
+//  Wrong date parsing shifts `StartAt` stored by `EventService`; payment parse affects `Payment` entity.
+// ************************************************************************************************
 public static class CreateEventFormHelper
 {
-    // **************************************************************************************************************************
-    // Maps a domain event to the create/edit event form model.
+    // ************************************************************************************************
+    // FromEvent — hydrates the shared create/edit form from an existing event (edit flow).
+    // Maps schedule, location fields, join/chat/items flags, payment, cover URL to `AddEventViewModel` because one form (`CreateNewEvent.cshtml`) serves both create and edit; needs a single mapping from domain.
+    // Uses `EventsController` edit GET returns `View(FromEvent(ev))`; domain from `EventService`.
+    // Drives pre-filled inputs and modals on edit; does not load items/tasks (separate modal helper).
+    // ************************************************************************************************
     public static AddEventViewModel FromEvent(Event eventData)
     {
         var localStart = eventData.StartAt.ToLocalTime();
@@ -55,7 +64,10 @@ public static class CreateEventFormHelper
     }
 
     // ************************************************************************************************
-    // Resolves a location display string from an address object (e.g. "Stockholm", "123 Main St, 12345, New York, USA").
+    // ResolveLocationDisplay — single-line location summary for the form’s location field.
+    // Prefers venue name; otherwise joins street/postcode/city/country because edit form shows one `Location` input while DB stores structured `Address`.
+    // Uses `ApplyFormFields` may copy trimmed `Location` into `LocationName` on POST. Display string on form only unless POST overwrites structured fields.
+    // ************************************************************************************************
     private static string? ResolveLocationDisplay(Address? location)
     {
         if (location == null)
@@ -73,7 +85,10 @@ public static class CreateEventFormHelper
     }
 
     // ************************************************************************************************
-    // Parses free-text payment amounts from the create/edit form (e.g. "50kr", "12,50").
+    // ParsePaymentAmount — parses free-text payment amount from the form (also used by view model).
+    // Strips kr/sek/:- , tries invariant, sv-SE, and current culture decimal parse because users type “50kr” or “12,50”; DB stores `decimal?`.
+    // Uses `AddEventViewModel` setters; `EventService` persists `Payment.Amount`. Parse failure yields null amount on event; shown on `EventDetails` payment row when set.
+    // ************************************************************************************************
     public static decimal? ParsePaymentAmount(string? amountRaw)
     {
         if (string.IsNullOrWhiteSpace(amountRaw))
@@ -101,7 +116,10 @@ public static class CreateEventFormHelper
     }
 
     // ************************************************************************************************
-    // Formats payment amounts for display (e.g. "50kr", "12,50").
+    // FormatPaymentAmount — formats stored decimal for the edit form input.
+    // Whole numbers as `{n}kr`; decimals as invariant string because matches how users expect to see Swedish amounts in the form.
+    // Uses `FromEvent`; inverse of `ParsePaymentAmount`. Form display only.
+    // ************************************************************************************************
     private static string? FormatPaymentAmount(decimal? amount)
     {
         if (!amount.HasValue)
@@ -115,7 +133,10 @@ public static class CreateEventFormHelper
     }
 
     // ************************************************************************************************
-    // Normalizes create/edit form fields from posted values (dates, location, join toggles, payment).
+    // ApplyFormFields — normalizes POSTed create/edit fields before validation and service calls.
+    // Builds `StartAt` from date+time, default timezone, join/chat checkboxes, trims payment fields because HTML checkboxes and split date/time inputs are not bound cleanly without explicit normalization.
+    // Uses `IsFormCheckboxChecked`. `JoinMode` open/disabled drives join UI on `EventDetails`; wrong checkbox read disables join.
+    // ************************************************************************************************
     public static void ApplyFormFields(AddEventViewModel model, IFormCollection form)
     {
         if (!string.IsNullOrWhiteSpace(model.Date))
@@ -145,7 +166,10 @@ public static class CreateEventFormHelper
     }
 
     // ************************************************************************************************
-    // Normalizes the payment fields in the view model.
+    // NormalizePaymentFields — trims payment strings on the view model.
+    // Applies `TrimOrNull` extension to payment properties because avoids persisting whitespace-only payment metadata.
+    // Uses `ApplyFormFields`; `AddEventViewModel` mapping to domain. Empty strings become null in downstream save.
+    // ************************************************************************************************
     private static void NormalizePaymentFields(AddEventViewModel model)
     {
         model.PaymentMethod = model.PaymentMethod.TrimOrNull();
@@ -156,7 +180,10 @@ public static class CreateEventFormHelper
     }
 
     // ************************************************************************************************
-    // Checks if a checkbox is checked in the form.
+    // IsFormCheckboxChecked — reads checkbox values from raw form (on/true/1).
+    // Tries multiple field names used by the create/edit form markup because unchecked checkboxes are absent from model binding; POST must read form collection explicitly.
+    // Uses `ApplyFormFields`. Controls `JoinEnabled` and chat section visibility on event details after save.
+    // ************************************************************************************************
     private static bool IsFormCheckboxChecked(IFormCollection form, params string[] keys)
     {
         foreach (var key in keys)

@@ -1,12 +1,25 @@
 using Domain.Enums;
+using Presentation.Extensions;
 using Presentation.Models;
 
 namespace Presentation.Helpers;
 
 // ************************************************************************************************
-// Builds the owner/co-owner "Guests & contributions" table on event details (FrontOffice parity).
+// EventOrganizerContributionsHelper — server-side builder for the owner/co-owner “Guests & contributions”
+// table on event details. Mirrors FrontOffice `fillEventOrganizerView` in `eventdetailpage.js` so hosts see
+// who brings what and who has which tasks without client-side demo JSON.
+// ************************************************************************************************
+// Consumers: `EventsController.EventDetails` (after items/tasks are loaded), `_EventDetailsGuestContributions.cshtml`.
+// Data in: `EventDetailsViewModel.Items` / `.Tasks` assignments, `.Attendees`, `CanManageItemsTasks`.
+// Data out: `OrganizerContributions`, `OrganizerContributionsTotalGuests`, `OrganizerContributionsShowFootnote`.
+// ************************************************************************************************
 public static class EventOrganizerContributionsHelper
 {
+    // ================================================================================================
+    // Internal aggregation — groups assignment slots by person before rows are materialized
+    // ================================================================================================
+
+    // Mutable working set keyed by user or open-slot placeholder; not sent to the view.
     private sealed class PersonBucket
     {
         public string Key { get; init; } = "";
@@ -18,6 +31,16 @@ public static class EventOrganizerContributionsHelper
         public List<EventContributionsViewModel> Tasks { get; } = new();
     }
 
+    // ************************************************************************************************
+    // ApplyTo — entry point; fills organizer contribution properties on the event details view model.
+    // Builds table rows (person + item/task lines + checkmarks) for owners and co-owners because the
+    // Razor partial expects pre-shaped data and assignment rows must be grouped per guest. Called from
+    // `EventsController.EventDetails` only when `CanManageItemsTasks` is true, after `GetItemsForEventAsync`
+    // and `GetTasksForEventAsync` so assignments are present. `EventDetails.cshtml` shows
+    // `_EventDetailsGuestContributions` when `OrganizerContributions` is non-empty. Changing row order or
+    // “Myself” labelling affects host UX only (not guest join, modals, or `HomeTodosHelper`).
+    // `OrganizerContributionsShowFootnote` is set but the partial currently always shows the help text
+    // under the table.
     // ************************************************************************************************
     public static void ApplyTo(EventDetailsViewModel model, string currentUserId)
     {
@@ -34,7 +57,7 @@ public static class EventOrganizerContributionsHelper
 
         foreach (var item in model.Items)
         {
-            var title = FormatContributionTitle(item.Title);
+            var title = item.Title.FormatContributionTitle();
             if (string.IsNullOrWhiteSpace(title))
                 continue;
 
@@ -54,7 +77,7 @@ public static class EventOrganizerContributionsHelper
 
         foreach (var task in model.Tasks)
         {
-            var title = FormatContributionTitle(task.Title);
+            var title = task.Title.FormatContributionTitle();
             if (string.IsNullOrWhiteSpace(title))
                 continue;
 
@@ -76,7 +99,7 @@ public static class EventOrganizerContributionsHelper
             MergeEveryoneLines(bucket, everyoneItemTitles, everyoneTaskTitles);
 
         var rows = new List<EventContributionsViewModel>();
-        var selfKey = UserKey(currentUserId);
+        var selfKey = currentUserId.UserKey();
 
         if (buckets.TryGetValue(selfKey, out var selfBucket))
         {
@@ -107,7 +130,7 @@ public static class EventOrganizerContributionsHelper
                      .OrderBy(b => b.IsPlaceholder ? 1 : 0)
                      .ThenBy(b => b.DisplayName, StringComparer.OrdinalIgnoreCase))
         {
-            claimedNames.Add(NormalizePersonName(bucket.DisplayName));
+            claimedNames.Add(bucket.DisplayName.NormalizePersonName());
             rows.Add(ToRow(bucket));
         }
 
@@ -115,7 +138,7 @@ public static class EventOrganizerContributionsHelper
                      .Where(a => a.Status == AttendanceStatus.Accepted && !string.Equals(a.UserId, currentUserId, StringComparison.Ordinal))
                      .OrderBy(a => a.DisplayName, StringComparer.OrdinalIgnoreCase))
         {
-            var baseName = NormalizePersonName(attendee.DisplayName ?? "Guest");
+            var baseName = (attendee.DisplayName ?? "Guest").NormalizePersonName();
             if (claimedNames.Contains(baseName))
                 continue;
 
@@ -144,13 +167,15 @@ public static class EventOrganizerContributionsHelper
     }
 
     // ************************************************************************************************
-    private static PersonBucket GetOrCreateBucket(
-        Dictionary<string, PersonBucket> buckets,
-        EventAssignmentSlotViewModel assignment,
-        string currentUserId,
-        EventDetailsViewModel model)
+    // GetOrCreateBucket — resolves or creates the per-person accumulator for one assignment slot.
+    // Maps an `EventAssignmentSlotViewModel` to a stable dictionary key and `PersonBucket` because one
+    // guest may have several item/task assignments and buckets merge lines before a single table row.
+    // Uses `OrganizerBucketKey`, `ResolveDisplayName`, and `ResolvePlusGuests`; called from `ApplyTo` item/task loops.
+    // Wrong keys would duplicate rows or merge unrelated people in `_EventDetailsGuestContributions`.
+    // ************************************************************************************************
+    private static PersonBucket GetOrCreateBucket( Dictionary<string, PersonBucket> buckets, EventAssignmentSlotViewModel assignment, string currentUserId, EventDetailsViewModel model)
     {
-        var key = BucketKey(assignment);
+        var key = assignment.OrganizerBucketKey();
         if (!buckets.TryGetValue(key, out var bucket))
         {
             bucket = new PersonBucket
@@ -170,6 +195,13 @@ public static class EventOrganizerContributionsHelper
         return bucket;
     }
 
+    // ************************************************************************************************
+    // ResolveDisplayName — label shown in the Person column for a bucket.
+    // Returns placeholder text, “Myself” for the current user, assignment display name, or “Guest”, aligned
+    // with FrontOffice (`appendAttendeeNameLabel` maps “You” → “Myself”) and item/task modals that use
+    // `EventFormModalHelper.ResolveAssignmentDisplayName` for tags. Falls back to `model.Attendees` for names;
+    // open slots use `PlaceholderLabel` (e.g. PERSON 1). Changing “Myself” vs display name logic affects only
+    // this table, not chat or guest modal lists.
     // ************************************************************************************************
     private static string ResolveDisplayName(
         EventAssignmentSlotViewModel assignment,
@@ -194,6 +226,12 @@ public static class EventOrganizerContributionsHelper
     }
 
     // ************************************************************************************************
+    // ResolvePlusGuests — extra headcount suffix (+N) beside a person name.
+    // Returns `GuestCount - 1` from accepted attendance for that user, or 0 if not found, matching the join
+    // flow, guests modal (`+N` in `_EventDetailsGuestsModal`), and FrontOffice roster lines. Uses
+    // `EventDetailsViewModel.UserGuestCount` for the host’s own row and `model.Attendees` for others. Only
+    // affects `PlusGuests` rendering in the contributions table and total guest math in `ApplyTo`.
+    // ************************************************************************************************
     private static int ResolvePlusGuests(string userId, EventDetailsViewModel model)
     {
         var attendance = model.Attendees.FirstOrDefault(a =>
@@ -205,14 +243,17 @@ public static class EventOrganizerContributionsHelper
     }
 
     // ************************************************************************************************
-    private static void MergeEveryoneLines(
-        PersonBucket bucket,
-        IReadOnlyList<string> everyoneItems,
-        IReadOnlyList<string> everyoneTasks)
+    // MergeEveryoneLines — appends shared “EVERYONE” item/task titles to each person bucket.
+    // Adds lines with `IsEveryoneLine = true` when not already listed for that person, matching FrontOffice
+    // which shows everyone-tagged rows on each guest row unless they already have that title. Titles come from
+    // `CollectEveryoneTitles`; styling lives in `_EventDetailsGuestContributions` and `eventitem.css`. If
+    // everyone assignments are added or removed in modals, re-running `ApplyTo` on page load reflects changes.
+    // ************************************************************************************************
+    private static void MergeEveryoneLines( PersonBucket bucket, IReadOnlyList<string> everyoneItems, IReadOnlyList<string> everyoneTasks)
     {
         foreach (var title in everyoneItems)
         {
-            if (bucket.Items.Any(l => TitlesMatch(l.Text, title)))
+            if (bucket.Items.Any(l => l.Text.TitlesMatch(title)))
                 continue;
 
             bucket.Items.Add(new EventContributionsViewModel
@@ -225,7 +266,7 @@ public static class EventOrganizerContributionsHelper
 
         foreach (var title in everyoneTasks)
         {
-            if (bucket.Tasks.Any(l => TitlesMatch(l.Text, title)))
+            if (bucket.Tasks.Any(l => l.Text.TitlesMatch(title)))
                 continue;
 
             bucket.Tasks.Add(new EventContributionsViewModel
@@ -237,6 +278,12 @@ public static class EventOrganizerContributionsHelper
         }
     }
 
+    // ************************************************************************************************
+    // CollectEveryoneTitles — deduplicated uppercase titles for items/tasks assigned to Everyone.
+    // Scans assignment lists for `AssigneeType.Everyone` (non-removed) and collects formatted titles because
+    // everyone rows are excluded from per-bucket assignment loops and merged in a second pass. Same
+    // “EVERYONE” concept as `HomeTodosHelper.RowVisibleToUser` and item/task modal tags. New everyone slots
+    // in `EventItemService` and `EventTaskService` appear here after page refresh.
     // ************************************************************************************************
     private static List<string> CollectEveryoneTitles(
         IEnumerable<(string Title, List<EventAssignmentSlotViewModel> Assignments)> rows)
@@ -250,7 +297,7 @@ public static class EventOrganizerContributionsHelper
                     a.AssigneeType == AssigneeType.Everyone && a.Status != AssignmentStatus.Removed))
                 continue;
 
-            var title = FormatContributionTitle(row.Title);
+            var title = row.Title.FormatContributionTitle();
             if (string.IsNullOrWhiteSpace(title) || !seen.Add(title))
                 continue;
 
@@ -261,13 +308,19 @@ public static class EventOrganizerContributionsHelper
     }
 
     // ************************************************************************************************
+    // AddContributionLine — adds or updates one cell line (item or task) inside a bucket.
+    // Inserts `EventContributionsViewModel` line entries, merges duplicate titles, and ORs `IsDone` because
+    // one person can claim the same item twice in edge cases and one checkmark is enough for the host view.
+    // `IsDone` drives green check icons in the partial (same meaning as `HomeTodosHelper.IsDoneOnServer`).
+    // `AssignmentStatus.Completed` from item/task signup flows controls checkmarks here on next GET.
+    // ************************************************************************************************
     private static void AddContributionLine(
         List<EventContributionsViewModel> lines,
         string title,
         bool isEveryoneLine,
         bool isDone)
     {
-        var existing = lines.FirstOrDefault(l => TitlesMatch(l.Text, title));
+        var existing = lines.FirstOrDefault(l => l.Text.TitlesMatch(title));
         if (existing != null)
         {
             existing.IsDone = existing.IsDone || isDone;
@@ -283,6 +336,12 @@ public static class EventOrganizerContributionsHelper
     }
 
     // ************************************************************************************************
+    // ToRow — maps an internal bucket to one `EventContributionsViewModel` table row.
+    // Copies person fields and shallow-copies item/task line lists for Razor iteration. The view model uses
+    // the same type for rows and nested lines; buckets keep building logic separate. `ApplyTo` orders rows
+    // with Myself first, then assignees, then accepted guests without assignments. `IsPlaceholderPerson`
+    // renders “—” in the Person column (`_EventDetailsGuestContributions`).
+    // ************************************************************************************************
     private static EventContributionsViewModel ToRow(PersonBucket bucket) =>
         new()
         {
@@ -295,6 +354,11 @@ public static class EventOrganizerContributionsHelper
         };
 
     // ************************************************************************************************
+    // MapEveryoneOnlyLines — builds item/task lines when a row has no direct assignments (everyone-only).
+    // Creates line entries for each everyone title with `IsEveryoneLine = true` so accepted guests with no
+    // slots still see shared everyone duties on their row (FrontOffice parity). Used for empty “Myself” row
+    // and attendee-only rows in `ApplyTo`. Does not set `IsDone`; everyone lines are never marked done here.
+    // ************************************************************************************************
     private static List<EventContributionsViewModel> MapEveryoneOnlyLines(IEnumerable<string> titles) =>
         titles.Select(t => new EventContributionsViewModel
         {
@@ -302,34 +366,4 @@ public static class EventOrganizerContributionsHelper
             IsEveryoneLine = true,
             IsDone = false,
         }).ToList();
-
-    // ************************************************************************************************
-    private static string FormatContributionTitle(string? title)
-    {
-        var s = (title ?? "").Trim();
-        return s.Length == 0 ? "" : s.ToUpperInvariant();
-    }
-
-    // ************************************************************************************************
-    private static string BucketKey(EventAssignmentSlotViewModel assignment) =>
-        assignment.AssigneeType switch
-        {
-            AssigneeType.OpenSlot => SlotKey(assignment.PlaceholderLabel),
-            _ => UserKey(assignment.UserId ?? assignment.Id),
-        };
-
-    // ************************************************************************************************
-    private static string UserKey(string userId) => $"user:{userId}";
-
-    // ************************************************************************************************
-    private static string SlotKey(string? placeholder) =>
-        $"slot:{(placeholder ?? "").Trim().ToUpperInvariant()}";
-
-    // ************************************************************************************************
-    private static string NormalizePersonName(string name) =>
-        name.Replace("(host)", "", StringComparison.OrdinalIgnoreCase).Trim();
-
-    // ************************************************************************************************
-    private static bool TitlesMatch(string a, string b) =>
-        string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
 }

@@ -12,37 +12,45 @@
           data-target="#event-details-share-dialog"
           tabindex="-1"
           aria-label="Close"></button>
-  <div class="modal-panel card card-share event-details-share-dialogue-panel"
+  <div class="modal-panel card event-details-share-dialogue-panel"
        role="dialog"
        aria-modal="true"
        aria-labelledby="event-details-share-dialog-heading">
-    <button type="button"
-            class="modal-dismiss"
-            data-type="close"
-            data-target="#event-details-share-dialog"
-            aria-label="Close">×</button>
-    <div class="card-body card-body-share">
+    <div class="card-header event-details-share-dialogue-header">
+      <button type="button"
+              class="btn-close event-details-share-dialogue-close modal-dismiss"
+              data-type="close"
+              data-target="#event-details-share-dialog"
+              aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="card-body event-details-share-dialogue-body">
       <i class="fa-solid fa-share-nodes icon" aria-hidden="true"></i>
-      <h5 class="card-title card-title-share" id="event-details-share-dialog-heading">Share event</h5>
-      <p class="card-text card-text-share">Share a private link so guests can join this event.</p>
-      <p class="card-text card-text-share" id="event-details-share-status" hidden role="status"></p>
-      <div class="card-actions card-actions-share">
+      <h5 class="event-details-share-dialogue-heading" id="event-details-share-dialog-heading">Share event</h5>
+      <p class="event-details-share-dialogue-text">
+        Share a private link so guests can join this event.
+      </p>
+      <p class="event-details-share-dialogue-text event-details-share-dialogue-status"
+         id="event-details-share-status"
+         hidden
+         role="status">
+        <i class="fa-solid fa-circle-check event-details-share-dialogue-status-icon" hidden aria-hidden="true"></i>
+        <span class="event-details-share-dialogue-status-text"></span>
+      </p>
+      <div class="event-details-share-dialogue-actions">
         <button type="button"
-                class="btn btn-share btn-share-link"
+                class="btn btn-secondary"
                 data-event-details-share-action="link">
-          Copy share link
+          <i class="fa-solid fa-copy" aria-hidden="true"></i>
+          Copy link
         </button>
         <button type="button"
-                class="btn btn-share btn-share-revoke"
+                class="btn btn-danger"
                 data-event-details-share-action="revoke"
                 @(canManageEvent ? null : "hidden")>
+          <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
           Revoke link
-        </button>
-        <button type="button"
-                class="btn btn-share btn-share-cancel"
-                data-type="close"
-                data-target="#event-details-share-dialog">
-          Cancel
         </button>
       </div>
     </div>

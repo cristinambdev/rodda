@@ -1,15 +1,16 @@
 // *************************************************************************************************
 // home-index.js — Home page Upcoming Events (`Index.cshtml`)
 // *************************************************************************************************
-// Uses `EVENTS` from `events-portal.js` and renders vertical cards into `[data-home-upcoming]`.
 
-// ================================================================================================
+// - Uses `EVENTS` from `events-portal.js` and renders vertical cards into `[data-home-upcoming]`.
+// - The week / month / year segmented control filters upcoming events by calendar bounds from `homeTimeRangeBoundsMs`.
+
+// *************************************************************************************************
 // Upcoming events segment (week / month / year)
-// ================================================================================================
+// *************************************************************************************************
 
-/**
- * @returns {void}
- */
+// Wires the segmented control and fetches vertical cards for events whose datetime falls in the active range.
+// @returns {void}
 function initHomeUpcomingSegment() {
   const block = document.querySelector("[data-home-upcoming]");
   if (!block || typeof EVENTS === "undefined") return;
@@ -20,10 +21,9 @@ function initHomeUpcomingSegment() {
 
   if (!buttons.length || !empty || !eventsList) return;
 
-  /**
-   * @param {string} range
-   * @returns {Promise<void>}
-   */
+  // Re-renders the list and syncs pill `active` / `aria-pressed` state for the chosen range key.
+  // @param {string} range
+  // @returns {Promise<void>}
   async function applyRange(range) {
     const key = range === "week" || range === "month" || range === "year" ? range : "month";
     const { fromMs, toMs } = homeTimeRangeBoundsMs(key);

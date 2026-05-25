@@ -14,12 +14,15 @@
     <div class="card-body">
       <h1 class="card-title">Sign in</h1>
 
-      <div>
-        <button type="button" class="btn btn-external">
+      <form asp-controller="Auth" asp-action="ExternalLogin" method="post">
+        <input type="hidden" name="provider" value="Google" />
+        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+
+        <button type="submit" class="btn btn-external">
           <img src="~/images/google_logo.svg" alt="Google logo" decoding="async" />
           Sign in with Google
         </button>
-      </div>
+      </form>
 
       <p class="auth-divider" role="separator">OR</p>
 

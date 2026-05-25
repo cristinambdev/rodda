@@ -2,6 +2,7 @@
 // site.js — Shared portal UI (`_PortalLayout.cshtml`)
 // *************************************************************************************************
 // Dropdowns, modals, forms, previews, header profile menu (Settings / Log out), bottom-nav active state.
+// Exposes `window.PortalUi` so page scripts can open/close modals and submit anti-forgery POST forms.
 
 let profileNavMenuInitialized = false;
 
@@ -41,10 +42,14 @@ document.addEventListener("DOMContentLoaded", () => {
   initAnchoredMenus();
 });
 
-// ================================================================================================
+// *************************************************************************************************
 // Modal API (used by markup and page scripts)
-// ================================================================================================
+// *************************************************************************************************
 
+// Toggles modal visibility and optional body scroll-lock class for tall item/task modals.
+// @param {HTMLElement | null} modal
+// @param {boolean} visible
+// @returns {void}
 function setModalVisible(modal, visible) {
   if (!modal) return;
   modal.classList.toggle("modal-show", visible);
@@ -56,6 +61,10 @@ function setModalVisible(modal, visible) {
 
 /********************************************************************************/
 
+// Opens a modal by CSS selector; optionally closes a parent modal first (`data-close-parent`).
+// @param {string} targetSelector
+// @param {HTMLElement | null} trigger
+// @returns {HTMLElement | null}
 function openModalBySelector(targetSelector, trigger) {
   const modal = document.querySelector(targetSelector);
   if (!modal) return null;
@@ -77,6 +86,10 @@ function openModalBySelector(targetSelector, trigger) {
 
 /********************************************************************************/
 
+// Closes a modal by selector; may reopen another via `data-reopen` on the trigger.
+// @param {string} targetSelector
+// @param {HTMLElement | null} trigger
+// @returns {void}
 function closeModalBySelector(targetSelector, trigger) {
   const modal = document.querySelector(targetSelector);
   if (!modal) return;
@@ -97,16 +110,20 @@ function closeModalBySelector(targetSelector, trigger) {
 
 /********************************************************************************/
 
+// Closes every visible `.modal.modal-show` (Escape key handler).
+// @returns {void}
 function closeAllModals() {
   document.querySelectorAll(".modal.modal-show").forEach((modal) => {
     setModalVisible(/** @type {HTMLElement} */ (modal), false);
   });
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // Dropdowns
-// ================================================================================================
+// *************************************************************************************************
 
+// Wires `[data-type="dropdown"]` toggles and closes open menus on outside click.
+// @returns {void}
 function initDropdowns() {
   const dropdowns = document.querySelectorAll('[data-type="dropdown"]');
 
@@ -139,10 +156,12 @@ function initDropdowns() {
   });
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // Modals (`data-type="modal"` / `data-type="close"`)
-// ================================================================================================
+// *************************************************************************************************
 
+// Binds modal open/close triggers, bring-items shortcuts, Escape, and deep-link open on details page.
+// @returns {void}
 function initModals() {
   const modals = document.querySelectorAll('[data-type="modal"]');
   modals.forEach((modal) => {
@@ -187,10 +206,13 @@ function initModals() {
   }
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // Custom selects
-// ================================================================================================
+// *************************************************************************************************
 
+// Initializes one custom select: hidden input sync, placeholder styling, click-outside close.
+// @param {HTMLElement} select
+// @returns {void}
 function initializeCustomSelect(select) {
   const trigger = select.querySelector(".custom-select-trigger");
   const triggerText = select.querySelector(".custom-select-text");
@@ -242,16 +264,21 @@ function initializeCustomSelect(select) {
 
 /********************************************************************************/
 
+// Initializes every `.custom-select` on the page.
+// @returns {void}
 function initCustomSelects() {
   document.querySelectorAll(".custom-select").forEach((select) => {
     initializeCustomSelect(/** @type {HTMLElement} */ (select));
   });
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // Ajax forms (modal forms and `[data-ajax-form]` only; skips `.no-ajax`)
-// ================================================================================================
+// *************************************************************************************************
 
+// Inline required-field validation for portal modal forms.
+// @param {HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement} field
+// @returns {void}
 function validatePortalField(field) {
   const errorSpan = field.closest(".form-group")?.querySelector(".error-message");
   if (!errorSpan) return;
@@ -268,6 +295,9 @@ function validatePortalField(field) {
 
 /********************************************************************************/
 
+// Clears ASP.NET validation classes before a new AJAX submit attempt.
+// @param {HTMLFormElement} form
+// @returns {void}
 function clearPortalFormErrors(form) {
   form.querySelectorAll('[data-val="true"]').forEach((input) => {
     input.classList.remove("input-validation-error");
@@ -280,6 +310,8 @@ function clearPortalFormErrors(form) {
 
 /********************************************************************************/
 
+// Intercepts modal and `[data-ajax-form]` submits; reloads on success, maps 400 JSON errors to fields.
+// @returns {void}
 function initAjaxForms() {
   const forms = document.querySelectorAll(
     ".modal form:not(.no-ajax), [data-ajax-form] form:not(.no-ajax)"
@@ -359,10 +391,13 @@ function initAjaxForms() {
   });
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // Image previewer
-// ================================================================================================
+// *************************************************************************************************
 
+// Reads a file into an `Image` for square canvas preview.
+// @param {File} file
+// @returns {Promise<HTMLImageElement>}
 async function loadPreviewImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -379,6 +414,12 @@ async function loadPreviewImage(file) {
 
 /********************************************************************************/
 
+// Draws a centered square JPEG preview into the image previewer shell.
+// @param {File} file
+// @param {HTMLImageElement} imagePreview
+// @param {HTMLElement} previewer
+// @param {number} [previewSize]
+// @returns {Promise<void>}
 async function processPreviewImage(file, imagePreview, previewer, previewSize = 150) {
   const img = await loadPreviewImage(file);
   const canvas = document.createElement("canvas");
@@ -393,6 +434,8 @@ async function processPreviewImage(file, imagePreview, previewer, previewSize = 
 
 /********************************************************************************/
 
+// Wires click-to-browse on `.image-previewer` blocks.
+// @returns {void}
 function initImagePreviewers() {
   const previewSize = 150;
 
@@ -417,10 +460,12 @@ function initImagePreviewers() {
   });
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // Modal form reset (initial page load)
-// ================================================================================================
+// *************************************************************************************************
 
+// Clears modal forms and image previews on first paint so stale create-modal state does not linger.
+// @returns {void}
 function resetModalFormsOnLoad() {
   document.querySelectorAll(".modal").forEach((modal) => {
     modal.querySelectorAll("form").forEach((form) => {
@@ -439,24 +484,22 @@ function resetModalFormsOnLoad() {
   });
 }
 
-// ================================================================================================
+// *************************************************************************************************
 // Anchored menus (`[data-menu-toggle]` + `[aria-controls]` / `[data-menu-target]`)
-// ================================================================================================
+// *************************************************************************************************
 
-/**
- * @returns {string}
- */
+// Reads the MVC anti-forgery token injected in layout markup.
+// @returns {string}
 function getAntiForgeryToken() {
   return document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
 }
 
 /********************************************************************************/
 
-/**
- * @param {string} action
- * @param {Record<string, string>} [fields]
- * @returns {void}
- */
+// Builds and submits a transient POST form (used for logout and destructive actions).
+// @param {string} action
+// @param {Record<string, string>} [fields]
+// @returns {void}
 function submitPostForm(action, fields = {}) {
   const token = getAntiForgeryToken();
   const form = document.createElement("form");
@@ -485,9 +528,8 @@ function submitPostForm(action, fields = {}) {
 
 /********************************************************************************/
 
-/**
- * @returns {void}
- */
+// Wires `[data-menu-toggle]` popovers with click-outside and Escape dismiss.
+// @returns {void}
 function initAnchoredMenus() {
   document.querySelectorAll("[data-menu-toggle]").forEach((trigger) => {
     if (trigger.dataset.menuToggleBound === "1") return;
@@ -502,17 +544,13 @@ function initAnchoredMenus() {
       trigger.closest("[data-menu-wrap]") ||
       trigger.parentElement;
 
-    /**
-     * @returns {void}
-     */
+    // @returns {void}
     function closeMenu() {
       menu.hidden = true;
       trigger.setAttribute("aria-expanded", "false");
     }
 
-    /**
-     * @returns {void}
-     */
+    // @returns {void}
     function openMenu() {
       menu.hidden = false;
       trigger.setAttribute("aria-expanded", "true");
@@ -551,14 +589,13 @@ window.PortalUi = {
   submitPostForm,
 };
 
-// ================================================================================================
+// *************************************************************************************************
 // Portal shell (profile popover, bottom nav, logout)
-// ================================================================================================
+// *************************************************************************************************
 
-/**
- * @param {{ activeNav?: string }} [options]
- * @returns {void}
- */
+// Initializes profile menu + bottom-nav active state from layout dataset.
+// @param {{ activeNav?: string }} [options]
+// @returns {void}
 function mountPortalShell(options) {
   initProfileNavMenu();
   applyPortalNavActive(options?.activeNav || document.body.dataset.activeNav || "");
@@ -566,10 +603,9 @@ function mountPortalShell(options) {
 
 /********************************************************************************/
 
-/**
- * @param {string} activeNav
- * @returns {void}
- */
+// Highlights the active bottom-nav link for the current page.
+// @param {string} activeNav
+// @returns {void}
 function applyPortalNavActive(activeNav) {
   if (!activeNav) return;
   const menu = document.querySelector("#navigation-menu, nav.navigation-menu");
@@ -586,9 +622,8 @@ function applyPortalNavActive(activeNav) {
 
 /********************************************************************************/
 
-/**
- * @returns {void}
- */
+// Builds the header profile popover (Settings + Log out) once per page load.
+// @returns {void}
 function initProfileNavMenu() {
   if (profileNavMenuInitialized) return;
 
@@ -669,6 +704,9 @@ function initProfileNavMenu() {
 
 /********************************************************************************/
 
+// Submits the hidden logout form when present; otherwise navigates to sign-in.
+// @param {string} signInUrl
+// @returns {void}
 function submitPortalLogout(signInUrl) {
   const form = /** @type {HTMLFormElement | null} */ (document.getElementById("portal-logout-form"));
   if (form) {
