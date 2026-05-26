@@ -8,7 +8,7 @@ namespace Presentation.Helpers;
 // ************************************************************************************************
 // Consumers: `EventsController.BuildCardBadgesAsync` → `ViewData["EventCardBadges"]` on All Events list;
 //            `_HorizontalEventCard.cshtml`, `_VerticalEventCard.cshtml`.
-// Distinct from: `AttendanceCounts` / `AttendanceStatusLabels` (RSVP badges), organizer hero summary.
+// Distinct from: `AttendanceStatusLabels` (current-user RSVP badges on cards and event hero).
 // ************************************************************************************************
 public static class EventCardBadgeHelper
 {

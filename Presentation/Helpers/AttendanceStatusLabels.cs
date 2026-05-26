@@ -5,9 +5,8 @@ namespace Presentation.Helpers;
 // ************************************************************************************************
 // AttendanceStatusLabels — maps `AttendanceStatus` to badge label text and CSS classes for the UI.
 // ************************************************************************************************
-// Consumers: `EventDetails.cshtml` hero, `_HorizontalEventCard`, `_VerticalEventCard`,
-//            `_AttendanceSummaryBadges.cshtml` (host Accepted/Declined/Pending counts).
-// Uses `AttendanceCounts.From` to supply counts; domain status comes from `EventAttendance` / join POST.
+// Consumers: `EventDetails.cshtml` hero, `_HorizontalEventCard`, `_VerticalEventCard` (current user RSVP only).
+// Domain status comes from `EventAttendance` / join POST.
 // Copy/CSS changes are presentation-only; RSVP logic lives in `EventsController` join/leave.
 // ************************************************************************************************
 public static class AttendanceStatusLabels
@@ -16,7 +15,7 @@ public static class AttendanceStatusLabels
     // BadgeLabel — short English label for one attendance status.
     //  Accepted / Declined / Pending (Maybe maps to Pending label in summary partial).
     // Single source for consistent badge text across cards and event details.
-    // Uses `BadgeCssClass` for pairing; `_AttendanceSummaryBadges` uses Accepted/Declined/Pending enums.
+    // Uses `BadgeCssClass` for pairing on event cards and event details hero.
     // Changing labels updates all badges; does not change stored enum values.
     // ************************************************************************************************
     public static string BadgeLabel(AttendanceStatus status) =>

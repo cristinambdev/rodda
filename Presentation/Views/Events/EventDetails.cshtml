@@ -10,11 +10,6 @@
     // Item and task counts
     var itemCount = Model.Items?.Count ?? 0;
     var taskCount = Model.Tasks?.Count ?? 0;
-    // Attendance counts: Accepted, Declined, Pending, Maybe
-    var attendanceCounts = (
-        Model.HostGuestRoster.Count(r => r.Status == Domain.Enums.AttendanceStatus.Accepted),
-        Model.HostGuestRoster.Count(r => r.Status == Domain.Enums.AttendanceStatus.Declined),
-        Model.HostGuestRoster.Count(r => r.Status is Domain.Enums.AttendanceStatus.Pending or Domain.Enums.AttendanceStatus.Maybe));
     // Current user ID
     var userId = User.GetUserId() ?? "";
     // Current user role
@@ -28,12 +23,8 @@
         : null;
     // Current user attendance
     var myAttendance = Model.Attendees.FirstOrDefault(a => string.Equals(a.UserId, userId, StringComparison.Ordinal));
-    // Show guest attendance badge
-    var showGuestAttendanceBadge = myAttendance != null
-        && string.IsNullOrEmpty(roleBadge)
-        && myAttendance.Status != AttendanceStatus.Accepted;
     // Show hero badges
-    var showHeroBadges = !string.IsNullOrEmpty(roleBadge) || Model.CanManageItemsTasks || showGuestAttendanceBadge;
+    var showHeroBadges = !string.IsNullOrEmpty(roleBadge) || myAttendance != null;
 }
 
 @if (TempData["ErrorMessage"] is string errorMessage)
@@ -81,12 +72,12 @@
                     <span class="badge @AttendanceStatusLabels.RoleBadgeCssClass eventitem-hero-role-badge">@roleBadge</span>
                 }
 
-                @if (Model.CanManageItemsTasks)
+                @if (myAttendance != null)
                 {
-                    <!-- Attendance badges: Accepted, Declined, Pending -->
-                    <div class="badge eventitem-hero-attendance-badges" aria-label="Guest attendance summary">
-                        <partial name="~/Views/Shared/Partials/EventDetailsPartials/_AttendanceSummaryBadges.cshtml" model="attendanceCounts" />
-                    </div>
+                    <!-- Your RSVP: Accepted, Declined, or Pending -->
+                    <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge" aria-label="Your RSVP">
+                        @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
+                    </span>
                 }
             </div>
         }
