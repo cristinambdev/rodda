@@ -61,7 +61,8 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
     }
 
     // **************************************************************************************************************************
-    // Reusable share token adds the visitor as an accepted attendee so they pass the view gate.
+    // Validates a share token and ensures a pending attendance row so the visitor can open the event
+    // without accepting RSVP; JoinEventAsync sets Accepted when they click Join.
     public async Task<EventResult> RedeemShareTokenAsync(string userId, string eventId, string token)
     {
         if (string.IsNullOrWhiteSpace(token))
@@ -90,10 +91,11 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
         if (attendanceResponse.Succeeded && attendanceResponse.Result != null)
         {
             var attendance = attendanceResponse.Result;
-            attendance.Status = AttendanceStatus.Accepted;
+            if (attendance.Status != AttendanceStatus.Accepted)
+                attendance.Status = AttendanceStatus.Pending;
+
             attendance.HiddenFromList = false;
             attendance.GuestCount = Math.Max(1, attendance.GuestCount);
-            attendance.RespondedAt = DateTime.UtcNow;
 
             var updateResult = await _attendanceRepository.UpdateAsync(attendance);
             return updateResult.Succeeded
@@ -105,10 +107,9 @@ public class EventAccessService( IEventRepository eventRepository, IEventShareLi
         {
             EventId = eventId,
             UserId = userId,
-            Status = AttendanceStatus.Accepted,
+            Status = AttendanceStatus.Pending,
             HiddenFromList = false,
             GuestCount = 1,
-            RespondedAt = DateTime.UtcNow
         });
 
         return addResult.Succeeded

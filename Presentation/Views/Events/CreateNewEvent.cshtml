@@ -30,6 +30,7 @@
       data-event-id="@Model.EventId"
       data-return-url="@(isEdit ? Url.Action("EventDetails", "Events", new { id = Model.EventId }) : "/events")">
     @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="auth-error" role="alert"></div>
     @if (isEdit)
     {
         <input type="hidden" asp-for="EventId" />

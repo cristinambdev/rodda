@@ -20,7 +20,6 @@ public class AddEventViewModel
     public string? Slug { get; set; }
 
     [StringLength(2048)]
-    [Url]
     public string? CoverImageUrl { get; set; }
 
     [StringLength(8000)]

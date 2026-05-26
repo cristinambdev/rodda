@@ -15,6 +15,20 @@ function initNewEventPage() {
   const form = document.getElementById("edit-event-form");
   if (!form) return;
 
+  // Only the primary button should submit the form.
+  form.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.tagName === "TEXTAREA") return;
+    if (target instanceof HTMLButtonElement && target.type === "submit") return;
+    if (target instanceof HTMLInputElement) {
+      const type = (target.type || "text").toLowerCase();
+      if (type === "submit" || type === "button" || type === "checkbox" || type === "radio") return;
+    }
+    e.preventDefault();
+  });
+
   const back = document.getElementById("newevent-back");
   const coverInput = document.getElementById("cover-input");
   const coverLabelEmpty = document.getElementById("cover-label-empty");

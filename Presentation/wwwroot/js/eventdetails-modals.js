@@ -98,7 +98,7 @@ async function copyShareLink() {
     if (!data.url) throw new Error("Share link was empty.");
 
     await navigator.clipboard.writeText(data.url);
-    setShareStatus("Link copied. Anyone with this link can join while it stays active.", {
+    setShareStatus("Link copied. Guests can open the event with this link.", {
       showCheck: true,
     });
   } catch (error) {
@@ -257,6 +257,113 @@ function bindEventDetailsDeleteModal() {
 
 /********************************************************************************/
 
+// Updates shield button + optional role badge after a successful co-owner toggle.
+// @param {HTMLButtonElement} trigger
+// @param {boolean} isCoOwner
+// @param {string} guestName
+// @returns {void}
+function applyGuestCoOwnerUi(trigger, isCoOwner, guestName) {
+  const label = guestName || "this guest";
+  trigger.classList.toggle("is-coowner", isCoOwner);
+  trigger.setAttribute("data-is-coowner", isCoOwner ? "true" : "false");
+  trigger.setAttribute("aria-pressed", isCoOwner ? "true" : "false");
+  trigger.setAttribute(
+    "aria-label",
+    isCoOwner ? `Remove co-ownership from ${label}` : `Make ${label} co-owner`
+  );
+  trigger.title = isCoOwner ? "Remove co-owner" : "Make co-owner";
+
+  const row = trigger.closest(".event-details-members-row");
+  const nameEl = row?.querySelector(".event-details-members-name");
+  if (!nameEl) return;
+
+  let roleEl = nameEl.querySelector(".event-details-members-role");
+  if (isCoOwner) {
+    if (!roleEl) {
+      roleEl = document.createElement("span");
+      roleEl.className = "event-details-members-role";
+      nameEl.appendChild(roleEl);
+    }
+    roleEl.textContent = "Co-owner";
+    return;
+  }
+
+  if (roleEl?.textContent?.trim() === "Co-owner") {
+    roleEl.remove();
+  }
+}
+
+/********************************************************************************/
+
+// Toggles co-owner on a roster guest via POST/DELETE; updates row UI without reload.
+// @param {string} targetUserId
+// @param {string} guestName
+// @param {HTMLButtonElement} trigger
+// @returns {Promise<void>}
+async function toggleGuestCoOwner(targetUserId, guestName, trigger) {
+  const { eventId, canManage } = getEventDetailsPageConfig();
+  if (!canManage || !eventId || !targetUserId) return;
+
+  const isCoOwner = trigger.getAttribute("data-is-coowner") === "true";
+  const token = window.PortalUi.getAntiForgeryToken();
+  if (!token) {
+    window.alert("Could not update co-owner. Please refresh and try again.");
+    return;
+  }
+
+  trigger.disabled = true;
+
+  try {
+    const response = await fetch(`/events/${encodeURIComponent(eventId)}/co-owners`, {
+      method: isCoOwner ? "DELETE" : "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        RequestVerificationToken: token,
+        "X-XSRF-TOKEN": token,
+      },
+      body: JSON.stringify({ targetUserId }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(
+        payload.error ||
+          (isCoOwner ? "Could not remove co-owner." : "Could not add co-owner.")
+      );
+    }
+
+    applyGuestCoOwnerUi(trigger, !isCoOwner, guestName);
+  } catch (error) {
+    console.error("Toggle co-owner failed:", error);
+    window.alert(error instanceof Error ? error.message : "Could not update co-owner.");
+  } finally {
+    trigger.disabled = false;
+  }
+}
+
+/********************************************************************************/
+
+// Delegated clicks on shield icons in `#event-details-guests-modal` (host roster only).
+// @returns {void}
+function bindEventDetailsGuestsCoOwnerActions() {
+  const guestsModal = document.getElementById("event-details-guests-modal");
+  if (!guestsModal || guestsModal.dataset.coOwnerBound === "1") return;
+
+  guestsModal.dataset.coOwnerBound = "1";
+  guestsModal.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-event-details-toggle-coowner]");
+    if (!btn || !(btn instanceof HTMLButtonElement) || btn.disabled) return;
+
+    event.preventDefault();
+    const targetUserId = btn.getAttribute("data-user-id") || "";
+    const guestName = btn.getAttribute("data-guest-name") || "";
+    toggleGuestCoOwner(targetUserId, guestName, btn);
+  });
+}
+
+/********************************************************************************/
+
 // Entry point: wires share, hero menu, and delete modals when the details page is present.
 // @returns {void}
 function initEventDetailsActions() {
@@ -265,6 +372,7 @@ function initEventDetailsActions() {
   bindEventDetailsShareModal();
   bindEventDetailsContextMenuActions();
   bindEventDetailsDeleteModal();
+  bindEventDetailsGuestsCoOwnerActions();
 }
 
 /********************************************************************************/

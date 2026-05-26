@@ -162,6 +162,15 @@ public static class CreateEventFormHelper
         model.ChatEnabled = IsFormCheckboxChecked(form, nameof(model.ChatEnabled), "chatEnabled");
         model.JoinMode = model.JoinButton ? JoinMode.Open : JoinMode.Disabled;
 
+        if (form.TryGetValue(nameof(model.ItemsTasksEnabled), out var itemsTasksValues))
+            model.ItemsTasksEnabled = IsFormCheckboxChecked(form, nameof(model.ItemsTasksEnabled));
+
+        if (form.TryGetValue(nameof(model.AllowGuestBringItems), out _))
+            model.AllowGuestBringItems = IsFormCheckboxChecked(form, nameof(model.AllowGuestBringItems));
+
+        if (form.TryGetValue(nameof(model.AllowGuestTasks), out _))
+            model.AllowGuestTasks = IsFormCheckboxChecked(form, nameof(model.AllowGuestTasks));
+
         NormalizePaymentFields(model);
     }
 

@@ -10,15 +10,13 @@
     var eventTitle = Model?.Title?.ToUpperInvariant() ?? "";
     var acceptedCount = hostRoster.Count(r => r.Status == AttendanceStatus.Accepted);
     var declinedCount = hostRoster.Count(r => r.Status == AttendanceStatus.Declined);
-    var pendingCount = hostRoster.Count(r =>
-        r.Status is AttendanceStatus.Pending or AttendanceStatus.Maybe);
 }
 
 <!-- Guests list modal -->
-<div id="event-details-guests-modal" class="modal modal-guests" hidden role="presentation">
+<div id="event-details-guests-modal" class="modal modal-guests" role="presentation">
   <button type="button" class="modal-backdrop" data-type="close" data-target="#event-details-guests-modal" tabindex="-1" aria-label="Close"></button>
   <div
-    class="modal-panel modal-panel-members"
+    class="modal-panel card modal-panel-members event-details-guests-dialogue-panel"
     role="dialog"
     aria-modal="true"
     aria-labelledby="event-details-guests-dialog-heading"
@@ -39,24 +37,46 @@
         ×
       </button>
     </header>
-    <div class="modal-content modal-content-guests">
+    <div class="card-body modal-content modal-content-guests modal-content--guests">
       <ul class="event-details-members-list" id="event-details-guests-list" role="list">
         @if (isHost)
         {
             @foreach (var guest in hostRoster)
             {
                 var name = string.IsNullOrWhiteSpace(guest.DisplayName) ? "Guest" : guest.DisplayName;
+                var declined = guest.Status == AttendanceStatus.Declined;
                 var count = Math.Max(1, guest.GuestCount);
-                var accepted = guest.Status == AttendanceStatus.Accepted;
-                <li class="event-details-members-row event-details-members-row--attendee">
+                var partySuffix = !declined && count > 1 ? $" (+{count - 1})" : "";
+                var statusClass = declined
+                    ? "event-details-guests-status--declined"
+                    : "event-details-guests-status-on";
+                var statusSymbol = declined ? "×" : "✓";
+                <li class="event-details-members-row event-details-members-row--attendee"
+                    data-guest-user-id="@guest.UserId">
                   <span class="event-details-members-name">
-                    @name@(count > 1 ? $" (+{count - 1})" : "")
+                    @name@partySuffix
                     @if (!string.IsNullOrWhiteSpace(guest.RoleLabel))
                     {
                         <span class="event-details-members-role">@guest.RoleLabel</span>
                     }
                   </span>
-                  <span class="event-details-guests-status @(accepted ? "event-details-guests-status-on" : "event-details-guests-status--off")" aria-hidden="true">@(accepted ? "✓" : "○")</span>
+                  <span class="event-details-guests-actions">
+                    @if (guest.CanToggleCoOwner)
+                    {
+                        <button type="button"
+                                class="event-details-guests-promote-coowner@(guest.IsCoOwner ? " is-coowner" : "")"
+                                data-event-details-toggle-coowner
+                                data-user-id="@guest.UserId"
+                                data-guest-name="@name"
+                                data-is-coowner="@(guest.IsCoOwner ? "true" : "false")"
+                                aria-pressed="@(guest.IsCoOwner ? "true" : "false")"
+                                aria-label="@(guest.IsCoOwner ? $"Remove co-ownership from {name}" : $"Make {name} co-owner")"
+                                title="@(guest.IsCoOwner ? "Remove co-owner" : "Make co-owner")">
+                          <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+                        </button>
+                    }
+                    <span class="event-details-guests-status @statusClass" aria-hidden="true">@statusSymbol</span>
+                  </span>
                 </li>
             }
         }
@@ -73,22 +93,27 @@
             }
         }
       </ul>
-      <p class="event-details-guests-list-hint">
-        @if (isHost)
-        {
-            <text>Guests with <span class="visually-hidden">a green check</span><span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span> have confirmed attendance.</text>
-        }
-        else
-        {
-            <text>Guests listed here have confirmed attendance.</text>
-        }
-      </p>
+      @if (isHost)
+      {
+          <p class="event-details-guests-list-hint">
+            Guests with <span class="visually-hidden">a green check</span><span class="event-details-guests-status event-details-guests-status-on" aria-hidden="true">✓</span> have confirmed attendance.
+          </p>
+          <p class="event-details-guests-list-hint">
+            Guests with <span class="visually-hidden">a red cross</span><span class="event-details-guests-status event-details-guests-status--declined" aria-hidden="true">×</span> have declined attendance.
+          </p>
+      }
+      else
+      {
+          <p class="event-details-guests-list-hint">
+            Guests listed here have confirmed attendance.
+          </p>
+      }
     </div>
-    <footer class="event-details-guests-modal-footer" aria-label="Attendance summary">
+    <footer class="card-footer event-details-guests-modal-footer modal-footer--guests-total" aria-label="Attendance summary">
       <p id="event-details-guests-total" aria-live="polite">
         @if (isHost)
         {
-            @($"{acceptedCount} accepted · {declinedCount} declined · {pendingCount} not answered")
+            @($"{acceptedCount} accepted · {declinedCount} declined")
         }
         else
         {

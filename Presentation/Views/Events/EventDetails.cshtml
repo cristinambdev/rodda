@@ -23,8 +23,9 @@
         : null;
     // Current user attendance
     var myAttendance = Model.Attendees.FirstOrDefault(a => string.Equals(a.UserId, userId, StringComparison.Ordinal));
-    // Show hero badges
-    var showHeroBadges = !string.IsNullOrEmpty(roleBadge) || myAttendance != null;
+    // RSVP badge only when Join is available and user has not joined yet (same state as JOIN button)
+    var showAttendanceBadge = Model.JoinEnabled && !Model.UserHasJoined && myAttendance != null;
+    var showHeroBadges = !string.IsNullOrEmpty(roleBadge) || showAttendanceBadge;
 }
 
 @if (TempData["ErrorMessage"] is string errorMessage)
@@ -72,10 +73,10 @@
                     <span class="badge @AttendanceStatusLabels.RoleBadgeCssClass eventitem-hero-role-badge">@roleBadge</span>
                 }
 
-                @if (myAttendance != null)
+                @if (showAttendanceBadge)
                 {
-                    <!-- Your RSVP: Accepted, Declined, or Pending -->
-                    <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance.Status) event-attendance-badge" aria-label="Your RSVP">
+                    <!-- Your RSVP: Accepted, Declined, or Pending (only before joining via JOIN) -->
+                    <span class="badge @AttendanceStatusLabels.BadgeCssClass(myAttendance!.Status) event-attendance-badge" aria-label="Your RSVP">
                         @AttendanceStatusLabels.BadgeLabel(myAttendance.Status)
                     </span>
                 }

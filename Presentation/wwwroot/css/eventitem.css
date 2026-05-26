@@ -393,15 +393,31 @@ button.eventitem-join-count:focus-visible,
 /* guests / who’s coming in myevents page                                                   */
 /* ========================================================================== */
 
-/* Who’s coming — same shell as members modal; read-only rows (no checks / no footer) */
+#event-details-guests-modal .modal-panel.modal-panel-members
+{
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(22rem, calc(100vw - 2rem));
+  max-width: 100%;
+  max-height: min(90vh, 36rem);
+  overflow: hidden;
+}
 
+#event-details-guests-modal .modal-panel.card
+{
+  border-color: var(--gray-300);
+  box-shadow: var(--shadows-popup);
+}
 
-#event-details-guests-modal .modal-content--guests
+#event-details-guests-modal .modal-content--guests,
+#event-details-guests-modal .modal-content-guests
 {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: 0.5rem;
+  padding: 0 1rem 0.5rem;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -414,9 +430,15 @@ button.eventitem-join-count:focus-visible,
   color: var(--gray-700);
 }
 
+.event-details-guests-list-hint + .event-details-guests-list-hint
+{
+  margin-top: .35rem;
+}
 
 
-#event-details-guests-modal .modal-footer--guests-total
+
+#event-details-guests-modal .modal-footer--guests-total,
+#event-details-guests-modal .event-details-guests-modal-footer
 {
   width: 100%;
   box-sizing: border-box;
@@ -424,6 +446,15 @@ button.eventitem-join-count:focus-visible,
   padding: .75rem 1rem 1rem;
   border-top: 1px solid var(--gray-200);
   background: var(--white-100);
+  text-align: right;
+}
+
+#event-details-guests-modal #event-details-guests-total
+{
+  margin: 0;
+  font-size: .8rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--gray-700);
 }
 
 #event-details-guests-modal .event-details-members-row--attendee,
@@ -475,19 +506,30 @@ button.eventitem-join-count:focus-visible,
   height: 1.35rem;
   border-radius: 50%;
   border: 1px solid var(--gray-500);
-  color: var(--gray-700);
   font-size: .92rem;
   font-weight: var(--font-weight-bold);
   line-height: 1;
 }
 
-
+.event-details-guests-status-on
+{
+  border-color: var(--green);
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, var(--white-100));
+}
 
 .event-details-guests-status--off
 {
   border-color: var(--gray-600);
   color: var(--gray-700);
   background: color-mix(in srgb, var(--gray-400) 30%, var(--white-100));
+}
+
+.event-details-guests-status--declined
+{
+  border-color: var(--red-dark);
+  color: var(--red-dark);
+  background: var(--red-pale);
 }
 
 .event-details-guests-actions
@@ -498,7 +540,8 @@ button.eventitem-join-count:focus-visible,
   gap: .4rem;
 }
 
-.event-details-guests-add-community
+.event-details-guests-add-community,
+.event-details-guests-promote-coowner
 {
   display: inline-flex;
   align-items: center;
@@ -523,6 +566,28 @@ button.eventitem-join-count:focus-visible,
   {
     opacity: .42;
     cursor: not-allowed;
+  }
+}
+
+.event-details-guests-promote-coowner
+{
+  color: #c4b5fd;
+
+  &:hover:not(:disabled)
+  {
+    background: color-mix(in srgb, #c4b5fd 18%, var(--white-100));
+    color: #a78bfa;
+  }
+}
+
+.event-details-guests-promote-coowner.is-coowner
+{
+  color: #5b21b6;
+
+  &:hover:not(:disabled)
+  {
+    background: color-mix(in srgb, #7e22ce 14%, var(--white-100));
+    color: #4c1d95;
   }
 }
 
@@ -2248,23 +2313,9 @@ body.eventtasks-modal-open
 
 .event-details-organizer-table-scroll .event-details-organizer-cell-list li
 {
-  position: relative;
-  padding-left: .6rem;
   font-size: .75rem;
   line-height: var(--leading-normal);
   white-space: nowrap;
-}
-
-.event-details-organizer-table-scroll .event-details-organizer-cell-list li::before
-{
-  content: "";
-  position: absolute;
-  left: 0;
-  top: .58em;
-  width: .35rem;
-  height: 1px;
-  background: currentColor;
-  opacity: .55;
 }
 
 .event-details-organizer-cell-list li + li

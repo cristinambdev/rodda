@@ -24,6 +24,8 @@ public interface IEventService
     Task<EventResult> JoinEventAsync(string userId, string eventId, int guestCount = 1);
     Task<EventResult> LeaveEventAsync(string userId, string eventId);
     Task<EventResult> RemoveFromMyListAsync(string userId, string eventId);
+    Task<EventResult> AddCoOwnerAsync(string actingUserId, string slugOrId, string targetUserId);
+    Task<EventResult> RemoveCoOwnerAsync(string actingUserId, string slugOrId, string targetUserId);
     Task<string?> ResolveEventIdAsync(string slugOrId);
     Task PersistDraftItemsAndTasksOnCreateAsync(string userId,
         string eventId,
@@ -77,14 +79,6 @@ public class EventService(
         {
             UserId = userId,
             Role = EventRoleType.Owner
-        });
-
-        // Add user as attendee
-        eventEntity.Attendances.Add(new EventAttendanceEntity
-        {
-            UserId = userId,
-            Status = AttendanceStatus.Accepted,
-            GuestCount = 1
         });
 
         var result = await _eventRepository.AddAsync(eventEntity);
@@ -277,7 +271,7 @@ public class EventService(
     }
 
     // **************************************************************************************************************************
-    // JOIN EVENT: Updates party size for members who already have view access (use share link to enter first).
+    // JOIN EVENT: Accepts RSVP and sets guest count (share link may have created pending attendance for preview access).
     public async Task<EventResult> JoinEventAsync(string userId, string slugOrId, int guestCount = 1)
     {
         if (guestCount < 1)
@@ -295,14 +289,24 @@ public class EventService(
             a => a.UserId == userId && a.EventId == eventId);
 
         if (!attendanceResponse.Succeeded || attendanceResponse.Result == null)
-            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+        {
+            var addResult = await _eventAttendanceRepository.AddAsync(new EventAttendanceEntity
+            {
+                EventId = eventId,
+                UserId = userId,
+                Status = AttendanceStatus.Accepted,
+                HiddenFromList = false,
+                GuestCount = guestCount,
+                RespondedAt = DateTime.UtcNow,
+            });
+
+            return addResult.Succeeded
+                ? new EventResult { Succeeded = true, StatusCode = 201 }
+                : new EventResult { Succeeded = false, StatusCode = addResult.StatusCode, ErrorMessage = addResult.ErrorMessage };
+        }
 
         var attendance = attendanceResponse.Result;
-        if (attendance.Status == AttendanceStatus.Declined)
-            attendance.Status = AttendanceStatus.Accepted;
-        else if (attendance.Status != AttendanceStatus.Accepted)
-            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
-
+        attendance.Status = AttendanceStatus.Accepted;
         attendance.HiddenFromList = false;
         attendance.GuestCount = guestCount;
         attendance.RespondedAt = DateTime.UtcNow;
@@ -333,6 +337,7 @@ public class EventService(
 
         var attendance = response.Result;
         attendance.Status = AttendanceStatus.Declined;
+        attendance.GuestCount = 1;
         attendance.RespondedAt = DateTime.UtcNow;
 
         var updateResult = await _eventAttendanceRepository.UpdateAsync(attendance);
@@ -378,6 +383,97 @@ public class EventService(
         }
 
         return new EventResult { Succeeded = true, StatusCode = 200 };
+    }
+
+    // **************************************************************************************************************************
+    // ADD CO-OWNER: grants manage rights to a guest on the roster (owner/co-owner only).
+    public async Task<EventResult> AddCoOwnerAsync(string actingUserId, string slugOrId, string targetUserId)
+    {
+        if (string.IsNullOrWhiteSpace(targetUserId))
+            return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Guest is required." };
+
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var fetchResponse = await _eventRepository.GetEntityAsync(
+            e => e.Id == eventId,
+            includes: [x => x.Roles, x => x.Attendances]);
+
+        if (!fetchResponse.Succeeded || fetchResponse.Result == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var eventEntity = fetchResponse.Result;
+        var canManage = eventEntity.Roles.Any(r =>
+            r.UserId == actingUserId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+
+        if (!canManage)
+            return new EventResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to add co-owners." };
+
+        var existingRole = eventEntity.Roles.FirstOrDefault(r => r.UserId == targetUserId);
+        if (existingRole != null)
+        {
+            if (existingRole.Role == EventRoleType.CoOwner)
+                return new EventResult { Succeeded = false, StatusCode = 409, ErrorMessage = "This guest is already a co-owner." };
+            if (existingRole.Role == EventRoleType.Owner)
+                return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "The event owner cannot be changed to co-owner." };
+        }
+
+        var onRoster = eventEntity.Attendances.Any(a => a.UserId == targetUserId)
+            || eventEntity.Roles.Any(r => r.UserId == targetUserId);
+        if (!onRoster)
+            return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "This person must be on the event guest list before they can become a co-owner." };
+
+        var addResult = await _eventRoleRepository.AddAsync(new EventRoleEntity
+        {
+            EventId = eventId,
+            UserId = targetUserId,
+            Role = EventRoleType.CoOwner,
+            HiddenFromList = false,
+        });
+
+        return addResult.Succeeded
+            ? new EventResult { Succeeded = true, StatusCode = 201 }
+            : new EventResult { Succeeded = false, StatusCode = addResult.StatusCode, ErrorMessage = addResult.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
+    // REMOVE CO-OWNER: revokes manage rights from a co-owner (owner/co-owner only).
+    public async Task<EventResult> RemoveCoOwnerAsync(string actingUserId, string slugOrId, string targetUserId)
+    {
+        if (string.IsNullOrWhiteSpace(targetUserId))
+            return new EventResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Guest is required." };
+
+        var eventId = await ResolveEventIdAsync(slugOrId);
+        if (eventId == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var fetchResponse = await _eventRepository.GetEntityAsync(
+            e => e.Id == eventId,
+            includes: [x => x.Roles]);
+
+        if (!fetchResponse.Succeeded || fetchResponse.Result == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var eventEntity = fetchResponse.Result;
+        var canManage = eventEntity.Roles.Any(r =>
+            r.UserId == actingUserId &&
+            (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
+
+        if (!canManage)
+            return new EventResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to remove co-owners." };
+
+        var coOwnerRole = eventEntity.Roles.FirstOrDefault(r =>
+            r.UserId == targetUserId && r.Role == EventRoleType.CoOwner);
+
+        if (coOwnerRole == null)
+            return new EventResult { Succeeded = false, StatusCode = 404, ErrorMessage = "This guest is not a co-owner." };
+
+        var deleteResult = await _eventRoleRepository.DeleteAsync(coOwnerRole);
+        return deleteResult.Succeeded
+            ? new EventResult { Succeeded = true, StatusCode = 200 }
+            : new EventResult { Succeeded = false, StatusCode = deleteResult.StatusCode, ErrorMessage = deleteResult.ErrorMessage };
     }
 
     // **************************************************************************************************************************

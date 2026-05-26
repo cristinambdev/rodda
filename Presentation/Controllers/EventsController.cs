@@ -1,4 +1,5 @@
-﻿using Business.Services;
+﻿using Business.Dtos;
+using Business.Services;
 using Domain.Enums;
 using Domain.Extensions;
 using Domain.Models;
@@ -178,6 +179,10 @@ public class EventsController( IEventService eventService, IEventItemService eve
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(string id, AddEventViewModel model, IFormFile? cover)
     {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
         CreateEventFormHelper.ApplyFormFields(model, Request.Form);
 
         ModelState.Remove(nameof(model.JoinButton));
@@ -190,18 +195,19 @@ public class EventsController( IEventService eventService, IEventItemService eve
                 model.CoverImageUrl = coverUrl;
         }
 
-        if (!ModelState.IsValid)
-            return View("CreateNewEvent", model);
-
-        var userId = User.GetUserId();
-        if (userId == null)
-            return Unauthorized();
-
         model.EventId = id;
+
+        if (!ModelState.IsValid)
+        {
+            await AttachEventDetailsModalForEditAsync(userId, id);
+            return View("CreateNewEvent", model);
+        }
+
         var result = await _eventService.UpdateEventAsync(userId, id, model.ToUpdateFormData());
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Could not save the event.");
+            await AttachEventDetailsModalForEditAsync(userId, id);
             return View("CreateNewEvent", model);
         }
 
@@ -269,6 +275,58 @@ public class EventsController( IEventService eventService, IEventItemService eve
             TempData["ErrorMessage"] = result.ErrorMessage ?? "Could not leave the event.";
 
         return RedirectToAction(nameof(EventDetails), new { id });
+    }
+
+    // **************************************************************************************************************************
+    [HttpPost]
+    [Route("/events/{id}/co-owners")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddCoOwner(string id, [FromBody] AddCoOwnerFormData formData)
+    {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        if (formData == null || string.IsNullOrWhiteSpace(formData.TargetUserId))
+            return BadRequest(new { error = "Guest is required." });
+
+        var result = await _eventService.AddCoOwnerAsync(userId, id, formData.TargetUserId.Trim());
+        if (!result.Succeeded)
+        {
+            if (result.StatusCode == 403)
+                return Forbid();
+            if (result.StatusCode == 404)
+                return NotFound(new { error = result.ErrorMessage });
+            return StatusCode(result.StatusCode, new { error = result.ErrorMessage });
+        }
+
+        return Json(new { succeeded = true });
+    }
+
+    // **************************************************************************************************************************
+    [HttpDelete]
+    [Route("/events/{id}/co-owners")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveCoOwner(string id, [FromBody] AddCoOwnerFormData formData)
+    {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        if (formData == null || string.IsNullOrWhiteSpace(formData.TargetUserId))
+            return BadRequest(new { error = "Guest is required." });
+
+        var result = await _eventService.RemoveCoOwnerAsync(userId, id, formData.TargetUserId.Trim());
+        if (!result.Succeeded)
+        {
+            if (result.StatusCode == 403)
+                return Forbid();
+            if (result.StatusCode == 404)
+                return NotFound(new { error = result.ErrorMessage });
+            return StatusCode(result.StatusCode, new { error = result.ErrorMessage });
+        }
+
+        return Json(new { succeeded = true });
     }
 
     // **************************************************************************************************************************
@@ -454,7 +512,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
         ViewData["CanManageEvent"] = model.CanManageItemsTasks;
 
-        var itemsResponse = await _eventItemService.GetItemsForEventAsync(userId, id);
+        var itemsResponse = await _eventItemService.GetItemsForEventAsync(userId, eventId);
         if (itemsResponse.Succeeded && itemsResponse.Result != null)
         {
             var itemList = itemsResponse.Result.ToList();
@@ -480,7 +538,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
         model.CanClaimItems = model.CanManageItemsTasks ||
             (hasAcceptedAttendance && model.Items.Count > 0);
 
-        var tasksResponse = await _eventTaskService.GetTasksForEventAsync(userId, id);
+        var tasksResponse = await _eventTaskService.GetTasksForEventAsync(userId, eventId);
         if (tasksResponse.Succeeded && tasksResponse.Result != null)
         {
             var taskList = tasksResponse.Result.ToList();

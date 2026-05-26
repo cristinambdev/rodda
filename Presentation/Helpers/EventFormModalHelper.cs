@@ -94,7 +94,12 @@ public static class EventFormModalHelper
 
         foreach (var role in eventData.Roles)
         {
-            var roleLabel = role.Role == EventRoleType.Owner ? "Owner" : "Co-owner";
+            var roleLabel = role.Role switch
+            {
+                EventRoleType.Owner => "Owner",
+                EventRoleType.CoOwner => "Co-owner",
+                _ => "",
+            };
             byUser[role.UserId] = new EventGuestRosterViewModel
             {
                 UserId = role.UserId,
@@ -126,7 +131,19 @@ public static class EventFormModalHelper
             }
         }
 
+        foreach (var row in byUser.Values)
+        {
+            var isOwner = string.Equals(row.RoleLabel, "Owner", StringComparison.Ordinal);
+            var isCoOwner = string.Equals(row.RoleLabel, "Co-owner", StringComparison.Ordinal);
+            row.IsCoOwner = isCoOwner;
+            row.CanToggleCoOwner = !isOwner && !string.IsNullOrWhiteSpace(row.UserId);
+        }
+
         return byUser.Values
+            .Where(r =>
+                r.Status is AttendanceStatus.Accepted or AttendanceStatus.Declined
+                || string.Equals(r.RoleLabel, "Owner", StringComparison.Ordinal)
+                || string.Equals(r.RoleLabel, "Co-owner", StringComparison.Ordinal))
             .OrderByDescending(r => string.Equals(r.UserId, eventData.CreatedByUserId, StringComparison.Ordinal))
             .ThenByDescending(r => r.RoleLabel == "Owner")
             .ThenByDescending(r => r.RoleLabel == "Co-owner")
