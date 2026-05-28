@@ -504,6 +504,9 @@ public class EventsController( IEventService eventService, IEventItemService eve
                     : (!string.IsNullOrWhiteSpace(m.AuthorDisplay)
                         ? m.AuthorDisplay
                         : (m.Author?.DisplayName ?? "Guest"));
+                row.AuthorProfileImageUrl = string.IsNullOrWhiteSpace(m.AuthorUser?.ProfileImageUrl)
+                    ? null
+                    : m.AuthorUser.ProfileImageUrl.Trim();
                 row.CanDelete = row.IsFromCurrentUser || model.CanManageItemsTasks;
                 return row;
             })

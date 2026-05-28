@@ -2110,8 +2110,29 @@ body.eventtasks-modal-open
 
 .event-details-chat-author
 {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
   font-weight: var(--font-weight-bold);
   color: var(--dark-900);
+}
+
+.event-details-chat-author-photo
+{
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--gray-100);
+}
+
+.event-details-chat-author-name
+{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .event-details-chat-time

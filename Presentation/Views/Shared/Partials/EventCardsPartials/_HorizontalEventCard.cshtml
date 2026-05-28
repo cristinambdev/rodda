@@ -91,20 +91,20 @@
         <div class="card-header">
             <div class="event-card-datetime-row">
                 <p class="event-card-datetime">@listDateTime</p>
-                @if (workloadBadges != null && (!string.IsNullOrEmpty(workloadBadges.WorkloadLabel) || workloadBadges.UserHasItemsOrTasks))
-                {
-                    <div class="event-card-status-stack" aria-label="Items and tasks status">
-                        @if (!string.IsNullOrEmpty(workloadBadges!.WorkloadLabel))
-                        {
-                            <span class="badge badge-blue">@workloadBadges.WorkloadLabel</span>
-                        }
-                        @if (workloadBadges.UserHasItemsOrTasks)
-                        {
-                            <span class="badge badge-orange">You have tasks/items</span>
-                        }
-                    </div>
-                }
             </div>
+            @if (workloadBadges != null && (!string.IsNullOrEmpty(workloadBadges.WorkloadLabel) || workloadBadges.UserHasItemsOrTasks))
+            {
+                <div class="event-card-status-stack" aria-label="Items and tasks status">
+                    @if (!string.IsNullOrEmpty(workloadBadges!.WorkloadLabel))
+                    {
+                        <span class="badge badge-blue">@workloadBadges.WorkloadLabel</span>
+                    }
+                    @if (workloadBadges.UserHasItemsOrTasks)
+                    {
+                        <span class="badge badge-orange">You have tasks/items</span>
+                    }
+                </div>
+            }
         </div>
 
         <div class="card-body">

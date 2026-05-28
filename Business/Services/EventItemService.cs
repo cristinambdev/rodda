@@ -2,6 +2,7 @@
 using Data.Entities;
 using Data.Repositories;
 using Domain.Enums;
+using Domain.Extensions;
 using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;

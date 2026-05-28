@@ -647,6 +647,10 @@ html,body
 
 .event-card.horizontal .card-header
 {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  min-width: 0;
   padding: .55rem .75rem 0;
 }
 
@@ -668,9 +672,7 @@ html,body
 /* --- Header: Date/Time Row --- */
 .event-card.horizontal .event-card-datetime-row
 {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
+  flex: 1;
   min-width: 0;
 }
 

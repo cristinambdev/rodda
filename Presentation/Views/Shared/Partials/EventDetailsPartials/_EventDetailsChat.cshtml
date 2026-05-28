@@ -3,6 +3,7 @@
     var chatEnded = Model.EndAt.HasValue
         ? Model.EndAt.Value < DateTimeOffset.UtcNow
         : Model.StartAt < DateTimeOffset.UtcNow;
+    var chatProfileFallbackUrl = Url.Content("~/images/default-profile.svg");
 }
 <!-- Chat section in event details -->
 <section class="event-details-chat" data-event-details-guest-chat aria-labelledby="event-details-chat-heading">
@@ -20,7 +21,22 @@
           aria-expanded="@(message.CanDelete ? "false" : null)">
         <div class="event-details-chat-item-body">
           <p class="event-details-chat-meta">
-            <span class="event-details-chat-author">@message.AuthorDisplay</span>
+            @{
+              var authorPhotoUrl = string.IsNullOrWhiteSpace(message.AuthorProfileImageUrl)
+                  ? chatProfileFallbackUrl
+                  : message.AuthorProfileImageUrl;
+            }
+            <span class="event-details-chat-author">
+              <img class="event-details-chat-author-photo"
+                   src="@authorPhotoUrl"
+                   alt=""
+                   width="20"
+                   height="20"
+                   decoding="async"
+                   data-fallback-src="@chatProfileFallbackUrl"
+                   onerror="this.onerror=null;this.src=this.dataset.fallbackSrc||'';" />
+              <span class="event-details-chat-author-name">@message.AuthorDisplay</span>
+            </span>
             <span class="event-details-chat-time">@message.CreatedAt.ToLocalTime().ToString("HH:mm")</span>
           </p>
           <p class="event-details-chat-text">@message.Body</p>
