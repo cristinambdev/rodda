@@ -6,10 +6,19 @@
      class="event-card-context-menu event-details-context-menu--hero"
      role="menu"
      hidden>
+  @* Share event — was shown to all; guests only get "Remove from my list" for now.
   <button type="button" class="event-card-context-menu-item" role="menuitem" data-event-details-menu-action="share">
     <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
     <span>Share</span>
   </button>
+  *@
+  @if (canManageEvent)
+  {
+    <button type="button" class="event-card-context-menu-item" role="menuitem" data-event-details-menu-action="share">
+      <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+      <span>Share</span>
+    </button>
+  }
   <button type="button"
           class="event-card-context-menu-item"
           role="menuitem"
