@@ -32,8 +32,8 @@ builder.Services.AddAuthentication()
 
 builder.Services.ConfigureApplicationCookie(x =>
 {
-    x.LoginPath = "/Auth/SignIn";
-    x.AccessDeniedPath = "/Auth/SignIn";
+    x.LoginPath = "/auth/sign-in";
+    x.AccessDeniedPath = "/auth/sign-in";
     x.Cookie.Name = "Rodda.Auth";
     x.Cookie.Path = "/";
     x.Cookie.HttpOnly = true;
@@ -71,7 +71,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-app.UseRewriter(new RewriteOptions().AddRedirect("^$", "/Auth/SignIn"));
+app.UseRewriter(new RewriteOptions().AddRedirect("^$", "/auth/sign-in"));
 app.UseStaticFiles();
 app.UseRouting();
 

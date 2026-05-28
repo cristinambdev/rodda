@@ -148,7 +148,6 @@ public class EventsController( IEventService eventService, IEventItemService eve
 
     // **************************************************************************************************************************
     [HttpGet("/events/create")]
-    [HttpGet("/Events/CreateNewEvent")]
     public async Task<IActionResult> CreateNewEvent([FromQuery] string? edit)
     {
         if (string.IsNullOrWhiteSpace(edit))

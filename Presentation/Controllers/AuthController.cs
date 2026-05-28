@@ -17,7 +17,7 @@ public class AuthController(IAuthService authService, UserManager<UserEntity> us
     private readonly SignInManager<UserEntity> _signInManager = signInManager;
 
     // **************************************************************************************************************************
-    [HttpGet]
+    [HttpGet("/auth/sign-in")]
     public IActionResult SignIn(string? returnUrl = null)
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -28,7 +28,7 @@ public class AuthController(IAuthService authService, UserManager<UserEntity> us
     }
 
     // **************************************************************************************************************************
-    [HttpPost]
+    [HttpPost("/auth/sign-in")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SignIn(SignInViewModel model, string? returnUrl = null)
     {
@@ -50,14 +50,14 @@ public class AuthController(IAuthService authService, UserManager<UserEntity> us
     }
 
     // **************************************************************************************************************************
-    [HttpGet]
+    [HttpGet("/auth/sign-up")]
     public IActionResult SignUp()
     {
         return View(new SignUpViewModel());
     }
 
     // **************************************************************************************************************************
-    [HttpPost]
+    [HttpPost("/auth/sign-up")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SignUp(SignUpViewModel model)
     {
@@ -77,17 +77,17 @@ public class AuthController(IAuthService authService, UserManager<UserEntity> us
     }
 
     // **************************************************************************************************************************
-    [HttpPost]
+    [HttpPost("/auth/logout")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
         await _authService.SignOutAsync();
-        return RedirectToAction("SignIn");
+        return Redirect("/auth/sign-in");
     }
 
     // *************************************************************************************************
     // Redirects the user to Google
-    [HttpPost]
+    [HttpPost("/auth/external-login")]
     [ValidateAntiForgeryToken]
     public IActionResult ExternalLogin(string provider, string? returnUrl = null)
     {
@@ -97,7 +97,7 @@ public class AuthController(IAuthService authService, UserManager<UserEntity> us
     }
 
     // *************************************************************************************************
-    [HttpGet]
+    [HttpGet("/auth/external-sign-in-callback")]
     public async Task<IActionResult> ExternalSignInCallback(string? returnUrl = null, string? remoteError = null)
     {
         if (!string.IsNullOrEmpty(remoteError))

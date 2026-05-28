@@ -118,7 +118,7 @@ public class SettingsController( IUserService userService, SignInManager<Data.En
         return Json(new
         {
             succeeded = true,
-            redirectUrl = Url.Action(nameof(AuthController.SignIn), "Auth") ?? "/Auth/SignIn",
+            redirectUrl = Url.Action(nameof(AuthController.SignIn), "Auth") ?? "/auth/sign-in",
         });
     }
 }

@@ -633,7 +633,7 @@ function initProfileNavMenu() {
 
   const shell = document.body;
   const settingsUrl = shell.dataset.settingsUrl || "/settings";
-  const signInUrl = shell.dataset.signInUrl || "/Auth/SignIn";
+  const signInUrl = shell.dataset.signInUrl || "/auth/sign-in";
 
   const menu = document.createElement("div");
   menu.className = "profile-nav-popover";
