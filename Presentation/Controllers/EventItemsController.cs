@@ -148,4 +148,20 @@ public class EventItemsController(IEventItemService eventItemService) : Controll
         TempData["OpenModal"] = "items";
         return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
+
+    // **************************************************************************************************************************
+    [HttpPost("{itemId}/toggle-complete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleComplete(string eventId, string itemId)
+    {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        var result = await _eventItemService.ToggleItemCompletionAsync(userId, eventId, itemId);
+        if (!result.Succeeded)
+            return StatusCode(result.StatusCode, new { error = result.ErrorMessage });
+
+        return Json(new { succeeded = true, done = result.Result });
+    }
 }

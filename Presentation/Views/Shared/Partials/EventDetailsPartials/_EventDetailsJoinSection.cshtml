@@ -11,7 +11,7 @@
     var joined = myStatus == AttendanceStatus.Accepted;
     var declined = myStatus == AttendanceStatus.Declined;
     var guestCount = joined ? Math.Max(1, myAttendance?.GuestCount ?? Model.UserGuestCount) : 1;
-    var pillText = guestCount > 1 ? $"You (+{guestCount - 1}) have joined" : "You have joined";
+    var pillText = guestCount > 1 ? $"You (+{guestCount - 1})" : "You have joined";
 
     <div class="eventitem-join" data-eventitem-guest-join>
         <button type="button"

@@ -146,4 +146,20 @@ public class EventTasksController(IEventTaskService eventTaskService) : Controll
         TempData["OpenModal"] = "tasks";
         return RedirectToAction(nameof(EventsController.EventDetails), "Events", new { id = eventId });
     }
+
+    // **************************************************************************************************************************
+    [HttpPost("{taskId}/toggle-complete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleComplete(string eventId, string taskId)
+    {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized();
+
+        var result = await _eventTaskService.ToggleTaskCompletionAsync(userId, eventId, taskId);
+        if (!result.Succeeded)
+            return StatusCode(result.StatusCode, new { error = result.ErrorMessage });
+
+        return Json(new { succeeded = true, done = result.Result });
+    }
 }

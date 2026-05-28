@@ -21,6 +21,7 @@ public interface IEventItemService
     Task<EventItemResult> UpdateEventItemAsync(string userId, string eventId, string eventItemId, EditItemFormData formData);
     Task<EventItemResult> ClaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null);
     Task<EventItemResult> UnclaimItemAsync(string userId, string eventId, string eventItemId, string? assignmentId = null);
+    Task<EventItemResult<bool>> ToggleItemCompletionAsync(string userId, string eventId, string eventItemId);
 }
 
 // Handles EventItemEntity, EventItemAssignmentEntity
@@ -441,6 +442,74 @@ public class EventItemService( IEventItemRepository eventItemRepository, IEventI
     }
 
     // **************************************************************************************************************************
+    // Toggles the signed-in user's completion flag for a home to-do bring line (persists to assignment status).
+    public async Task<EventItemResult<bool>> ToggleItemCompletionAsync(string userId, string eventId, string eventItemId)
+    {
+        var access = await _eventAccessService.VerifyViewAccessAsync(userId, eventId);
+        if (!access.Succeeded)
+            return new EventItemResult<bool> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event not found." };
+
+        var fetchResponse = await _eventItemRepository.GetEntityAsync(
+            i => i.Id == eventItemId && i.EventId == eventId && i.IsActive,
+            includes: [x => x.Assignments]);
+
+        var item = fetchResponse.Result;
+        if (!fetchResponse.Succeeded || item == null)
+            return new EventItemResult<bool> { Succeeded = false, StatusCode = 404, ErrorMessage = "Event item not found." };
+
+        if (!CanUserToggleHomeTodoItem(item.Assignments, userId))
+            return new EventItemResult<bool> { Succeeded = false, StatusCode = 403, ErrorMessage = "You cannot update this item." };
+
+        var assignment = ResolveUserTodoAssignment(item.Assignments, userId);
+        var hasEveryone = item.Assignments.Any(a =>
+            a.AssigneeType == AssigneeType.Everyone && a.Status != AssignmentStatus.Removed);
+
+        bool nowDone;
+        if (assignment == null)
+        {
+            if (!hasEveryone)
+                return new EventItemResult<bool>
+                {
+                    Succeeded = false,
+                    StatusCode = 400,
+                    ErrorMessage = "Claim this item before marking it done.",
+                };
+
+            item.Assignments.Add(new EventItemAssignmentEntity
+            {
+                Id = Guid.NewGuid().ToString(),
+                EventItemId = eventItemId,
+                UserId = userId,
+                AssigneeType = AssigneeType.User,
+                Status = AssignmentStatus.Completed,
+                CreatedAt = DateTime.UtcNow,
+            });
+            nowDone = true;
+        }
+        else if (assignment.Status == AssignmentStatus.Completed)
+        {
+            assignment.Status = hasEveryone ? AssignmentStatus.Removed : AssignmentStatus.SignedUp;
+            assignment.UpdatedAt = DateTime.UtcNow;
+            nowDone = false;
+        }
+        else if (assignment.Status is AssignmentStatus.SignedUp or AssignmentStatus.Assigned)
+        {
+            assignment.Status = AssignmentStatus.Completed;
+            assignment.UpdatedAt = DateTime.UtcNow;
+            nowDone = true;
+        }
+        else
+            return new EventItemResult<bool> { Succeeded = false, StatusCode = 400, ErrorMessage = "This item cannot be marked done." };
+
+        item.UpdatedAt = DateTime.UtcNow;
+        var result = await _eventItemRepository.UpdateAsync(item);
+
+        return result.Succeeded
+            ? new EventItemResult<bool> { Succeeded = true, StatusCode = 200, Result = nowDone }
+            : new EventItemResult<bool> { Succeeded = false, StatusCode = result.StatusCode, ErrorMessage = result.ErrorMessage };
+    }
+
+    // **************************************************************************************************************************
     // Keeps open PERSON # placeholders in sync when an organizer changes people needed on edit.
     private static EventItemResult? SyncAssignmentSlotsForPeopleNeeded(EventItemEntity item, int newPeopleNeeded)
     {
@@ -595,6 +664,31 @@ public class EventItemService( IEventItemRepository eventItemRepository, IEventI
         }
 
         return assignments.FirstOrDefault(a => a.UserId == userId && IsActiveUserAssignment(a));
+    }
+
+    // **************************************************************************************************************************
+    private static EventItemAssignmentEntity? ResolveUserTodoAssignment( ICollection<EventItemAssignmentEntity> assignments, string userId)
+    {
+        return assignments.FirstOrDefault(a =>
+            a.UserId == userId &&
+            a.Status != AssignmentStatus.Removed &&
+            a.AssigneeType == AssigneeType.User &&
+            a.Status is AssignmentStatus.SignedUp
+                or AssignmentStatus.Assigned
+                or AssignmentStatus.Completed);
+    }
+
+    // **************************************************************************************************************************
+    private static bool CanUserToggleHomeTodoItem(ICollection<EventItemAssignmentEntity> assignments, string userId)
+    {
+        return assignments.Any(a =>
+            a.Status != AssignmentStatus.Removed &&
+            ((a.UserId == userId &&
+              a.AssigneeType == AssigneeType.User &&
+              a.Status is AssignmentStatus.SignedUp
+                  or AssignmentStatus.Assigned
+                  or AssignmentStatus.Completed) ||
+             a.AssigneeType == AssigneeType.Everyone));
     }
 
     // **************************************************************************************************************************

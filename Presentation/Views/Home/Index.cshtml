@@ -25,7 +25,7 @@
         }
         else
         {
-            <ul class="todos-list">
+            <ul class="todos-list" data-todos-list>
                 @foreach (var todoEvent in Model.TodoEvents)
                 {
                     <partial name="~/Views/Shared/Partials/HomePartials/_HomeTodoEventCard.cshtml" model="todoEvent" />

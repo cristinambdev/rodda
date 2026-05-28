@@ -30,6 +30,7 @@ public class HomeTodoEventCardViewModel
 // ************************************************************************************************
 public class HomeTodoBringLineViewModel
 {
+    public string ItemId { get; set; } = "";
     public string Title { get; set; } = "";
     public string Amount { get; set; } = "";
     public bool Done { get; set; }
@@ -38,6 +39,7 @@ public class HomeTodoBringLineViewModel
 // ************************************************************************************************
 public class HomeTodoTaskLineViewModel
 {
+    public string TaskId { get; set; } = "";
     public string Title { get; set; } = "";
     public string TaskTime { get; set; } = "";
     public string TaskLocation { get; set; } = "";

@@ -86,6 +86,7 @@ public static class HomeTodosHelper
 
             var bringLines = eventItems.Select(i => new HomeTodoBringLineViewModel
             {
+                ItemId = i.Id,
                 Title = FormatLineTitle(i.Title),
                 Amount = FormatAmount(i.Amount),
                 Done = IsDoneOnServer(i.Assignments, userId),
@@ -93,6 +94,7 @@ public static class HomeTodosHelper
 
             var taskLines = eventTasks.Select(t => new HomeTodoTaskLineViewModel
             {
+                TaskId = t.Id,
                 Title = FormatLineTitle(t.Title),
                 TaskTime = (t.TaskTime ?? "").Trim(),
                 TaskLocation = (t.TaskLocationName ?? "").Trim(),
