@@ -1,7 +1,9 @@
 ﻿@model Presentation.Models.HomeIndexViewModel
+@using System.Globalization
 @{
     ViewData["Title"] = "Home Page";
     var hasTodos = Model.TodoEvents.Count > 0;
+    var todayDateLabel = DateTime.Now.ToString("MMMM d yyyy", CultureInfo.InvariantCulture);
 }
 
 <!-- To-Dos (server-rendered; range via ?range=week|month|year) -->
@@ -35,11 +37,10 @@
     </div>
 </section>
 
-<!-- Calendar Highlights -->
-<!-- Code generated with AI help -->
+@* Calendar Highlights — uncomment block below when mini-calendar JS is wired in BackOffice *@
+<!--
 <section class="home-section" aria-labelledby="calendar-heading">
     <h2 class="section-header" id="calendar-heading">Calendar Highlights</h2>
-    <!-- Mini calendar -->
     <div class="calendar-mini">
         <div class="calendar-mini-month-row">
             <button type="button" class="calendar-mini-month-nav" aria-label="Previous month">
@@ -56,9 +57,10 @@
         <div class="calendar-mini-grid"></div>
     </div>
 </section>
-<!-- Events from calendar-->
+-->
+
 <section class="home-section" aria-labelledby="today-heading">
-    <h4 class="section-subhead" id="today-heading"> Today, <span class="home-section-subhead-date"></span></h4>
+    <h4 class="section-subhead" id="today-heading">Today, <span class="home-section-subhead-date">@todayDateLabel</span></h4>
     <p class="empty-state-card">No events today.</p>
 </section>
 <!-- Upcoming Events -->
