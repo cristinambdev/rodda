@@ -7,11 +7,8 @@ namespace Presentation.Extensions;
 public static class OrganizerContributionsExtensions
 {
     // Uppercase display title for the contributions table (not home todos title case).
-    public static string FormatContributionTitle(this string? title)
-    {
-        var s = (title ?? "").Trim();
-        return s.Length == 0 ? "" : s.ToUpperInvariant();
-    }
+    public static string FormatContributionTitle(this string? title) =>
+        (title ?? "").Trim().ToUpperInvariant();
 
     public static string UserKey(this string userId) => $"user:{userId}";
 

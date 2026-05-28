@@ -3,7 +3,6 @@ using Business.Dtos;
 using Data.Entities;
 using Data.Repositories;
 using Domain.Enums;
-using Domain.Extensions;
 using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,15 +56,20 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
         if (permissionError != null)
             return permissionError;
 
+        var displayTitle = (formData.Title ?? "").Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(displayTitle))
+            return new EventTaskResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Task name is required." };
+
         var newEventTask = formData.MapTo<EventTaskEntity>();
         newEventTask.EventId = formData.EventId;
+        newEventTask.Title = displayTitle;
         newEventTask.CreatedByUserId = userId;
         newEventTask.IsActive = true;
         newEventTask.CreatedAt = DateTime.UtcNow;
 
         var peopleNeeded = ClampPeopleNeeded(formData.PeopleNeeded);
         newEventTask.PeopleNeeded = peopleNeeded;
-        newEventTask.OriginalTitle = formData.Title;
+        newEventTask.OriginalTitle = displayTitle;
         newEventTask.OriginalScheduledAt = formData.ScheduledAt;
         newEventTask.OriginalTaskTime = formData.TaskTime;
         newEventTask.OriginalTaskLocation = formData.TaskLocation;
@@ -246,8 +250,14 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
         if (!isOwnerOrCoOwner)
             return new EventTaskResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You do not have permission to edit this event task." };
 
+        var displayTitle = (formData.Title ?? "").Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(displayTitle))
+            return new EventTaskResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Task name is required." };
+
+        formData.Title = displayTitle;
         var previousPeopleNeeded = eventTaskEntity.PeopleNeeded;
         formData.MapOnto(eventTaskEntity);
+        eventTaskEntity.OriginalTitle = displayTitle;
         var newPeopleNeeded = ClampPeopleNeeded(formData.PeopleNeeded);
         eventTaskEntity.PeopleNeeded = newPeopleNeeded;
 
