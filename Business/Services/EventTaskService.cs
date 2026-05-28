@@ -649,7 +649,7 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
 
     // **************************************************************************************************************************
     // Enforces the core business rules for guest interactions. Validates event role permissions,
-    // global event volunteer settings, attendance status, and task-level signup visibility.
+    // event-level availability, and task-level signup visibility.
     private static EventTaskResult? ValidateGuestTaskInteraction(EventTaskEntity task, string userId, bool requireOpenSlot)
     {
         // Check if the user is an owner or co-owner
@@ -659,14 +659,8 @@ public class EventTaskService( IEventTaskRepository eventTaskRepository, IEventT
 
         if (!isOwnerOrCoOwner)
         {
-            // Guest claim (AllowGuestClaimTasks): allowed when joined and the event has tasks.
-            // Separate from AllowGuestTasks, which only controls adding new tasks.
-            var hasAcceptedAttendance = task.Event.Attendances.Any(a =>
-                a.UserId == userId && a.Status == AttendanceStatus.Accepted);
-
-            if (!hasAcceptedAttendance)
-                return new EventTaskResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You must join the event before claiming a task." };
-
+            // Guests may sign up for tasks even if they declined or haven't responded yet.
+            // Access is already enforced by `VerifyViewAccessAsync` earlier in the call chain.
             var eventHasClaimableTasks = task.Event.Tasks.Any(t => t.IsActive);
             if (!eventHasClaimableTasks)
                 return new EventTaskResult { Succeeded = false, StatusCode = 403, ErrorMessage = "There are no tasks to claim for this event." };

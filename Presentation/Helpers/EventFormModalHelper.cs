@@ -27,8 +27,12 @@ public static class EventFormModalHelper
             (r.Role == EventRoleType.Owner || r.Role == EventRoleType.CoOwner));
         model.CanAddItems = model.CanManageItemsTasks || model.AllowGuestBringItems;
         model.CanAddTasks = model.CanManageItemsTasks || model.AllowGuestTasks;
-        model.CanClaimItems = model.CanManageItemsTasks;
-        model.CanClaimTasks = model.CanManageItemsTasks;
+        // Keep item/task signup available even if the guest declined or hasn't responded yet.
+        // Guests still need list membership (an attendance row / invite redemption) to view the event.
+        var hasListMembership = model.CanManageItemsTasks ||
+            eventData.Attendances.Any(a => a.UserId == userId && !a.HiddenFromList);
+        model.CanClaimItems = hasListMembership;
+        model.CanClaimTasks = hasListMembership;
         return model;
     }
 

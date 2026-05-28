@@ -535,8 +535,9 @@ public class EventsController( IEventService eventService, IEventItemService eve
             }).ToList();
         }
 
-        model.CanClaimItems = model.CanManageItemsTasks ||
-            (hasAcceptedAttendance && model.Items.Count > 0);
+        // Claiming items/tasks should remain available even if the guest declined or hasn't responded yet.
+        // Actual access is already enforced by `EventAccessService` for this event.
+        model.CanClaimItems = model.CanManageItemsTasks || model.Items.Count > 0;
 
         var tasksResponse = await _eventTaskService.GetTasksForEventAsync(userId, eventId);
         if (tasksResponse.Succeeded && tasksResponse.Result != null)
@@ -561,8 +562,7 @@ public class EventsController( IEventService eventService, IEventItemService eve
             }).ToList();
         }
 
-        model.CanClaimTasks = model.CanManageItemsTasks ||
-            (hasAcceptedAttendance && model.Tasks.Count > 0);
+        model.CanClaimTasks = model.CanManageItemsTasks || model.Tasks.Count > 0;
 
         if (model.CanManageItemsTasks)
             EventOrganizerContributionsHelper.ApplyTo(model, userId);

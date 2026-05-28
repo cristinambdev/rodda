@@ -1,50 +1,46 @@
 @using Domain.Enums
+@using Presentation.Extensions
 @model Presentation.Models.EventDetailsViewModel
 
 @if (Model.JoinEnabled)
 {
-    var joined = Model.UserHasJoined;
-    var guestCount = Math.Max(1, Model.UserGuestCount);
-    var pillText = joined
-        ? (guestCount > 1 ? $"You (+{guestCount - 1}) have joined" : "You have joined")
-        : "You joined";
+    var userId = User.GetUserId() ?? "";
+    var myAttendance = Model.Attendees.FirstOrDefault(a => string.Equals(a.UserId, userId, StringComparison.Ordinal));
+    var myStatus = myAttendance?.Status;
+
+    var joined = myStatus == AttendanceStatus.Accepted;
+    var declined = myStatus == AttendanceStatus.Declined;
+    var guestCount = joined ? Math.Max(1, myAttendance?.GuestCount ?? Model.UserGuestCount) : 1;
+    var pillText = guestCount > 1 ? $"You (+{guestCount - 1}) have joined" : "You have joined";
 
     <div class="eventitem-join" data-eventitem-guest-join>
-        @if (joined)
-        {
-            <form method="post"
-                  asp-controller="Events"
-                  asp-action="Leave"
-                  asp-route-id="@Model.Id"
-                  class="eventitem-join-leave-form no-ajax">
-                @Html.AntiForgeryToken()
-                <button type="submit"
-                        class="btn btn-primary btn-save-item btn-save-item--joined"
-                        aria-pressed="true"
-                        aria-label="Leave this event">
-                    <span class="eventitem-join-label" aria-hidden="true"></span>
-                    <span class="eventitem-join-pill">
-                        <i class="fa-solid fa-check" aria-hidden="true"></i>
-                        <span class="eventitem-join-pill-text">@pillText</span>
-                    </span>
-                </button>
-            </form>
-        }
-        else
-        {
-            <button type="button"
-                    class="btn btn-primary btn-save-item"
-                    id="eventitem-join-open-btn"
-                    aria-pressed="false"
-                    aria-label="Join this event"
-                    data-join-dialog-target="#event-details-join-dialog">
-                <span class="eventitem-join-label">JOIN</span>
-                <span class="eventitem-join-pill" hidden>
-                    <i class="fa-solid fa-check" aria-hidden="true"></i>
-                    <span class="eventitem-join-pill-text">You joined</span>
-                </span>
+        <button type="button"
+                class="btn btn-primary btn-save-item @(joined ? "btn-save-item--joined" : "")"
+                id="eventitem-join-open-btn"
+                aria-pressed="@(joined ? "true" : "false")"
+                aria-label="Join this event"
+                data-join-dialog-target="#event-details-join-dialog">
+            <span class="eventitem-join-label">JOIN</span>
+            <span class="eventitem-join-pill" @(joined ? "" : "hidden")>
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                <span class="eventitem-join-pill-text">@pillText</span>
+            </span>
+        </button>
+
+        <form method="post"
+              asp-controller="Events"
+              asp-action="Leave"
+              asp-route-id="@Model.Id"
+              class="eventitem-join-leave-form no-ajax">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="btn btn-secondary btn-save-item"
+                    aria-pressed="@(declined ? "true" : "false")"
+                    aria-label="Decline this event"
+                    @(declined ? "disabled" : "")>
+                <span class="eventitem-join-label">DECLINE</span>
             </button>
-        }
+        </form>
 
         <button type="button"
                 class="eventitem-join-count"

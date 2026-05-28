@@ -638,7 +638,7 @@ public class EventItemService( IEventItemRepository eventItemRepository, IEventI
 
     // **************************************************************************************************************************
     // Enforces the core business rules for guest interactions. Validates event role permissions,
-    // global event volunteer settings, attendance status, and task-level signup visibility.
+    // event-level availability, and item-level signup visibility.
     private static EventItemResult? ValidateGuestItemInteraction(EventItemEntity item, string userId, bool requireOpenSlot)
     {
         // Check if the user is an owner or co-owner
@@ -648,14 +648,8 @@ public class EventItemService( IEventItemRepository eventItemRepository, IEventI
 
         if (!isOwnerOrCoOwner)
         {
-            // Guest claim (AllowGuestClaimItems): allowed when the guest has joined and the event has items.
-            // Separate from AllowGuestBringItems, which only controls adding new items.
-            var hasAcceptedAttendance = item.Event.Attendances.Any(a =>
-                a.UserId == userId && a.Status == AttendanceStatus.Accepted);
-
-            if (!hasAcceptedAttendance)
-                return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "You must join the event before claiming an item." };
-
+            // Guests may sign up for items even if they declined or haven't responded yet.
+            // Access is already enforced by `VerifyViewAccessAsync` earlier in the call chain.
             var eventHasClaimableItems = item.Event.Items.Any(i => i.IsActive);
             if (!eventHasClaimableItems)
                 return new EventItemResult { Succeeded = false, StatusCode = 403, ErrorMessage = "There are no items to claim for this event." };

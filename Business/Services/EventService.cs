@@ -122,7 +122,7 @@ public class EventService(
     }
 
     // **************************************************************************************************************************
-    // READ: events the user created (owner) or co-owns, unless removed from their list.
+    // READ: events the user created (owner) or co-owns, unless removed from their list.  
     public async Task<EventResult<IEnumerable<Event>>> GetManagedEventsForUserAsync(string userId)
     {
         var response = await _eventRepository.GetAllAsync
@@ -196,7 +196,6 @@ public class EventService(
     }
 
     // **************************************************************************************************************************
-    // Generated with help of AI
     // UPDATE
     public async Task<EventResult> UpdateEventAsync(string userId, string slugOrId, UpdateEventFormData formData)
     {
@@ -272,6 +271,7 @@ public class EventService(
 
     // **************************************************************************************************************************
     // JOIN EVENT: Accepts RSVP and sets guest count (share link may have created pending attendance for preview access).
+    // Generated with help of AI
     public async Task<EventResult> JoinEventAsync(string userId, string slugOrId, int guestCount = 1)
     {
         if (guestCount < 1)
@@ -572,6 +572,7 @@ public class EventService(
     }
 
     // **************************************************************************************************************************
+    // Resolve Event ID from slug or ID
     public async Task<string?> ResolveEventIdAsync(string slugOrId)
     {
         if (string.IsNullOrWhiteSpace(slugOrId))
