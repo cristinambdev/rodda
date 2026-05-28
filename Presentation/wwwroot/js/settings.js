@@ -242,11 +242,6 @@ function initSettingsAvatarPreview() {
   input.addEventListener("change", () => {
     const file = input.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
-    if (file.size > 200 * 1024) {
-      window.alert("Please choose an image under 200KB.");
-      input.value = "";
-      return;
-    }
     const reader = new FileReader();
     reader.onload = () => {
       const url = typeof reader.result === "string" ? reader.result : "";

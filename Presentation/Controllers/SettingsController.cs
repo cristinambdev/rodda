@@ -56,9 +56,6 @@ public class SettingsController( IUserService userService, SignInManager<Data.En
             if (!avatar.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
                 return BadRequest(new { succeeded = false, errorMessage = "Please choose an image file." });
 
-            if (avatar.Length > 200 * 1024)
-                return BadRequest(new { succeeded = false, errorMessage = "Please choose an image under 200KB." });
-
             profileImageUrl = await ImageUploadHelper.UploadImageAsync(avatar, "profiles", _webHostEnvironment);
             if (profileImageUrl == null)
                 return StatusCode(500, new { succeeded = false, errorMessage = "Could not save profile picture." });
